@@ -19,11 +19,12 @@ def "main build" [
 
 def "main config" [
     --sources  # Show configuration with sources
+    --json     # Output as JSON only
 ] {
     if $sources {
-        show-sources
+        show-sources --json=$json
     } else {
-        show
+        show --json=$json
     }
 }
 
@@ -47,13 +48,15 @@ OPTIONS:
     -v, --version  Show version
     
 EXAMPLES:
-    ocx run                # Run OpenCode interactively
-    ocx build              # Build Docker images
-    ocx build --force      # Force rebuild images
-    ocx config             # Show current configuration
-    ocx config --sources   # Show config with sources
-    ocx version            # Show version
-    ocx help               # Show help
+    ocx run                  # Run OpenCode interactively
+    ocx build                # Build Docker images
+    ocx build --force        # Force rebuild images
+    ocx config               # Show current configuration
+    ocx config --sources     # Show config with sources
+    ocx config --json        # Output config as JSON
+    ocx config --sources --json  # Output config with sources as JSON
+    ocx version              # Show version
+    ocx help                 # Show help
     
 ENVIRONMENT VARIABLES:
     OCX_WORKSPACE          Workspace directory path
