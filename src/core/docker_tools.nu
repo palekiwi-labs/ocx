@@ -83,8 +83,22 @@ export def run [...args] {
     let timezone = if $cfg.timezone == null { "Asia/Taipei" } else { $cfg.timezone }
     
     let config_dir = $cfg.config_dir | path expand
-    let config_mount_mode = "rw"
     let user = "user"
+    
+    # Detect mount conflicts: if CONFIG_DIR and WORKSPACE point to same location
+    # and would mount to same container path, handle specially
+    let config_container_path = $"/home/($user)/.config/opencode"
+    let workspace_would_conflict = (
+        ($config_dir == $ws.host_path) and 
+        ($config_container_path == $ws.container_path)
+    )
+    
+    let config_mount_mode = if $workspace_would_conflict { "rw" } else { "ro" }
+    let skip_workspace_mount = $workspace_would_conflict
+    
+    if $workspace_would_conflict {
+        print "Info: Config directory is the workspace - mounting as read-write"
+    }
     
     # Check if image exists, build if needed
     if not (image_exists $cfg.image_name) {
@@ -128,10 +142,14 @@ export def run [...args] {
     $cmd = ($cmd | append [
         "-v" $"ocx-cache-($port):/home/($user)/.cache:rw"
         "-v" $"ocx-local-($port):/home/($user)/.local:rw"
-        "-v" $"($config_dir):/home/($user)/.config/opencode:($config_mount_mode)"
+        "-v" $"($config_dir):($config_container_path):($config_mount_mode)"
         "-v" "/etc/localtime:/etc/localtime:ro"
-        "-v" $"($ws.host_path):($ws.container_path):rw"
     ])
+    
+    # Add workspace mount only if it doesn't conflict with config mount
+    if not $skip_workspace_mount {
+        $cmd = ($cmd | append ["-v" $"($ws.host_path):($ws.container_path):rw"])
+    }
     
     # Add rgignore file mount if configured
     if $cfg.rgignore_file != null {
