@@ -1,0 +1,35 @@
+version: '3'
+
+vars:
+  OPENCODE_VERSION:
+    sh: cat .opencode-version
+  
+dotenv: ['.env']
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - go-task --list
+
+  build:base:
+    desc: Build ocx base image
+    cmds:
+      - |
+        docker build \
+          -f docker/Dockerfile.base \
+          -t localhost/ocx-base:latest \
+          .
+
+  build:ocx:
+    desc: Build ocx image
+    deps: [build:base]
+    cmds:
+      - |
+        docker build \
+          -f docker/Dockerfile.opencode \
+          --build-arg BASE_IMAGE=localhost/ocx-base:latest \
+          --build-arg OPENCODE_VERSION={{.OPENCODE_VERSION}} \
+          -t localhost/ocx:{{.OPENCODE_VERSION}} \
+          -t localhost/ocx:latest \
+          .
