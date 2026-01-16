@@ -4,6 +4,7 @@
 
 use core/docker_tools.nu
 use core/ports.nu
+use core/config.nu [show, show-sources]
 
 def --wrapped "main run" [...args] {
     docker_tools run ...$args
@@ -14,6 +15,16 @@ def "main build" [
     --force(-f)
 ] {
     docker_tools build --base=$base --force=$force
+}
+
+def "main config" [
+    --sources  # Show configuration with sources
+] {
+    if $sources {
+        show-sources
+    } else {
+        show
+    }
 }
 
 def "main port generate" [] {
@@ -29,6 +40,7 @@ USAGE:
 SUBCOMMANDS:
     run      Run OpenCode container
     build    Build Docker images
+    config   Show configuration (use --sources to see origins)
     
 OPTIONS:
     -h, --help     Show this help
@@ -38,6 +50,8 @@ EXAMPLES:
     ocx run                # Run OpenCode interactively
     ocx build              # Build Docker images
     ocx build --force      # Force rebuild images
+    ocx config             # Show current configuration
+    ocx config --sources   # Show config with sources
     ocx version            # Show version
     ocx help               # Show help
     

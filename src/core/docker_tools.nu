@@ -1,5 +1,6 @@
 use ./ports.nu
 use ./workspace.nu
+use ./config.nu
 
 export def build [
     --base
@@ -66,51 +67,108 @@ def image_exists [name: string] {
 }
 
 export def run [...args] {
-    # Get workspace configuration
+    # Get configuration
+    let cfg = (config load)
     let ws = workspace get
     
-    let config_dir = "~/.config/opencode" | path expand
+    # Resolve values with auto-generation
+    let port = if $cfg.port == null { ports generate } else { $cfg.port }
+    let container_name = if $cfg.container_name == null {
+        let parent = ($env.PWD | path dirname | path basename)
+        let base = ($env.PWD | path basename)
+        $"ocx-($parent)-($base)"
+    } else {
+        $cfg.container_name
+    }
+    let timezone = if $cfg.timezone == null { "Asia/Taipei" } else { $cfg.timezone }
+    
+    let config_dir = $cfg.config_dir | path expand
     let config_mount_mode = "rw"
-    let container_name = "ocx-test"
-    let image_name = "localhost/ocx:latest"
-    let port = ports generate
     let user = "user"
-
-    if not (image_exists $image_name) {
-        print $"Image ($image_name) not found, building it first..."
+    
+    # Check if image exists, build if needed
+    if not (image_exists $cfg.image_name) {
+        print $"Image ($cfg.image_name) not found, building it first..."
         build_ocx
     }
-
+    
+    # Ensure config directory exists
     mkdir $config_dir
-
-    let cmd = [
+    
+    # Build base docker command
+    mut cmd = [
         "docker" "run" "--rm" "-it"
         "--read-only"
-        "--tmpfs" "/tmp:exec,nosuid,size=500m"
-        "--tmpfs" "/workspace/tmp:exec,nosuid,size=500m"
+        "--tmpfs" $"/tmp:exec,nosuid,size=($cfg.tmp_size)"
+        "--tmpfs" $"/workspace/tmp:exec,nosuid,size=($cfg.workspace_tmp_size)"
         "--security-opt" "no-new-privileges"
         "--cap-drop" "ALL"
-        "--network" "bridge"
-        "--memory" "1024m"
-        "--cpus" "1.0"
-        "--pids-limit" "100"
-        # "-p" $"($port):80"
+        "--network" $cfg.network
+        "--memory" $cfg.memory
+        "--cpus" ($cfg.cpus | into string)
+        "--pids-limit" ($cfg.pids_limit | into string)
+    ]
+    
+    # Add port publishing if enabled
+    if $cfg.publish_port {
+        $cmd = ($cmd | append ["-p" $"($port):80"])
+    }
+    
+    # Add environment variables
+    $cmd = ($cmd | append [
         "-e" $"USER=($user)"
-        "-e" "TERM="xterm-256color"
-        "-e" "COLORTERM="truecolor"
+        "-e" "TERM=xterm-256color"
+        "-e" "COLORTERM=truecolor"
         "-e" "FORCE_COLOR=1"
-        # "-e" $"GEMINI_API_KEY=($env.GEMINI_API_KEY?)"
         "-e" "TMPDIR=/workspace/tmp"
-        "-e" $"TZ=($env.TZ? | default 'Asia/Taipei')"
+        "-e" $"TZ=($timezone)"
+    ])
+    
+    # Add volume mounts
+    $cmd = ($cmd | append [
         "-v" $"ocx-cache-($port):/home/($user)/.cache:rw"
         "-v" $"ocx-local-($port):/home/($user)/.local:rw"
         "-v" $"($config_dir):/home/($user)/.config/opencode:($config_mount_mode)"
         "-v" "/etc/localtime:/etc/localtime:ro"
         "-v" $"($ws.host_path):($ws.container_path):rw"
+    ])
+    
+    # Add rgignore file mount if configured
+    if $cfg.rgignore_file != null {
+        let rgignore_path = $cfg.rgignore_file | path expand
+        if ($rgignore_path | path exists) {
+            $cmd = ($cmd | append ["-v" $"($rgignore_path):/home/($user)/.rgignore:ro"])
+        }
+    } else {
+        # Check default location in config dir
+        let default_rgignore = ($config_dir | path join ".rgignore")
+        if ($default_rgignore | path exists) {
+            $cmd = ($cmd | append ["-v" $"($default_rgignore):/home/($user)/.rgignore:ro"])
+        }
+    }
+    
+    # Add shadow mounts for forbidden paths
+    for path in $cfg.forbidden_paths {
+        let full_path = ($ws.host_path | path join $path)
+        let container_forbidden_path = ($ws.container_path | path join $path)
+        
+        if ($full_path | path exists) {
+            if ($full_path | path type) == "dir" {
+                # Shadow mount directory with tmpfs
+                $cmd = ($cmd | append ["--tmpfs" $"($container_forbidden_path):ro,noexec,nosuid,size=1k,mode=000"])
+            } else {
+                # Shadow mount file with /dev/null
+                $cmd = ($cmd | append ["-v" $"/dev/null:($container_forbidden_path):ro"])
+            }
+        }
+    }
+    
+    # Add workdir, name, and image
+    $cmd = ($cmd | append [
         "--workdir" $ws.container_path
-        "--name" $"($container_name)"
-        $image_name "opencode" ...$args
-    ]
-
+        "--name" $container_name
+        $cfg.image_name "opencode" ...$args
+    ])
+    
     run-external ...$cmd
 }
