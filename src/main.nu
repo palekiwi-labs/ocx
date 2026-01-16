@@ -2,14 +2,18 @@
 
 # OCX - Secure Docker wrapper for OpenCode
 
+use core/docker_tools.nu
 use core/ports.nu
 
 def "main run" [...args: string ] {
     print "TODO"
 }
 
-def "main build" [--force(-f)] {
-    print "TODO" 
+def "main build" [
+    --base,
+    --force(-f)
+] {
+    docker_tools build --base=$base --force=$force
 }
 
 def "main port generate" [] {

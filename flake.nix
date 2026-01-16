@@ -26,9 +26,6 @@
               
               # Bundle all source files and dependencies
               cp -r src $out/share/ocx/
-              cp .opencode-version $out/share/ocx/
-              cp Taskfile.yml $out/share/ocx/
-              cp -r docker $out/share/ocx/
               
               # Create wrapper that sets up proper environment
               makeWrapper ${pkgs.nushell}/bin/nu $out/bin/ocx \
