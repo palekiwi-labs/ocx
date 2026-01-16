@@ -5,8 +5,8 @@
 use core/docker_tools.nu
 use core/ports.nu
 
-def "main run" [...args: string ] {
-    print "TODO"
+def --wrapped "main run" [...args] {
+    docker_tools run ...$args
 }
 
 def "main build" [

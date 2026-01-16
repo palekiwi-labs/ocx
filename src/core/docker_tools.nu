@@ -1,23 +1,25 @@
+use ./ports.nu
+
 export def build [
     --base
     --force
 ] {
     if $base {
-        build-ocx-base --force=$force
+        build_ocx_base --force=$force
     } else {
-        build-ocx --force=$force
+        build_ocx --force=$force
     }
 }
 
-def build-ocx [--force] {
+def build_ocx [--force] {
     const BASE_IMAGE = "localhost/ocx-base:latest"
     const OPENCODE_VERSION = "1.1.23"
     const DOCKERFILE = "src/Dockerfile.opencode"
 
     # Check if base image exists, build it if missing
-    if not (image-exists $BASE_IMAGE) {
+    if not (image_exists $BASE_IMAGE) {
         print $"Base image ($BASE_IMAGE) not found, building it first..."
-        build-ocx-base --force=false
+        build_ocx_base --force=false
         print "Base image ready, now building ocx..."
     }
 
@@ -36,12 +38,12 @@ def build-ocx [--force] {
     run-external ...$cmd
 }
 
-def build-ocx-base [--force] {
+def build_ocx_base [--force] {
     const BASE_IMAGE = "localhost/ocx-base:latest"
     const DOCKERFILE = "src/Dockerfile.base"
 
     # Skip build if image exists and not forcing
-    if (not $force) and (image-exists $BASE_IMAGE) {
+    if (not $force) and (image_exists $BASE_IMAGE) {
         print $"Base image ($BASE_IMAGE) already exists, skipping build \(use --force to rebuild\)"
         return
     }
@@ -58,108 +60,55 @@ def build-ocx-base [--force] {
     run-external ...$cmd
 }
 
-# Check if Docker image exists
-def image-exists [name: string] {
+def image_exists [name: string] {
     (docker image inspect $name | complete).exit_code == 0
 }
 
-# Run container with full configuration
-# export def run [config: record, workspace: record, args: list] {
-#     # Build base docker run command
-#     mut cmd = [
-#         "docker" "run" "--rm" "-it"
-#         "--read-only"
-#         "--tmpfs" "/tmp:noexec,nosuid,size=500m"
-#         "--tmpfs" "/workspace/tmp:exec,nosuid,size=500m"
-#         "--security-opt" "no-new-privileges"
-#         "--cap-drop" "ALL"
-#         "--network" $config.network
-#         "--memory" $config.memory
-#         "--cpus" $config.cpus
-#         "--pids-limit" ($config.pids_limit | into string)
-#     ]
-#
-#     # Add port publishing if enabled
-#     if $config.publish_port {
-#         $cmd = ($cmd | append ["-p" $"($config.port):80"])
-#     }
-#
-#     # Add environment variables
-#     for entry in ($config.env | transpose key value) {
-#         $cmd = ($cmd | append ["-e" $"($entry.key)=($entry.value)"])
-#     }
-#
-#     # Add named volumes for cache and local
-#     let volumes = (workspace volumes $config.port)
-#     for vol in $volumes {
-#         $cmd = ($cmd | append ["-v" $"($vol.name):($vol.container_path):($vol.mode)"])
-#     }
-#
-#     # Add config directory mount
-#     let config_dir_exists = ($config.config_dir | path exists)
-#     if not $config_dir_exists {
-#         mkdir $config.config_dir
-#     }
-#
-#     let config_mount_mode = if $config.config_dir == $workspace.host_path {
-#         "rw"
-#     } else {
-#         "ro"
-#     }
-#     $cmd = ($cmd | append ["-v" $"($config.config_dir):/home/user/.config/opencode:($config_mount_mode)"])
-#
-#     # Add workspace mount (unless it conflicts with config)
-#     if $config.config_dir != $workspace.host_path {
-#         $cmd = ($cmd | append ["-v" $"($workspace.host_path):($workspace.container_path):rw"])
-#     }
-#
-#     # Add timezone mounts
-#     if ("/etc/localtime" | path exists) {
-#         $cmd = ($cmd | append ["-v" "/etc/localtime:/etc/localtime:ro"])
-#     }
-#     if ("/etc/timezone" | path exists) {
-#         $cmd = ($cmd | append ["-v" "/etc/timezone:/etc/timezone:ro"])
-#     }
-#
-#     # Add rgignore file if it exists
-#     let rgignore_path = if ($env.OCX_RGIGNORE? | is-not-empty) {
-#         $env.OCX_RGIGNORE
-#     } else if ([$config.config_dir ".rgignore"] | path join | path exists) {
-#         [$config.config_dir ".rgignore"] | path join
-#     } else {
-#         null
-#     }
-#
-#     if $rgignore_path != null and ($rgignore_path | path exists) {
-#         $cmd = ($cmd | append ["-v" $"($rgignore_path):/home/user/.rgignore:ro"])
-#     }
-#
-#     # Add forbidden path mounts
-#     use security.nu
-#     let forbidden = (security forbidden-mounts $workspace.host_path $workspace.container_path $config.forbidden)
-#     for mount in $forbidden {
-#         if $mount.type == "tmpfs" {
-#             $cmd = ($cmd | append ["--tmpfs" $"($mount.container_path):($mount.options)"])
-#         } else if $mount.type == "bind" {
-#             $cmd = ($cmd | append ["-v" $"($mount.source):($mount.container_path):($mount.mode)"])
-#         }
-#     }
-#
-#     # Add working directory
-#     $cmd = ($cmd | append ["--workdir" $workspace.container_path])
-#
-#     # Add container name
-#     $cmd = ($cmd | append ["--name" $config.container_name])
-#
-#     # Add image name
-#     $cmd = ($cmd | append $config.image_name)
-#
-#     # Add opencode command
-#     $cmd = ($cmd | append "opencode")
-#
-#     # Add user arguments
-#     $cmd = ($cmd | append $args)
-#
-#     # Execute
-#     run-external ...$cmd
-# }
+export def run [...args] {
+    let config_dir = "~/.config/opencode" | path expand
+    let config_mount_mode = "rw"
+    let container_name = "ocx-test"
+    let container_workspace = "/home/user/code"
+    let image_name = "localhost/ocx:latest"
+    let port = ports generate
+    let user = "user"
+    let workspace = "."
+
+    if not (image_exists $image_name) {
+        print $"Image ($image_name) not found, building it first..."
+        build_ocx
+    }
+
+    mkdir $config_dir
+
+    let cmd = [
+        "docker" "run" "--rm" "-it"
+        "--read-only"
+        "--tmpfs" "/tmp:exec,nosuid,size=500m"
+        "--tmpfs" "/workspace/tmp:exec,nosuid,size=500m"
+        "--security-opt" "no-new-privileges"
+        "--cap-drop" "ALL"
+        "--network" "bridge"
+        "--memory" "1024m"
+        "--cpus" "1.0"
+        "--pids-limit" "100"
+        # "-p" $"($port):80"
+        "-e" $"USER=($user)"
+        "-e" "TERM="xterm-256color"
+        "-e" "COLORTERM="truecolor"
+        "-e" "FORCE_COLOR=1"
+        # "-e" $"GEMINI_API_KEY=($env.GEMINI_API_KEY?)"
+        "-e" "TMPDIR=/workspace/tmp"
+        "-e" $"TZ=($env.TZ? | default 'Asia/Taipei')"
+        "-v" $"ocx-cache-($port):/home/($user)/.cache:rw"
+        "-v" $"ocx-local-($port):/home/($user)/.local:rw"
+        "-v" $"($config_dir):/home/($user)/.config/opencode:($config_mount_mode)"
+        "-v" "/etc/localtime:/etc/localtime:ro"
+        "-v" $"($workspace):/home/user/code"
+        "--workdir" $"($container_workspace)"
+        "--name" $"($container_name)"
+        $image_name "opencode" ...$args
+    ]
+
+    run-external ...$cmd
+}
