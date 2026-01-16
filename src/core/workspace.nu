@@ -1,7 +1,9 @@
 # Workspace path calculations and validation
 
+use ./config.nu
+
 # Get workspace configuration from OCX_WORKSPACE environment variable
-export def get [] {
+export def get-workspace [] {
     # Check if OCX_WORKSPACE is set
     let workspace_env = $env.OCX_WORKSPACE? | default ""
     
@@ -27,8 +29,12 @@ export def get [] {
         }
     }
     
+    # Get username for path calculation
+    let cfg = (config load)
+    let user_settings = (config resolve-user $cfg)
+    
     # Compute container path
-    let container_path = (calculate-container-path $workspace)
+    let container_path = (calculate-container-path $workspace $user_settings.username)
     let home = ($env.HOME | path expand)
     
     {
@@ -38,9 +44,9 @@ export def get [] {
 }
 
 # Calculate container path based on host path
-# If under $HOME, preserve structure under /home/user
+# If under $HOME, preserve structure under /home/<username>
 # Otherwise mount under /workspace
-def calculate-container-path [path: string] {
+def calculate-container-path [path: string, username: string] {
     let home = ($env.HOME | path expand)
     
     if ($path | str starts-with $home) {
@@ -52,7 +58,7 @@ def calculate-container-path [path: string] {
         } else {
             $relative
         }
-        $"/home/user/($relative_clean)"
+        $"/home/($username)/($relative_clean)"
     } else {
         # Path outside $HOME, mount under /workspace
         let relative = ($path | str trim --left --char "/")

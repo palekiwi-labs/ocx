@@ -16,6 +16,11 @@ const DEFAULTS = {
     container_name: null  # auto-generate if null
     image_name: "localhost/ocx:latest"
     
+    # User settings
+    username: null  # auto-detect from $env.USER if null
+    uid: null       # auto-detect from `id -u` if null
+    gid: null       # auto-detect from `id -g` if null
+    
     # Paths
     config_dir: "~/.config/opencode"  # OpenCode container config dir (mounted into container)
     rgignore_file: null  # optional
@@ -56,7 +61,8 @@ export def get-with-sources [] {
         
         # Track global overrides
         for key in ($global | columns) {
-            if ($global | get $key) != null {
+            let value = ($global | get $key)
+            if $value != null {
                 $sources = ($sources | upsert $key "global")
             }
         }
@@ -72,7 +78,8 @@ export def get-with-sources [] {
         
         # Track project overrides
         for key in ($project | columns) {
-            if ($project | get $key) != null {
+            let value = ($project | get $key)
+            if $value != null {
                 $sources = ($sources | upsert $key "project")
             }
         }
@@ -242,6 +249,15 @@ def get-env-overrides [] {
     if ($env.OCX_WORKSPACE_TMP_SIZE? | default null) != null {
         $overrides = ($overrides | append {key: "workspace_tmp_size", env_var: "OCX_WORKSPACE_TMP_SIZE"})
     }
+    if ($env.OCX_USERNAME? | default null) != null {
+        $overrides = ($overrides | append {key: "username", env_var: "OCX_USERNAME"})
+    }
+    if ($env.OCX_UID? | default null) != null {
+        $overrides = ($overrides | append {key: "uid", env_var: "OCX_UID"})
+    }
+    if ($env.OCX_GID? | default null) != null {
+        $overrides = ($overrides | append {key: "gid", env_var: "OCX_GID"})
+    }
     
     $overrides
 }
@@ -335,6 +351,24 @@ def apply-env-overrides [config: record] {
         $result = ($result | upsert workspace_tmp_size $workspace_tmp_size_env)
     }
     
+    # OCX_USERNAME
+    let username_env = $env.OCX_USERNAME? | default null
+    if $username_env != null {
+        $result = ($result | upsert username $username_env)
+    }
+    
+    # OCX_UID
+    let uid_env = $env.OCX_UID? | default null
+    if $uid_env != null {
+        $result = ($result | upsert uid ($uid_env | into int))
+    }
+    
+    # OCX_GID
+    let gid_env = $env.OCX_GID? | default null
+    if $gid_env != null {
+        $result = ($result | upsert gid ($gid_env | into int))
+    }
+    
     $result
 }
 
@@ -389,5 +423,32 @@ def validate-memory [value: string] {
             msg: $"Invalid memory format: ($value)"
             help: "Memory must be in format: <number><unit> where unit is k, m, or g (e.g., '1024m', '2g')"
         }
+    }
+}
+
+# Resolve user settings with auto-detection
+export def resolve-user [config: record] {
+    let username = if $config.username == null {
+        $env.USER? | default "user"
+    } else {
+        $config.username
+    }
+    
+    let uid = if $config.uid == null {
+        (id -u | str trim | into int)
+    } else {
+        $config.uid
+    }
+    
+    let gid = if $config.gid == null {
+        (id -g | str trim | into int)
+    } else {
+        $config.gid
+    }
+    
+    {
+        username: $username
+        uid: $uid
+        gid: $gid
     }
 }

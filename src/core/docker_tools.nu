@@ -26,12 +26,17 @@ def build_ocx [--force] {
     }
 
     print "Building ocx image..."
+    
+    # Get user settings
+    let cfg = (config load)
+    let user_settings = (config resolve-user $cfg)
 
     mut cmd = [
         "docker" "build"
         "-f" $DOCKERFILE
         "--build-arg" $"BASE_IMAGE=($BASE_IMAGE)"
         "--build-arg" $"OPENCODE_VERSION=($OPENCODE_VERSION)"
+        "--build-arg" $"USERNAME=($user_settings.username)"
         "-t" $"localhost/ocx:($OPENCODE_VERSION)"
         "-t" "localhost/ocx:latest"
         "."
@@ -51,10 +56,19 @@ def build_ocx_base [--force] {
     }
 
     print "Building base ocx image..."
+    
+    # Get user settings
+    let cfg = (config load)
+    let user_settings = (config resolve-user $cfg)
+    
+    print $"Building with user: ($user_settings.username) \(UID: ($user_settings.uid), GID: ($user_settings.gid)\)"
 
     let cmd = [
         "docker" "build"
         "-f" $DOCKERFILE
+        "--build-arg" $"USERNAME=($user_settings.username)"
+        "--build-arg" $"UID=($user_settings.uid)"
+        "--build-arg" $"GID=($user_settings.gid)"
         "-t" $BASE_IMAGE
         "."
     ]
@@ -69,7 +83,7 @@ def image_exists [name: string] {
 export def run [...args] {
     # Get configuration
     let cfg = (config load)
-    let ws = workspace get
+    let ws = workspace get-workspace
     
     # Resolve values with auto-generation
     let port = if $cfg.port == null { ports generate } else { $cfg.port }
@@ -82,8 +96,11 @@ export def run [...args] {
     }
     let timezone = if $cfg.timezone == null { "Asia/Taipei" } else { $cfg.timezone }
     
+    # Resolve user settings
+    let user_settings = (config resolve-user $cfg)
+    let user = $user_settings.username
+    
     let config_dir = $cfg.config_dir | path expand
-    let user = "user"
     
     # Detect mount conflicts: if CONFIG_DIR and WORKSPACE point to same location
     # and would mount to same container path, handle specially

@@ -1,5 +1,10 @@
 FROM debian:bookworm-slim
 
+# Accept username, UID, and GID as build arguments
+ARG USERNAME=user
+ARG UID=1000
+ARG GID=1000
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
@@ -10,12 +15,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ripgrep \
     && rm -rf /var/lib/apt/lists/*
 
-RUN groupadd -g 1000 user && \
-    useradd -u 1000 -g user -m -d /home/user user && \
+RUN set -e; \
+    # Get or create group
+    if getent group ${GID} >/dev/null 2>&1; then \
+        # GID already exists, get the group name
+        GROUP_NAME=$(getent group ${GID} | cut -d: -f1); \
+    else \
+        # GID doesn't exist, create new group
+        groupadd -g ${GID} ${USERNAME}; \
+        GROUP_NAME=${USERNAME}; \
+    fi && \
+    # Create user with the determined group
+    useradd -u ${UID} -g ${GROUP_NAME} -m -d /home/${USERNAME} ${USERNAME} && \
     mkdir -p /workspace \
-             /home/user/.cache \
-             /home/user/.local && \
-    chown -R user:user /workspace /home/user
+             /home/${USERNAME}/.cache \
+             /home/${USERNAME}/.local && \
+    chown -R ${UID}:${GID} /workspace /home/${USERNAME}
 
-USER user
+USER ${USERNAME}
 WORKDIR /workspace
