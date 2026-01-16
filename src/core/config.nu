@@ -164,11 +164,15 @@ export def show-sources [
 # Load config from JSON file
 def load-file [path: string] {
     try {
-        open $path | from json
-    } catch {
+        open $path
+    } catch { |err|
         error make {
             msg: $"Failed to load config file: ($path)"
-            help: "Ensure the file exists and contains valid JSON"
+            label: {
+                text: $"Parse error: ($err.msg)"
+                span: (metadata $path).span
+            }
+            help: "Ensure the file contains valid JSON"
         }
     }
 }
