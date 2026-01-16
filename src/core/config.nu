@@ -17,7 +17,7 @@ const DEFAULTS = {
     image_name: "localhost/ocx:latest"
     
     # Paths
-    config_dir: "~/.config/opencode"
+    config_dir: "~/.config/opencode"  # OpenCode container config dir (mounted into container)
     rgignore_file: null  # optional
     
     # Security
@@ -47,7 +47,7 @@ export def get-with-sources [] {
     }
     
     # Merge global config if exists
-    let global_config_path = ($DEFAULTS.config_dir | path expand | path join "ocx.json")
+    let global_config_path = ("~/.config/ocx/ocx.json" | path expand)
     mut global_exists = false
     if ($global_config_path | path exists) {
         let global = load-file $global_config_path

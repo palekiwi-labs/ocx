@@ -71,6 +71,12 @@ ENVIRONMENT VARIABLES:
     OCX_PIDS_LIMIT         Process limit (default: 100)
     
     See documentation for full list of configuration options.
+
+CONFIGURATION FILES:
+    Global:  ~/.config/ocx/ocx.json
+    Project: ./ocx.json
+    
+    Config priority: env vars > project > global > defaults
 "
 }
 
