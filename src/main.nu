@@ -4,19 +4,6 @@
 
 use core/ports.nu
 
-def main [
-    --help(-h)
-    --version(-v)
-] {
-    if $help {
-        print_help
-    } else if $version {
-        print "TODO"
-    } else {
-        print_help 
-    }
-}
-
 def "main run" [...args: string ] {
     print "TODO"
 }
@@ -64,4 +51,14 @@ ENVIRONMENT VARIABLES:
     
     See documentation for full list of configuration options.
 "
+}
+
+def main [
+    --version(-v)
+] {
+    if $version {
+        print "TODO"
+    } else {
+        print_help 
+    }
 }
