@@ -1,4 +1,5 @@
 use ./ports.nu
+use ./workspace.nu
 
 export def build [
     --base
@@ -65,14 +66,15 @@ def image_exists [name: string] {
 }
 
 export def run [...args] {
+    # Get workspace configuration
+    let ws = workspace get
+    
     let config_dir = "~/.config/opencode" | path expand
     let config_mount_mode = "rw"
     let container_name = "ocx-test"
-    let container_workspace = "/home/user/code"
     let image_name = "localhost/ocx:latest"
     let port = ports generate
     let user = "user"
-    let workspace = "."
 
     if not (image_exists $image_name) {
         print $"Image ($image_name) not found, building it first..."
@@ -104,8 +106,8 @@ export def run [...args] {
         "-v" $"ocx-local-($port):/home/($user)/.local:rw"
         "-v" $"($config_dir):/home/($user)/.config/opencode:($config_mount_mode)"
         "-v" "/etc/localtime:/etc/localtime:ro"
-        "-v" $"($workspace):/home/user/code"
-        "--workdir" $"($container_workspace)"
+        "-v" $"($ws.host_path):($ws.container_path):rw"
+        "--workdir" $ws.container_path
         "--name" $"($container_name)"
         $image_name "opencode" ...$args
     ]
