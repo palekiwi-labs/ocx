@@ -3,18 +3,25 @@ export def build [
     --force
 ] {
     if $base {
-        build_ocx_base --force=$force
+        build-ocx-base --force=$force
     } else {
-        build_ocx
+        build-ocx --force=$force
     }
 }
 
-def build_ocx [--force] {
-    print "Building ocx image..."
-
+def build-ocx [--force] {
     const BASE_IMAGE = "localhost/ocx-base:latest"
     const OPENCODE_VERSION = "1.1.23"
     const DOCKERFILE = "src/Dockerfile.opencode"
+
+    # Check if base image exists, build it if missing
+    if not (image-exists $BASE_IMAGE) {
+        print $"Base image ($BASE_IMAGE) not found, building it first..."
+        build-ocx-base --force=false
+        print "Base image ready, now building ocx..."
+    }
+
+    print "Building ocx image..."
 
     mut cmd = [
         "docker" "build"
@@ -29,25 +36,32 @@ def build_ocx [--force] {
     run-external ...$cmd
 }
 
-def build_ocx_base [--force] {
-    print "Building base ocx image..."
-
+def build-ocx-base [--force] {
+    const BASE_IMAGE = "localhost/ocx-base:latest"
     const DOCKERFILE = "src/Dockerfile.base"
+
+    # Skip build if image exists and not forcing
+    if (not $force) and (image-exists $BASE_IMAGE) {
+        print $"Base image ($BASE_IMAGE) already exists, skipping build \(use --force to rebuild\)"
+        return
+    }
+
+    print "Building base ocx image..."
 
     let cmd = [
         "docker" "build"
         "-f" $DOCKERFILE
-        "-t" "localhost/ocx-base:latest"
+        "-t" $BASE_IMAGE
         "."
     ]
 
     run-external ...$cmd
 }
 
-# # Check if Docker image exists
-# export def "image-exists" [name: string] {
-#     (docker image inspect $name | complete).exit_code == 0
-# }
+# Check if Docker image exists
+def image-exists [name: string] {
+    (docker image inspect $name | complete).exit_code == 0
+}
 
 # Run container with full configuration
 # export def run [config: record, workspace: record, args: list] {
