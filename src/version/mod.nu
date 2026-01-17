@@ -14,3 +14,7 @@ export use cache.nu [
     clear-cache,
     get-cache-path
 ]
+export use local.nu [
+    get-local-image-tags,
+    get-local-semantic-versions
+]

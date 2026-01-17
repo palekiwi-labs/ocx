@@ -6,8 +6,6 @@ export def main [--check] {
     print "Checking for OpenCode updates..."
     
     let cfg = (config load)
-    let current = (version resolve-version $cfg.opencode_version)
-    
     let latest_info = (version fetch-latest-release)
     
     if $latest_info == null {
@@ -17,23 +15,40 @@ export def main [--check] {
     
     let latest = (version normalize-version $latest_info.version)
     
-    if $current == $latest {
-        print $"Already up to date: OpenCode v($current)"
+    if $cfg.opencode_version == "latest" {
+        handle-latest-config $latest $latest_info $check
+    } else {
+        handle-explicit-config $cfg.opencode_version $latest $latest_info $check
+    }
+}
+
+def handle-explicit-config [
+    config_version: string,
+    latest: string,
+    latest_info: record,
+    check: bool
+] {
+    let normalized_config = (version normalize-version $config_version)
+    
+    if $normalized_config == $latest {
+        print $"Already up to date: OpenCode v($normalized_config)"
         return
     }
     
-    print $"New version available: v($latest) \(current: v($current)\)"
+    print $"New version available: v($latest) (current config: v($normalized_config))"
     
     if ($latest_info.notes != null) {
+        print ""
         print "Release notes:"
         print $latest_info.notes
+        print ""
     }
     
     if $check {
         return
     }
     
-    let response = (input $"Update to v($latest)? [y/N] ")
+    let response = (input $"Update config to v($latest) and rebuild? [y/N] ")
     
     if ($response | str downcase) != "y" {
         print "Update cancelled"
@@ -43,6 +58,53 @@ export def main [--check] {
     update-global-config $latest
     
     print $"Updated configuration to v($latest)"
+    print "Rebuilding image..."
+    
+    build --force=true
+    
+    print $"OpenCode v($latest) is ready!"
+}
+
+def handle-latest-config [
+    latest: string,
+    latest_info: record,
+    check: bool
+] {
+    let local_versions = (version get-local-semantic-versions)
+    
+    if ($local_versions | is-empty) {
+        print "No OpenCode images found (or version tags missing)."
+        print $"Latest available: v($latest)"
+        print ""
+        print "Run 'ocx build' to create your first image."
+        return
+    }
+    
+    if $latest in $local_versions {
+        print $"Already up to date: OpenCode v($latest)"
+        return
+    }
+    
+    print $"New version available: v($latest)"
+    
+    if ($latest_info.notes != null) {
+        print ""
+        print "Release notes:"
+        print $latest_info.notes
+        print ""
+    }
+    
+    if $check {
+        return
+    }
+    
+    let response = (input $"Build v($latest)? [y/N] ")
+    
+    if ($response | str downcase) != "y" {
+        print "Update cancelled"
+        return
+    }
+    
     print "Rebuilding image..."
     
     build --force=true
