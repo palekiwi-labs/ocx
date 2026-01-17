@@ -2,7 +2,7 @@
 
 # OCX - Secure Docker wrapper for OpenCode
 
-use docker_tools.nu
+use docker_tools
 use ports.nu
 use config.nu [show, show-sources]
 
