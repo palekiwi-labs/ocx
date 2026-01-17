@@ -4,10 +4,14 @@ use ../ports.nu
 use ../workspace.nu
 use ../config
 use ../shadow_mounts.nu
+use ../version
 
 export def main [...args] {
     let cfg = (config load)
     let ws = workspace get-workspace
+    
+    let version = (version resolve-version $cfg.opencode_version)
+    let image_name = $"localhost/ocx:($version)"
     
     let port = if $cfg.port == null { ports generate } else { $cfg.port }
     let container_name = resolve-container-name $port
@@ -31,8 +35,8 @@ export def main [...args] {
         print "Info: Config directory is the workspace - mounting as read-write"
     }
     
-    if not (image_exists $cfg.image_name) {
-        print $"Image ($cfg.image_name) not found, building it first..."
+    if not (image_exists $image_name) {
+        print $"Image ($image_name) not found, building OpenCode v($version)..."
         build
     }
     
@@ -97,7 +101,7 @@ export def main [...args] {
     $cmd = ($cmd | append [
         "--workdir" $ws.container_path
         "--name" $container_name
-        $cfg.image_name "opencode" ...$args
+        $image_name "opencode" ...$args
     ])
     
     run-external ...$cmd

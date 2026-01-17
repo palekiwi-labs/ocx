@@ -1,5 +1,5 @@
 ---
-status: todo
+status: done
 ---
 
 # Opencode Version
@@ -8,7 +8,7 @@ status: todo
 
 ## Description
 
-Right now we are hardcoding the version of opencode in: `src/docker_tools/build.nu`
+Right now we are hardcoding version of opencode in: `src/docker_tools/build.nu`
 
 It is essential that the version of opencode can be easily set and updated by the user.
 We need to analyze how to approach this.
@@ -34,7 +34,87 @@ However, other users may appreciate the feature of having the version set in the
 In such case, we would need to periodically check the github releases (run an http request?) to check the latest release,
 compare it to the latest local release, and prompt the user if they would like to update?
 
-### `update` command
+### `upgrade` command
 
-If we implement the above release check mechanism, we can expose it under `ocx update` command that would perform the check
-and prompt the user if they want to update.
+If we implement the above release check mechanism, we can expose it under `ocx upgrade` command that would perform the check
+and prompt the user if they want to upgrade.
+
+---
+
+## Implementation Summary
+
+### Changes Made
+
+**New Module: `src/version/`**
+- `mod.nu` - Main exports for version module
+- `github.nu` - GitHub API integration to fetch latest release
+- `cache.nu` - Cache management with 24-hour TTL
+- `resolver.nu` - Version resolution, normalization, and validation
+
+**Config Changes:**
+- Added `opencode_version` field to defaults (default: "latest")
+- Removed `image_name` field (breaking change)
+- Added version validation to config validation
+
+**Build Command (`src/docker_tools/build.nu`):**
+- Removed hardcoded version constant
+- Resolves version dynamically from config
+- Tags images with specific version and `latest`
+
+**Run Command (`src/docker_tools/run.nu`):**
+- Derives image name from resolved version
+- No longer uses `image_name` from config
+
+**Upgrade Command (`src/upgrade.nu`):**
+- New command to check for updates
+- Displays release notes from GitHub
+- Prompts user to update
+- Updates global config
+- Triggers automatic rebuild
+
+### Design Decisions
+
+1. **Default version**: `"latest"` - auto-track latest version
+2. **Version checking**: Daily cache (24-hour TTL) to reduce GitHub API calls
+3. **Update target**: Global config (`~/.config/ocx/ocx.json`)
+4. **Rebuild**: Automatic after version update
+5. **Version normalization**: Strip 'v' prefix (e.g., `v1.2.3` → `1.2.3`)
+6. **Image naming**: Automatically derived from `opencode_version`
+
+### Usage Examples
+
+```bash
+# Use latest version (default)
+ocx run
+ocx build
+
+# Use specific version
+echo '{"opencode_version": "1.1.23"}' > ~/.config/ocx/ocx.json
+ocx build
+ocx run
+
+# Check for updates
+ocx upgrade --check
+
+# Update to latest version
+ocx upgrade
+```
+
+### Migration Notes
+
+Users need to remove `image_name` from config files and use `opencode_version` instead:
+
+```json
+{
+  "opencode_version": "latest"
+}
+```
+
+Or for pinned versions:
+
+```json
+{
+  "opencode_version": "1.1.23"
+}
+```
+

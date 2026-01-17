@@ -11,7 +11,9 @@ export const DEFAULTS = {
     
     # Container settings
     container_name: null  # auto-generate if null
-    image_name: "localhost/ocx:latest"
+    
+    # OpenCode version
+    opencode_version: "latest"  # "latest" or specific version like "1.1.23"
     
     # User settings
     username: null  # auto-detect from $env.USER if null

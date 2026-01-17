@@ -36,6 +36,9 @@ export def validate [config: record] {
         }
     }
     
+    # Validate opencode_version
+    validate-opencode-version ($config.opencode_version)
+    
     # Validate tmp sizes
     validate-memory ($config.tmp_size)
     validate-memory ($config.workspace_tmp_size)
@@ -46,6 +49,43 @@ export def validate-memory [value: string] {
         error make {
             msg: $"Invalid memory format: ($value)"
             help: "Memory must be in format: <number><unit> where unit is k, m, or g (e.g., '1024m', '2g')"
+        }
+    }
+}
+
+export def validate-opencode-version [value: string] {
+    if $value == "latest" {
+        return
+    }
+    
+    let normalized = if ($value | str starts-with "v") {
+        $value | str substring 1..
+    } else {
+        $value
+    }
+    
+    let parts = ($normalized | split row ".")
+    
+    if ($parts | length) != 3 {
+        error make {
+            msg: $"Invalid opencode_version format: ($value)"
+            help: "opencode_version must be 'latest' or semantic version (e.g., '1.2.3' or 'v1.2.3')"
+        }
+    }
+    
+    for part in $parts {
+        if ($part | str length) == 0 {
+            error make {
+                msg: $"Invalid opencode_version format: ($value)"
+                help: "opencode_version must be 'latest' or semantic version (e.g., '1.2.3' or 'v1.2.3')"
+            }
+        }
+        
+        if ($part | into int) == null {
+            error make {
+                msg: $"Invalid opencode_version format: ($value)"
+                help: "opencode_version must be 'latest' or semantic version (e.g., '1.2.3' or 'v1.2.3')"
+            }
         }
     }
 }

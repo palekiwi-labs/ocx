@@ -5,6 +5,7 @@
 use docker_tools
 use ports.nu
 use config [show, show-sources]
+use upgrade.nu
 
 def --wrapped "main run" [...args] {
     docker_tools run ...$args
@@ -36,17 +37,22 @@ def "main shell" [] {
     docker_tools shell
 }
 
+def "main upgrade" [--check] {
+    upgrade --check=$check
+}
+
 def print_help [] {
     print "OCX - Secure Docker wrapper for OpenCode
     
 USAGE:
     ocx <SUBCOMMAND> [OPTIONS]
     
-SUBCOMMANDS:
-    run      Run OpenCode container
-    build    Build Docker images
-    config   Show configuration (use --sources to see origins)
-    shell    Open shell in running container
+    SUBCOMMANDS:
+        run      Run OpenCode container
+        build    Build Docker images
+        config   Show configuration (use --sources to see origins)
+        shell    Open shell in running container
+        upgrade   Check for and install OpenCode updates
     
 OPTIONS:
     -h, --help     Show this help
@@ -61,6 +67,8 @@ EXAMPLES:
     ocx config --json        # Output config as JSON
     ocx config --sources --json  # Output config with sources as JSON
     ocx shell                # Open bash shell in running container
+    ocx upgrade              # Check and update to latest version
+    ocx upgrade --check      # Only check, don't install
     ocx version              # Show version
     ocx help                 # Show help
     
@@ -75,6 +83,7 @@ ENVIRONMENT VARIABLES:
     OCX_MEMORY             Memory limit (default: 1024m)
     OCX_CPUS               CPU limit (default: 1.0)
     OCX_PIDS_LIMIT         Process limit (default: 100)
+    OCX_OPENCODE_VERSION   OpenCode version (default: latest)
     
     See documentation for full list of configuration options.
 
@@ -83,7 +92,7 @@ CONFIGURATION FILES:
     Project: ./ocx.json
     
     Config priority: env vars > project > global > defaults
-"
+ "
 }
 
 def main [

@@ -1,5 +1,6 @@
 use ./utils.nu image_exists
 use ../config
+use ../version
 
 export def main [
     --base
@@ -14,7 +15,6 @@ export def main [
 
 def build_ocx [--force] {
     const BASE_IMAGE = "localhost/ocx-base:latest"
-    const OPENCODE_VERSION = "1.1.23"
     const DOCKERFILE = "src/Dockerfile.opencode"
 
     if not (image_exists $BASE_IMAGE) {
@@ -23,18 +23,20 @@ def build_ocx [--force] {
         print "Base image ready, now building ocx..."
     }
 
-    print "Building ocx image..."
-    
     let cfg = (config load)
+    let version = (version resolve-version $cfg.opencode_version)
+    
+    print $"Building ocx image for OpenCode v($version)..."
+    
     let user_settings = (config resolve-user $cfg)
 
     mut cmd = [
         "docker" "build"
         "-f" $DOCKERFILE
         "--build-arg" $"BASE_IMAGE=($BASE_IMAGE)"
-        "--build-arg" $"OPENCODE_VERSION=($OPENCODE_VERSION)"
+        "--build-arg" $"OPENCODE_VERSION=($version)"
         "--build-arg" $"USERNAME=($user_settings.username)"
-        "-t" $"localhost/ocx:($OPENCODE_VERSION)"
+        "-t" $"localhost/ocx:($version)"
         "-t" "localhost/ocx:latest"
         "."
     ]
