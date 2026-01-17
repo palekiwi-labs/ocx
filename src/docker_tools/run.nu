@@ -10,7 +10,7 @@ export def main [...args] {
     let ws = workspace get-workspace
     
     let port = if $cfg.port == null { ports generate } else { $cfg.port }
-    let container_name = resolve-container-name
+    let container_name = resolve-container-name $port
     let timezone = if $cfg.timezone == null { "Asia/Taipei" } else { $cfg.timezone }
     
     let user_settings = (config resolve-user $cfg)
