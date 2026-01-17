@@ -2,9 +2,9 @@
 
 # OCX - Secure Docker wrapper for OpenCode
 
-use core/docker_tools.nu
-use core/ports.nu
-use core/config.nu [show, show-sources]
+use docker_tools.nu
+use ports.nu
+use config.nu [show, show-sources]
 
 def --wrapped "main run" [...args] {
     docker_tools run ...$args
