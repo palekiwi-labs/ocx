@@ -3,9 +3,7 @@
 # Generate deterministic port from current directory path
 # Returns a port number in the range 32768-65535
 export def generate [] {
-    let parent = ($env.PWD | path dirname | path basename)
-    let current = ($env.PWD | path basename)
-    let path_hash = $"($parent)($current)"
+    let path_hash = $env.PWD
     
     let hash = ($path_hash | cksum | split row ' ' | first | into int)
     
