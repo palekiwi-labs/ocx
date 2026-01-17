@@ -80,6 +80,18 @@ def image_exists [name: string] {
     (docker image inspect $name | complete).exit_code == 0
 }
 
+export def resolve-container-name [] {
+    let cfg = (config load)
+    
+    if $cfg.container_name != null {
+        $cfg.container_name
+    } else {
+        let parent = ($env.PWD | path dirname | path basename)
+        let base = ($env.PWD | path basename)
+        $"ocx-($parent)-($base)"
+    }
+}
+
 export def run [...args] {
     # Get configuration
     let cfg = (config load)
@@ -87,13 +99,7 @@ export def run [...args] {
     
     # Resolve values with auto-generation
     let port = if $cfg.port == null { ports generate } else { $cfg.port }
-    let container_name = if $cfg.container_name == null {
-        let parent = ($env.PWD | path dirname | path basename)
-        let base = ($env.PWD | path basename)
-        $"ocx-($parent)-($base)"
-    } else {
-        $cfg.container_name
-    }
+    let container_name = resolve-container-name
     let timezone = if $cfg.timezone == null { "Asia/Taipei" } else { $cfg.timezone }
     
     # Resolve user settings
@@ -204,6 +210,38 @@ export def run [...args] {
         "--name" $container_name
         $cfg.image_name "opencode" ...$args
     ])
+    
+    run-external ...$cmd
+}
+
+export def shell [] {
+    let container_name = resolve-container-name
+    
+    # Check if container is running
+    let running = (docker ps --filter $"name=^($container_name)$" --format "{{.Names}}" 
+                   | complete 
+                   | get stdout 
+                   | str trim)
+    
+    if ($running | is-empty) {
+        error make {
+            msg: $"Container '($container_name)' is not running"
+            help: $"Start the container first with: ocx run"
+        }
+    }
+    
+    # Get user settings to exec as the correct user
+    let cfg = (config load)
+    let user_settings = (config resolve-user $cfg)
+    let user = $user_settings.username
+    
+    # Execute interactive bash shell
+    let cmd = [
+        "docker" "exec" "-it"
+        "--user" $user
+        $container_name
+        "/bin/bash"
+    ]
     
     run-external ...$cmd
 }

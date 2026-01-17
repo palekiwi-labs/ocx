@@ -32,6 +32,10 @@ def "main port generate" [] {
     ports generate
 } 
 
+def "main shell" [] {
+    docker_tools shell
+}
+
 def print_help [] {
     print "OCX - Secure Docker wrapper for OpenCode
     
@@ -42,6 +46,7 @@ SUBCOMMANDS:
     run      Run OpenCode container
     build    Build Docker images
     config   Show configuration (use --sources to see origins)
+    shell    Open shell in running container
     
 OPTIONS:
     -h, --help     Show this help
@@ -55,6 +60,7 @@ EXAMPLES:
     ocx config --sources     # Show config with sources
     ocx config --json        # Output config as JSON
     ocx config --sources --json  # Output config with sources as JSON
+    ocx shell                # Open bash shell in running container
     ocx version              # Show version
     ocx help                 # Show help
     
