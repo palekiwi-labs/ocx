@@ -2,7 +2,7 @@ use ./utils.nu [image_exists, resolve-container-name]
 use ./build.nu
 use ../ports.nu
 use ../workspace.nu
-use ../config.nu
+use ../config
 use ../shadow_mounts.nu
 
 export def main [...args] {

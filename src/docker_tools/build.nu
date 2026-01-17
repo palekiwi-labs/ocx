@@ -1,5 +1,5 @@
 use ./utils.nu image_exists
-use ../config.nu
+use ../config
 
 export def main [
     --base

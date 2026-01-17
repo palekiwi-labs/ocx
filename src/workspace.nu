@@ -1,6 +1,6 @@
 # Workspace path calculations and validation
 
-use ./config.nu
+use ./config
 
 # Get workspace configuration from OCX_WORKSPACE environment variable
 export def get-workspace [] {

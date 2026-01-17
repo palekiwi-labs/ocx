@@ -4,7 +4,7 @@
 
 use docker_tools
 use ports.nu
-use config.nu [show, show-sources]
+use config [show, show-sources]
 
 def --wrapped "main run" [...args] {
     docker_tools run ...$args

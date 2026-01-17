@@ -1,5 +1,5 @@
 use ./utils.nu resolve-container-name
-use ../config.nu
+use ../config
 use ../ports.nu
 
 export def main [] {
