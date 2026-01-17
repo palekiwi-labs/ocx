@@ -66,3 +66,4 @@ Session.vim
 # Other settings
 *.sublime-settings
 .envrc
+ocx.json
