@@ -1,6 +1,7 @@
 use ./ports.nu
 use ./workspace.nu
 use ./config.nu
+use ./shadow_mounts.nu
 
 export def build [
     --base
@@ -188,22 +189,13 @@ export def run [...args] {
         }
     }
     
-    # Add shadow mounts for forbidden paths
-    for path in $cfg.forbidden_paths {
-        let full_path = ($ws.host_path | path join $path)
-        let container_forbidden_path = ($ws.container_path | path join $path)
-        
-        if ($full_path | path exists) {
-            if ($full_path | path type) == "dir" {
-                # Shadow mount directory with tmpfs
-                $cmd = ($cmd | append ["--tmpfs" $"($container_forbidden_path):ro,noexec,nosuid,size=1k,mode=000"])
-            } else {
-                # Shadow mount file with /dev/null
-                $cmd = ($cmd | append ["-v" $"/dev/null:($container_forbidden_path):ro"])
-            }
-        }
-    }
-    
+    let shadow_mount_args = (shadow_mounts generate                                                   
+        $cfg.forbidden_paths                                                                          
+        $ws.host_path                                                                                 
+        $ws.container_path                                                                            
+    )                                                                                                 
+    $cmd = ($cmd | append $shadow_mount_args)     
+
     # Add workdir, name, and image
     $cmd = ($cmd | append [
         "--workdir" $ws.container_path
