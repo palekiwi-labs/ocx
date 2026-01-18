@@ -52,6 +52,12 @@ export def get-env-overrides [] {
     if ($env.OCX_GID? | default null) != null {
         $overrides = ($overrides | append {key: "gid", env_var: "OCX_GID"})
     }
+    if ($env.OCX_OVERLAY_DOCKERFILE? | default null) != null {
+        $overrides = ($overrides | append {key: "overlay_dockerfile", env_var: "OCX_OVERLAY_DOCKERFILE"})
+    }
+    if ($env.OCX_OVERLAY_IMAGE_NAME? | default null) != null {
+        $overrides = ($overrides | append {key: "overlay_image_name", env_var: "OCX_OVERLAY_IMAGE_NAME"})
+    }
     
     $overrides
 }
@@ -160,6 +166,18 @@ export def apply-env-overrides [config: record] {
     let gid_env = $env.OCX_GID? | default null
     if $gid_env != null {
         $result = ($result | upsert gid ($gid_env | into int))
+    }
+    
+    # OCX_OVERLAY_DOCKERFILE
+    let overlay_dockerfile_env = $env.OCX_OVERLAY_DOCKERFILE? | default null
+    if $overlay_dockerfile_env != null {
+        $result = ($result | upsert overlay_dockerfile $overlay_dockerfile_env)
+    }
+    
+    # OCX_OVERLAY_IMAGE_NAME
+    let overlay_image_name_env = $env.OCX_OVERLAY_IMAGE_NAME? | default null
+    if $overlay_image_name_env != null {
+        $result = ($result | upsert overlay_image_name $overlay_image_name_env)
     }
     
     $result

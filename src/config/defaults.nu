@@ -31,4 +31,8 @@ export const DEFAULTS = {
     timezone: null  # use $env.TZ if null
     tmp_size: "500m"
     workspace_tmp_size: "500m"
+    
+    # Overlay
+    overlay_dockerfile: null
+    overlay_image_name: null
 }

@@ -1,5 +1,6 @@
 use ./utils.nu [image_exists, resolve-container-name]
 use ./build.nu
+use ./overlay.nu
 use ../ports.nu
 use ../workspace.nu
 use ../config
@@ -11,7 +12,26 @@ export def main [...args] {
     let ws = workspace get-workspace
     
     let version = (version resolve-version $cfg.opencode_version)
-    let image_name = $"localhost/ocx:($version)"
+    
+    let image_name = if (overlay should-use-overlay $cfg) {
+        let overlay_image = overlay resolve-overlay-image-name $cfg $version
+        
+        if not (image_exists $overlay_image) {
+            print $"Overlay image ($overlay_image) not found, building..."
+            overlay build-overlay $cfg --force=false
+        }
+        
+        $overlay_image
+    } else {
+        let ocx_image = $"localhost/ocx:($version)"
+        
+        if not (image_exists $ocx_image) {
+            print $"Image ($ocx_image) not found, building OpenCode v($version)..."
+            build
+        }
+        
+        $ocx_image
+    }
     
     let port = if $cfg.port == null { ports generate } else { $cfg.port }
     let container_name = resolve-container-name $port

@@ -1,15 +1,36 @@
 use ./utils.nu image_exists
 use ../config
 use ../version
+use ./overlay.nu
 
 export def main [
     --base
     --force
+    --force-overlay
 ] {
+    if $force_overlay {
+        let cfg = (config load)
+        
+        if not (overlay should-use-overlay $cfg) {
+            error make {
+                msg: "No overlay configured"
+                help: "Set overlay_dockerfile in ocx.json to use --force-overlay"
+            }
+        }
+        
+        overlay build-overlay $cfg --force=true
+        return
+    }
+    
     if $base {
         build_ocx_base --force=$force
     } else {
         build_ocx --force=$force
+        
+        let cfg = (config load)
+        if (overlay should-use-overlay $cfg) {
+            overlay build-overlay $cfg --force=$force
+        }
     }
 }
 
