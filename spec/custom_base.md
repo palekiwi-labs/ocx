@@ -1,5 +1,5 @@
 ---
-status: todo
+status: done
 branch: custom-base-image
 ---
 
