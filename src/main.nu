@@ -148,7 +148,14 @@ def main [
     --version(-v)
 ] {
     if $version {
-        print "TODO"
+        let version_path = ($env.FILE_PWD | path join "VERSION")
+        if ($version_path | path exists) {
+            open $version_path | str trim
+        } else {
+            # Fallback if running directly without proper install structure
+            # and not in source root
+            print "unknown (VERSION file not found)"
+        }
     } else {
         print_help 
     }
