@@ -83,7 +83,8 @@ ENVIRONMENT VARIABLES:
     OCX_MEMORY             Memory limit (default: 1024m)
     OCX_CPUS               CPU limit (default: 1.0)
     OCX_PIDS_LIMIT         Process limit (default: 100)
-    OCX_OPENCODE_VERSION   OpenCode version (default: latest)
+    OCX_OPENCODE_VERSION       OpenCode version (default: latest)
+    OCX_CUSTOM_BASE_DOCKERFILE Path to custom base Dockerfile
     
     See documentation for full list of configuration options.
 
@@ -92,6 +93,17 @@ CONFIGURATION FILES:
     Project: ./ocx.json
     
     Config priority: env vars > project > global > defaults
+
+CUSTOM BASE IMAGES:
+    Provide a Dockerfile to customize the base environment.
+    Place in global config or project directory:
+    
+    Global:  ~/.config/ocx/ruby/Dockerfile  → ocx-ruby:1.1.23
+    Project: ./docker-ocx/Dockerfile        → ocx-<projectname>-docker-ocx:1.1.23
+    
+    Config: {\"custom_base_dockerfile\": \"ruby/Dockerfile\"}
+    
+    See docs/custom-base-template.md for Dockerfile requirements.
  "
 }
 
