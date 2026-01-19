@@ -34,4 +34,7 @@ export const DEFAULTS = {
     
     # Custom base image
     custom_base_dockerfile: null  # e.g., "ruby/Dockerfile" - path to custom base Dockerfile
+
+    # Environment file
+    env_file: null # e.g. "ocx.env" - if null defaults to ocx.env
 }

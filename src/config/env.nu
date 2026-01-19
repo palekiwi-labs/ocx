@@ -55,6 +55,9 @@ export def get-env-overrides [] {
     if ($env.OCX_CUSTOM_BASE_DOCKERFILE? | default null) != null {
         $overrides = ($overrides | append {key: "custom_base_dockerfile", env_var: "OCX_CUSTOM_BASE_DOCKERFILE"})
     }
+    if ($env.OCX_ENV_FILE? | default null) != null {
+        $overrides = ($overrides | append {key: "env_file", env_var: "OCX_ENV_FILE"})
+    }
     
     $overrides
 }
@@ -169,6 +172,12 @@ export def apply-env-overrides [config: record] {
     let custom_base_dockerfile_env = $env.OCX_CUSTOM_BASE_DOCKERFILE? | default null
     if $custom_base_dockerfile_env != null {
         $result = ($result | upsert custom_base_dockerfile $custom_base_dockerfile_env)
+    }
+
+    # OCX_ENV_FILE
+    let env_file_env = $env.OCX_ENV_FILE? | default null
+    if $env_file_env != null {
+        $result = ($result | upsert env_file $env_file_env)
     }
     
     $result
