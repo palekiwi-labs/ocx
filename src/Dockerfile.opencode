@@ -11,6 +11,9 @@ RUN curl -fsSL "https://github.com/anomalyco/opencode/releases/download/v${OPENC
   | tar -xz -C /usr/local/bin/ && \
   chmod +x /usr/local/bin/opencode
 
+# Ensure /usr/local/bin is in PATH (defensive for custom base images)
+ENV PATH="/usr/local/bin:${PATH}"
+
 USER ${USERNAME}
 
 CMD ["opencode"]
