@@ -55,12 +55,13 @@ This will:
 |---------|-------------|
 | `ocx opencode`, `ocx o` | Run the OpenCode container interactively. |
 | `ocx build` | Build the Docker images. Use `--force` to rebuild. |
+| `ocx config` | Display the current configuration. |
+| `ocx port` | Show the port number that will be used for the container. |
 | `ocx shell` | Open a bash shell inside the running container. |
 | `ocx exec <cmd>` | Execute a command inside the running container (e.g., `ocx exec ls -la`). |
 | `ocx stop` | Stop the project container. |
 | `ocx ps` | Show the status of the project container. |
 | `ocx stats` | Show resource usage stats for the container. |
-| `ocx config` | Display the current configuration. |
 | `ocx upgrade` | Check for and install OpenCode updates. |
 | `ocx volume` | List project volumes. |
 
