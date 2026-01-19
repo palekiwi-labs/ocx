@@ -1,4 +1,5 @@
 use ../config
+use ../ports.nu
 
 export def image_exists [name: string] {
     (docker image inspect $name | complete).exit_code == 0
@@ -13,6 +14,21 @@ export def resolve-container-name [port: int] {
         let base = ($env.PWD | path basename)
         $"ocx-($base)-($port)"
     }
+}
+
+export def get-current-container-name [] {
+    let cfg = (config load)
+    let port = if $cfg.port == null { ports generate } else { $cfg.port }
+    resolve-container-name $port
+}
+
+export def container-is-running [container_name: string] {
+    let running = (docker ps --filter $"name=^($container_name)$" --format "{{.Names}}" 
+                   | complete 
+                   | get stdout 
+                   | str trim)
+    
+    not ($running | is-empty)
 }
 
 export def resolve-dockerfile-path [dockerfile_path: string] {

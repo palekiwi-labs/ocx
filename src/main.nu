@@ -37,6 +37,30 @@ def "main shell" [] {
     docker_tools shell
 }
 
+def "main stats" [
+    --all
+] {
+    docker_tools stats --all=$all
+}
+
+def "main ps" [
+    --all(-a)
+] {
+    docker_tools ps --all=$all
+}
+
+def "main volume" [] {
+    docker_tools volume
+}
+
+def --wrapped "main exec" [...args] {
+    docker_tools exec ...$args
+}
+
+def "main stop" [] {
+    docker_tools stop
+}
+
 def "main upgrade" [--check] {
     upgrade --check=$check
 }
@@ -52,7 +76,12 @@ USAGE:
         build    Build Docker images
         config   Show configuration (use --sources to see origins)
         shell    Open shell in running container
-        upgrade   Check for and install OpenCode updates
+        exec     Execute command in running container
+        stats    Show container stats
+        ps       List running containers
+        stop     Stop project container
+        volume   List project volumes
+        upgrade  Check for and install OpenCode updates
     
 OPTIONS:
     -h, --help     Show this help
@@ -63,12 +92,13 @@ EXAMPLES:
     ocx build                # Build Docker images
     ocx build --force        # Force rebuild images
     ocx config               # Show current configuration
-    ocx config --sources     # Show config with sources
-    ocx config --json        # Output config as JSON
-    ocx config --sources --json  # Output config with sources as JSON
     ocx shell                # Open bash shell in running container
+    ocx exec ls -la          # Execute 'ls -la' in container
+    ocx stats                # Show stats for project container
+    ocx stats --all          # Show stats for all OCX containers
+    ocx ps                   # Show project container status
+    ocx stop                 # Stop project container
     ocx upgrade              # Check and update to latest version
-    ocx upgrade --check      # Only check, don't install
     ocx version              # Show version
     ocx help                 # Show help
     
