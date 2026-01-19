@@ -1,0 +1,12 @@
+FROM debian:bookworm-slim
+
+# Install essential tools for development
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    fd-find \
+    git \
+    gnupg \
+    jq \
+    ripgrep \
+    && rm -rf /var/lib/apt/lists/*
