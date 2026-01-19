@@ -13,9 +13,10 @@ def --wrapped "main run" [...args] {
 
 def "main build" [
     --base,
-    --force(-f)
+    --force(-f),
+    --no-cache
 ] {
-    docker_tools build --base=$base --force=$force
+    docker_tools build --base=$base --force=$force --no-cache=$no_cache
 }
 
 def "main config" [
@@ -90,7 +91,8 @@ OPTIONS:
 EXAMPLES:
     ocx run                  # Run OpenCode interactively
     ocx build                # Build Docker images
-    ocx build --force        # Force rebuild images
+    ocx build --force        # Force rebuild images (includes base image)
+    ocx build --no-cache     # Build images without cache
     ocx config               # Show current configuration
     ocx shell                # Open bash shell in running container
     ocx exec ls -la          # Execute 'ls -la' in container
