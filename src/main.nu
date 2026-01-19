@@ -115,7 +115,7 @@ ENVIRONMENT VARIABLES:
     OCX_PIDS_LIMIT         Process limit (default: 100)
     OCX_OPENCODE_VERSION       OpenCode version (default: latest)
     OCX_CUSTOM_BASE_DOCKERFILE Path to custom base Dockerfile
-    OCX_ENV_FILE               Environment file name (default: ocx.env)
+    OCX_ENV_FILE               Project env file name (default: ocx.env)
     
     See documentation for full list of configuration options.
 

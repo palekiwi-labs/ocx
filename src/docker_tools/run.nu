@@ -31,7 +31,11 @@ export def main [...args] {
     
     # Resolve env file
     let env_file_name = if $cfg.env_file != null { $cfg.env_file } else { "ocx.env" }
-    let global_env_path = ("~/.config/ocx" | path expand | path join $env_file_name)
+    
+    # Global is always ocx.env to ensure stability
+    let global_env_path = ("~/.config/ocx/ocx.env" | path expand)
+    
+    # Project respects the configured name
     let project_env_path = ($env_file_name | path expand)
     
     let config_container_path = $"/home/($user)/.config/opencode"
