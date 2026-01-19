@@ -109,7 +109,7 @@ OPTIONS:
     ocx help                 # Show help
     
 ENVIRONMENT VARIABLES:
-    OCX_WORKSPACE          Workspace directory path
+    OCX_WORKSPACE          Workspace directory path (default: current directory)
     OCX_CONTAINER_NAME     Override container name
     OCX_PORT               Override port number
     OCX_CONFIG_DIR         Config directory path

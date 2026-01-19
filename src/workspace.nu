@@ -7,15 +7,14 @@ export def get-workspace [] {
     # Check if OCX_WORKSPACE is set
     let workspace_env = $env.OCX_WORKSPACE? | default ""
     
-    if ($workspace_env | is-empty) {
-        error make {
-            msg: "Error: OCX_WORKSPACE environment variable is required"
-            help: "Set it to the directory you want to mount as the workspace"
-        }
+    let workspace = if ($workspace_env | is-empty) {
+        pwd
+    } else {
+        $workspace_env
     }
     
     # Validate and expand the path
-    let workspace = $workspace_env | path expand
+    let workspace = $workspace | path expand
     
     if not ($workspace | path exists) {
         error make {
