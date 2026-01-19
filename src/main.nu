@@ -11,6 +11,10 @@ def --wrapped "main opencode" [...args] {
     docker_tools run ...$args
 }
 
+def --wrapped "main o" [...args] {
+    docker_tools run ...$args
+}
+
 def "main build" [
     --base,
     --force(-f),
@@ -73,7 +77,7 @@ USAGE:
     ocx <SUBCOMMAND> [OPTIONS]
     
     SUBCOMMANDS:
-        opencode Run OpenCode container
+        opencode Run OpenCode container (alias: o)
         build    Build Docker images
         config   Show configuration (use --sources to see origins)
         shell    Open shell in running container
