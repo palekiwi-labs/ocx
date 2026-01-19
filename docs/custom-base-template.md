@@ -2,213 +2,147 @@
 
 ## Requirements
 
-Your custom base Dockerfile **MUST**:
+Your custom base image only needs **3 simple requirements**:
 
-1. **Use a Debian/Ubuntu-based image** - OpenCode binary requires glibc (Alpine's musl is not supported)
+1. **Linux with glibc** - OpenCode binary requires glibc (standard Linux C library)
+   - Works: Debian, Ubuntu, Fedora, CentOS, Amazon Linux, etc.
+   - Needs wrapper: Alpine (uses musl instead of glibc)
 
-2. **Accept build arguments:**
-   - `USERNAME` - Container username (will match your host username)
-   - `UID` - User ID (will match your host UID)
-   - `GID` - Group ID (will match your host GID)
+2. **Include `curl`** - Required by OCX to download the OpenCode binary
 
-3. **Include `curl`** - Required to download OpenCode binary in the final image build
+3. **Standard user tools** - Should have `useradd`, `groupadd`, `getent` commands
+   - Present in virtually all Linux distributions
+   - Part of the `shadow` package (usually pre-installed)
 
-4. **Have `/usr/local/bin` in PATH** - Where OpenCode binary is installed
+**That's it!** OCX automatically handles:
+- User creation with your host UID/GID
+- UID/GID conflict resolution
+- Directory setup (.cache, .local, /workspace)
+- Proper permissions and ownership
 
-**Why Debian/Ubuntu only?** OpenCode is compiled for glibc (standard Linux C library). Alpine uses musl libc which is incompatible. Supporting Alpine would require gcompat which adds complexity and potential issues.
+**Why glibc?** OpenCode is compiled for glibc (standard Linux C library). Alpine uses musl which is incompatible without a compatibility layer.
 
-**Why UID/GID?** OCX mounts your workspace with files owned by your host UID. The container user must have the same UID to read/write these files.
+**Why curl?** The OCX layer downloads the OpenCode binary during image build.
 
-**Why curl?** The OCX layer (Dockerfile.opencode) downloads the OpenCode binary using curl.
+**Why user tools?** OCX creates a container user matching your host UID to ensure file permissions work correctly.
 
 ## Basic Template
 
 ```dockerfile
 FROM ubuntu:22.04
 
-ARG USERNAME=user
-ARG UID=1000
-ARG GID=1000
-
 # Install your dependencies
-# NOTE: curl is required for OCX to download OpenCode binary
+# NOTE: curl is REQUIRED for OCX to download OpenCode binary
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    bash \
     curl \
     git \
     # Add your packages here \
     && rm -rf /var/lib/apt/lists/*
 
-# Create user (--non-unique handles UID/GID conflicts)
-RUN groupadd ${USERNAME} --gid ${GID} --non-unique && \
-    useradd ${USERNAME} \
-      --create-home \
-      --uid ${UID} \
-      --gid ${GID} \
-      --non-unique \
-      --shell /bin/bash
-
-USER ${USERNAME}
-WORKDIR /workspace
+# That's all! OCX automatically handles user creation and directory setup.
 ```
+
+No user creation needed! OCX creates the user automatically with your host UID/GID.
 
 ## Ruby/Rails Example
 
 ```dockerfile
 FROM ruby:3.4-slim
 
-ARG USERNAME=user
-ARG UID=1000
-ARG GID=1000
-
 # Install system packages
-# NOTE: curl is required for OCX to download OpenCode binary
+# NOTE: curl is REQUIRED for OCX to download OpenCode binary
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    bash \
     build-essential \
     postgresql-client \
     git \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Create user with --non-unique to handle conflicts
-RUN groupadd ${USERNAME} --gid ${GID} --non-unique && \
-    useradd ${USERNAME} \
-      --create-home \
-      --uid ${UID} \
-      --gid ${GID} \
-      --non-unique \
-      --shell /bin/bash
-
-USER ${USERNAME}
-
 # Pre-install gems (optional - speeds up first run)
+# Run as root since OCX user doesn't exist yet
 WORKDIR /tmp
 COPY Gemfile* ./
 RUN bundle install
-
-WORKDIR /workspace
 ```
+
+Clean and simple! OCX handles all user setup automatically.
 
 ## Node.js Example
 
 ```dockerfile
 FROM node:20-slim
 
-ARG USERNAME=user
-ARG UID=1000
-ARG GID=1000
-
-# Install system packages
-# NOTE: curl is required for OCX to download OpenCode binary
+# Install system packages (curl usually pre-installed in node images)
+# NOTE: curl is REQUIRED for OCX to download OpenCode binary
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    bash \
     curl \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Create user (--non-unique handles conflicts with existing node user)
-RUN groupadd ${USERNAME} --gid ${GID} --non-unique && \
-    useradd ${USERNAME} \
-      --create-home \
-      --uid ${UID} \
-      --gid ${GID} \
-      --non-unique \
-      --shell /bin/bash
-
-USER ${USERNAME}
-
 # Pre-install global packages (optional)
 RUN npm install -g typescript ts-node
-
-WORKDIR /workspace
 ```
+
+No user management needed! Even though the Node.js image has a `node` user, OCX creates your user automatically.
 
 ## Python Example
 
 ```dockerfile
 FROM python:3.12-slim
 
-ARG USERNAME=user
-ARG UID=1000
-ARG GID=1000
-
-# Install system packages
-# NOTE: curl is required for OCX to download OpenCode binary
+# Install system packages (curl usually pre-installed in python images)
+# NOTE: curl is REQUIRED for OCX to download OpenCode binary
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    bash \
     curl \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Create user
-RUN groupadd ${USERNAME} --gid ${GID} --non-unique && \
-    useradd ${USERNAME} \
-      --create-home \
-      --uid ${UID} \
-      --gid ${GID} \
-      --non-unique \
-      --shell /bin/bash
-
-USER ${USERNAME}
-
 # Pre-install packages (optional)
 COPY requirements.txt /tmp/
-RUN pip install --user -r /tmp/requirements.txt
-
-WORKDIR /workspace
+RUN pip install -r /tmp/requirements.txt
 ```
+
+Simple and clean! OCX creates your user and sets up directories automatically.
 
 ## Wrapping Existing Images
 
-If you have an existing image that doesn't support USERNAME/UID/GID:
+You can use any existing Docker image as a base! Just ensure curl is installed:
 
 ```dockerfile
 FROM your-existing-image:latest
 
-ARG USERNAME=user
-ARG UID=1000
-ARG GID=1000
-
 USER root
 
 # Ensure curl is installed (required for OCX)
+# Try apt first, fallback to apk for Alpine
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/* || \
     apk add --no-cache curl 2>/dev/null || true
-
-RUN groupadd ${USERNAME} --gid ${GID} --non-unique && \
-    useradd ${USERNAME} \
-      --create-home \
-      --uid ${UID} \
-      --gid ${GID} \
-      --non-unique \
-      --shell /bin/bash
-
-USER ${USERNAME}
-WORKDIR /workspace
 ```
 
-## Handling UID/GID Conflicts
+That's it! OCX handles everything else automatically.
 
-Base images often have existing users with common UIDs/GIDs (e.g., GID 100 for `users` group on NixOS, UID 1000 for `node` user). The `--non-unique` flag handles this gracefully.
+## How OCX Handles UID/GID Conflicts
 
-### The `--non-unique` Flag
+OCX automatically handles common conflicts like:
 
-The `--non-unique` flag allows creating a user/group even if the UID/GID already exists:
+- **NixOS users** with GID 100 (`users` group)
+- **Node.js images** with `node` user at UID 1000
+- **Ruby images** with `ruby` user at UID 999
+- Any other existing users in base images
 
-```bash
-groupadd ${USERNAME} --gid ${GID} --non-unique
-useradd ${USERNAME} --uid ${UID} --gid ${GID} --non-unique
-```
-
-This creates multiple users with the same UID, which is fine since file permissions are based on the numeric UID, not the username.
+**How it works:**
+1. OCX checks if your UID/GID already exists in the base image
+2. If the GID exists, OCX reuses the existing group
+3. OCX creates your user with the `--non-unique` flag to handle conflicts
+4. File permissions work because they're based on numeric UID/GID, not usernames
 
 **Example on NixOS:**
 - Your host user has GID 100 (`users` group)
-- The base image also has GID 100 (`users` group)
-- With `--non-unique`, your user is added to the existing group
-- File ownership by GID 100 on host matches GID 100 in container
-- Permissions work correctly ✅
+- Base image also has GID 100 (`users` group)
+- OCX reuses the existing group
+- File ownership matches: GID 100 on host = GID 100 in container ✅
+
+You don't need to worry about this - OCX handles it automatically!
 
 ## Configuration
 
@@ -294,46 +228,50 @@ RUN cd /tmp && bundle install
 **Solution:** Add curl to your Dockerfile:
 
 ```dockerfile
+# Debian/Ubuntu
+RUN apt-get update && apt-get install -y --no-install-recommends curl
+
 # Alpine
 RUN apk add --no-cache curl
 
-# Debian/Ubuntu
-RUN apt-get update && apt-get install -y --no-install-recommends curl
+# Fedora/CentOS
+RUN yum install -y curl
 ```
 
-### Error: "One or more build-args were not consumed"
+### Error: "useradd: command not found" or "groupadd: command not found"
 
-**Cause:** Your Dockerfile doesn't accept USERNAME, UID, or GID.
+**Cause:** Your base image doesn't have standard user management tools.
 
-**Solution:** Add these lines at the top of your Dockerfile:
+**Solution:** Install the `shadow` package (or equivalent):
 
 ```dockerfile
-ARG USERNAME=user
-ARG UID=1000
-ARG GID=1000
+# Debian/Ubuntu
+RUN apt-get update && apt-get install -y --no-install-recommends passwd
+
+# Alpine (uses different commands - busybox)
+# Alpine should work out of the box with adduser/addgroup
+
+# Fedora/CentOS
+RUN yum install -y shadow-utils
 ```
 
 ### Error: "Permission denied" when editing files
 
-**Cause:** The container user's UID doesn't match your host UID.
+**Cause:** Likely a volume mount issue or the workspace directory ownership is incorrect.
 
-**Solution:** Ensure you're passing UID/GID and creating the user correctly in your Dockerfile. Check that the user creation logic matches one of the templates above.
+**Solution:**
+1. Rebuild the images: `ocx build --base --force && ocx build --force`
+2. Check that your workspace is not in a restricted location
+3. Verify your user UID/GID match the container: Run `id` on host and `ocx shell` then `id` in container
 
-### Error: "addgroup: gid 'XXX' in use" (Alpine)
+### OCX creates user successfully but files aren't writable
 
-**Cause:** The GID already exists in the base image (common with GID 100 on NixOS).
+**Cause:** The base image might have strict file permissions or AppArmor/SELinux restrictions.
 
-**Solution:** Use the GID conflict handling pattern from the templates above (check if GID exists and reuse it).
-
-### Error: "useradd: UID already exists" (Debian)
-
-**Cause:** The UID already exists in the base image.
-
-**Solution:** Add `--non-unique` flag to handle existing UIDs:
-
-```dockerfile
-useradd ${USERNAME} --uid ${UID} --gid ${GID} --non-unique
-```
+**Solution:**
+1. Check Docker volume permissions: `docker volume inspect {container-name}-local`
+2. Try running with relaxed security: Add to your config: `{"network": "host"}`
+3. Check SELinux labels if on Fedora/RHEL: `ls -Z` on workspace
 
 ## Examples
 

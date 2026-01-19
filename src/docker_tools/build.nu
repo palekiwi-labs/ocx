@@ -75,6 +75,8 @@ def build_ocx [--force] {
         "--build-arg" $"BASE_IMAGE=($base_and_name.base_image)"
         "--build-arg" $"OPENCODE_VERSION=($version)"
         "--build-arg" $"USERNAME=($user_settings.username)"
+        "--build-arg" $"UID=($user_settings.uid)"
+        "--build-arg" $"GID=($user_settings.gid)"
         "-t" $final_image
         "-t" $final_latest
         "."

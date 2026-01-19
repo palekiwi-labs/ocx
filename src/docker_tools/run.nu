@@ -76,8 +76,8 @@ export def main [...args] {
     ])
     
     $cmd = ($cmd | append [
-        "-v" $"ocx-cache-($port):/home/($user)/.cache:rw"
-        "-v" $"ocx-local-($port):/home/($user)/.local:rw"
+        "-v" $"($container_name)-cache:/home/($user)/.cache:rw"
+        "-v" $"($container_name)-local:/home/($user)/.local:rw"
         "-v" $"($config_dir):($config_container_path):($config_mount_mode)"
         "-v" "/etc/localtime:/etc/localtime:ro"
     ])
