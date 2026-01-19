@@ -65,12 +65,15 @@ export def resolve-dockerfile-path [dockerfile_path: string] {
         }
     }
     
-    # Not found
+    # Not found - fail with clear error
+    let project_checked = ($dockerfile_path | path expand)
+    let global_checked = ($global_base | path join $dockerfile_path)
+    
     error make {
-        msg: $"Dockerfile not found: ($dockerfile_path)"
+        msg: $"Custom base Dockerfile not found: ($dockerfile_path)"
         label: {
-            text: $"Checked: ./($dockerfile_path) and ~/.config/ocx/($dockerfile_path)"
+            text: $"Checked:\n  1. Project: ($project_checked)\n  2. Global:  ($global_checked)"
         }
-        help: "Create a custom Dockerfile at one of these locations"
+        help: $"Create a Dockerfile at one of these locations.\nSee docs/custom-base-template.md for templates."
     }
 }
