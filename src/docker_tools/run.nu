@@ -29,6 +29,15 @@ export def main [...args] {
     
     let config_dir = $cfg.config_dir | path expand
     
+    # Resolve env file
+    let env_file_name = if $cfg.env_file != null { $cfg.env_file } else { "ocx.env" }
+    
+    # Global is always ocx.env to ensure stability
+    let global_env_path = ("~/.config/ocx/ocx.env" | path expand)
+    
+    # Project respects the configured name
+    let project_env_path = ($env_file_name | path expand)
+    
     let config_container_path = $"/home/($user)/.config/opencode"
     let workspace_would_conflict = (
         ($config_dir == $ws.host_path) and 
@@ -64,6 +73,14 @@ export def main [...args] {
     
     if $cfg.publish_port {
         $cmd = ($cmd | append ["-p" $"($port):80"])
+    }
+
+    if ($global_env_path | path exists) {
+        $cmd = ($cmd | append ["--env-file" $global_env_path])
+    }
+    
+    if ($project_env_path | path exists) {
+        $cmd = ($cmd | append ["--env-file" $project_env_path])
     }
     
     $cmd = ($cmd | append [

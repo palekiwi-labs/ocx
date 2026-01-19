@@ -42,6 +42,16 @@ export def validate [config: record] {
     # Validate tmp sizes
     validate-memory ($config.tmp_size)
     validate-memory ($config.workspace_tmp_size)
+
+    # Validate env_file
+    if $config.env_file != null {
+        if ($config.env_file | describe) !~ "string" {
+             error make {
+                msg: $"Invalid env_file value: ($config.env_file)"
+                help: "env_file must be a string"
+            }
+        }
+    }
 }
 
 export def validate-memory [value: string] {
