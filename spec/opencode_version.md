@@ -20,7 +20,7 @@ There are a couple of aspects to is:
 Right now it is hardcoded inline without any user control.
 We should move it into the config (with some default).
 
-### When we run `ocx run`, what is the version of the image being run?
+### When we run `ocx opencode`, what is the version of the image being run?
 
 Right now it is the `latest`.
 How does it related to the version that we will set in the config?
@@ -85,13 +85,13 @@ and prompt the user if they want to upgrade.
 
 ```bash
 # Use latest version (default)
-ocx run
+ocx opencode
 ocx build
 
 # Use specific version
 echo '{"opencode_version": "1.1.23"}' > ~/.config/ocx/ocx.json
 ocx build
-ocx run
+ocx opencode
 
 # Check for updates
 ocx upgrade --check

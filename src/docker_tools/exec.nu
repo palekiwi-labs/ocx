@@ -7,7 +7,7 @@ export def --wrapped main [...args] {
     if not (container-is-running $container_name) {
         error make {
             msg: $"Container '($container_name)' is not running"
-            help: "Start the container first with: ocx run"
+            help: "Start the container first with: ocx opencode"
         }
     }
     
