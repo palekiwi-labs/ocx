@@ -22,8 +22,8 @@ export def get-env-overrides [] {
     if ($env.OCX_CONTAINER_NAME? | default null) != null {
         $overrides = ($overrides | append {key: "container_name", env_var: "OCX_CONTAINER_NAME"})
     }
-    if ($env.OCX_IMAGE_NAME? | default null) != null {
-        $overrides = ($overrides | append {key: "image_name", env_var: "OCX_IMAGE_NAME"})
+    if ($env.OCX_OPENCODE_VERSION? | default null) != null {
+        $overrides = ($overrides | append {key: "opencode_version", env_var: "OCX_OPENCODE_VERSION"})
     }
     if ($env.OCX_CONFIG_DIR? | default null) != null {
         $overrides = ($overrides | append {key: "config_dir", env_var: "OCX_CONFIG_DIR"})
@@ -51,6 +51,9 @@ export def get-env-overrides [] {
     }
     if ($env.OCX_GID? | default null) != null {
         $overrides = ($overrides | append {key: "gid", env_var: "OCX_GID"})
+    }
+    if ($env.OCX_CUSTOM_BASE_DOCKERFILE? | default null) != null {
+        $overrides = ($overrides | append {key: "custom_base_dockerfile", env_var: "OCX_CUSTOM_BASE_DOCKERFILE"})
     }
     
     $overrides
@@ -101,10 +104,10 @@ export def apply-env-overrides [config: record] {
         $result = ($result | upsert container_name $container_name_env)
     }
     
-    # OCX_IMAGE_NAME
-    let image_name_env = $env.OCX_IMAGE_NAME? | default null
-    if $image_name_env != null {
-        $result = ($result | upsert image_name $image_name_env)
+    # OCX_OPENCODE_VERSION
+    let opencode_version_env = $env.OCX_OPENCODE_VERSION? | default null
+    if $opencode_version_env != null {
+        $result = ($result | upsert opencode_version $opencode_version_env)
     }
     
     # OCX_CONFIG_DIR
@@ -160,6 +163,12 @@ export def apply-env-overrides [config: record] {
     let gid_env = $env.OCX_GID? | default null
     if $gid_env != null {
         $result = ($result | upsert gid ($gid_env | into int))
+    }
+    
+    # OCX_CUSTOM_BASE_DOCKERFILE
+    let custom_base_dockerfile_env = $env.OCX_CUSTOM_BASE_DOCKERFILE? | default null
+    if $custom_base_dockerfile_env != null {
+        $result = ($result | upsert custom_base_dockerfile $custom_base_dockerfile_env)
     }
     
     $result

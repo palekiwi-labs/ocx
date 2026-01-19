@@ -11,7 +11,9 @@ export const DEFAULTS = {
     
     # Container settings
     container_name: null  # auto-generate if null
-    image_name: "localhost/ocx:latest"
+    
+    # OpenCode version
+    opencode_version: "latest"  # "latest" or specific version like "1.1.23"
     
     # User settings
     username: null  # auto-detect from $env.USER if null
@@ -29,4 +31,7 @@ export const DEFAULTS = {
     timezone: null  # use $env.TZ if null
     tmp_size: "500m"
     workspace_tmp_size: "500m"
+    
+    # Custom base image
+    custom_base_dockerfile: null  # e.g., "ruby/Dockerfile" - path to custom base Dockerfile
 }
