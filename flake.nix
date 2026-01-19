@@ -34,7 +34,7 @@
             
             meta = with pkgs.lib; {
               description = "Secure Docker wrapper for OpenCode";
-              homepage = "https://github.com/palekiwi/ocx";
+              homepage = "https://github.com/palekiwi-labs/ocx";
               license = licenses.mit;
               platforms = platforms.unix;
               mainProgram = "ocx";
