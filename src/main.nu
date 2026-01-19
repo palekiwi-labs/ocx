@@ -7,7 +7,7 @@ use ports.nu
 use config [show, show-sources]
 use upgrade.nu
 
-def --wrapped "main run" [...args] {
+def --wrapped "main opencode" [...args] {
     docker_tools run ...$args
 }
 
@@ -73,7 +73,7 @@ USAGE:
     ocx <SUBCOMMAND> [OPTIONS]
     
     SUBCOMMANDS:
-        run      Run OpenCode container
+        opencode Run OpenCode container
         build    Build Docker images
         config   Show configuration (use --sources to see origins)
         shell    Open shell in running container
@@ -88,8 +88,8 @@ OPTIONS:
     -h, --help     Show this help
     -v, --version  Show version
     
-EXAMPLES:
-    ocx run                  # Run OpenCode interactively
+    EXAMPLES:
+    ocx opencode             # Run OpenCode interactively
     ocx build                # Build Docker images
     ocx build --force        # Force rebuild images (includes base image)
     ocx build --no-cache     # Build images without cache

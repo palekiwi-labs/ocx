@@ -44,9 +44,9 @@ The build context for the base image should be the directory where the dockerfil
 The name of the resulting custom image should be in the format:
 `ocx-<custom-base-image>:<opencode-version>`
 
-#### `run`
+#### `opencode`
 
-When the name of the custom base image is specified in the config, `run` command should attempt to use a custom image.
+When the name of the custom base image is specified in the config, `opencode` command should attempt to use a custom image.
 
 It is not required that the custom dockerfile is specified, the "custom base image" may already exist on the system because
 the user may have built it manually or simply providing their existing project image that we will extend with opencode.
