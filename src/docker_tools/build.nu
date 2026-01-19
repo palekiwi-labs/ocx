@@ -100,7 +100,7 @@ def build_custom_base [--force] {
     print $"Building custom base '($resolved.name)' from ($resolved.location) config"
     print $"  Dockerfile: ($resolved.path)"
     print $"  Context: ($resolved.context)"
-    print $"  User: ($user_settings.username) (UID: ($user_settings.uid), GID: ($user_settings.gid))"
+    print $"  User: ($user_settings.username) \(UID: ($user_settings.uid), GID: ($user_settings.gid)\)"
     
     let cmd = [
         "docker" "build"
