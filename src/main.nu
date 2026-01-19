@@ -4,7 +4,7 @@
 
 use docker_tools
 use ports.nu
-use config [show, show-sources]
+use config [load, show, show-sources]
 use upgrade.nu
 
 def --wrapped "main opencode" [...args] {
@@ -34,8 +34,13 @@ def "main config" [
     }
 }
 
-def "main port generate" [] {
-    ports generate
+def "main port" [] {
+    let cfg = load
+    if $cfg.port == null { 
+        ports generate 
+    } else { 
+        $cfg.port 
+    }
 } 
 
 def "main shell" [] {
@@ -80,6 +85,7 @@ USAGE:
         opencode Run OpenCode container (alias: o)
         build    Build Docker images
         config   Show configuration (use --sources to see origins)
+        port     Show the port number that will be used for the container
         shell    Open shell in running container
         exec     Execute command in running container
         stats    Show container stats
@@ -98,6 +104,7 @@ OPTIONS:
     ocx build --force        # Force rebuild images (includes base image)
     ocx build --no-cache     # Build images without cache
     ocx config               # Show current configuration
+    ocx port                 # Show effective port (from config or auto-generated)
     ocx shell                # Open bash shell in running container
     ocx exec ls -la          # Execute 'ls -la' in container
     ocx stats                # Show stats for project container
