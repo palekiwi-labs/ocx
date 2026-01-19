@@ -65,9 +65,10 @@ def build_ocx [--force] {
         "localhost/ocx:latest"
     }
     
-    print $"Building OCX image: ($final_image)"
-    
     let user_settings = (config resolve-user $cfg)
+    
+    print $"Building OCX image: ($final_image)"
+    print $"  Container user: ($user_settings.username) \(UID: ($user_settings.uid), GID: ($user_settings.gid)\)"
 
     let cmd = [
         "docker" "build"
@@ -75,6 +76,8 @@ def build_ocx [--force] {
         "--build-arg" $"BASE_IMAGE=($base_and_name.base_image)"
         "--build-arg" $"OPENCODE_VERSION=($version)"
         "--build-arg" $"USERNAME=($user_settings.username)"
+        "--build-arg" $"UID=($user_settings.uid)"
+        "--build-arg" $"GID=($user_settings.gid)"
         "-t" $final_image
         "-t" $final_latest
         "."
@@ -100,7 +103,6 @@ def build_custom_base [--force] {
     print $"Building custom base '($resolved.name)' from ($resolved.location) config"
     print $"  Dockerfile: ($resolved.path)"
     print $"  Context: ($resolved.context)"
-    print $"  User: ($user_settings.username) \(UID: ($user_settings.uid), GID: ($user_settings.gid)\)"
     
     let cmd = [
         "docker" "build"
@@ -125,18 +127,10 @@ def build_ocx_base [--force] {
     }
 
     print "Building base ocx image..."
-    
-    let cfg = (config load)
-    let user_settings = (config resolve-user $cfg)
-    
-    print $"Building with user: ($user_settings.username) \(UID: ($user_settings.uid), GID: ($user_settings.gid)\)"
 
     let cmd = [
         "docker" "build"
         "-f" $DOCKERFILE
-        "--build-arg" $"USERNAME=($user_settings.username)"
-        "--build-arg" $"UID=($user_settings.uid)"
-        "--build-arg" $"GID=($user_settings.gid)"
         "-t" $BASE_IMAGE
         "."
     ]

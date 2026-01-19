@@ -3,6 +3,8 @@ FROM ${BASE_IMAGE}
 
 ARG OPENCODE_VERSION=1.1.23
 ARG USERNAME=user
+ARG UID=1000
+ARG GID=1000
 
 USER root
 
@@ -14,6 +16,31 @@ RUN curl -fsSL "https://github.com/anomalyco/opencode/releases/download/v${OPENC
 # Ensure /usr/local/bin is in PATH (defensive for custom base images)
 ENV PATH="/usr/local/bin:${PATH}"
 
+# Create user and OCX directories (idempotent - safe even if user/dirs exist)
+RUN set -e; \
+    # Handle group creation
+    if getent group ${GID} >/dev/null 2>&1; then \
+        GROUP_NAME=$(getent group ${GID} | cut -d: -f1); \
+    else \
+        groupadd -g ${GID} --non-unique ${USERNAME} 2>/dev/null || true; \
+        GROUP_NAME=${USERNAME}; \
+    fi && \
+    # Create user if doesn't exist
+    if ! getent passwd ${USERNAME} >/dev/null 2>&1; then \
+        useradd -u ${UID} -g ${GID} -m -d /home/${USERNAME} --non-unique -s /bin/bash ${USERNAME} 2>/dev/null || true; \
+    fi && \
+    # Ensure home directory exists
+    mkdir -p /home/${USERNAME} && \
+    # Create OCX directories
+    mkdir -p /workspace \
+             /home/${USERNAME}/.cache \
+             /home/${USERNAME}/.local && \
+    chown -R ${UID}:${GID} /workspace \
+                           /home/${USERNAME}/.cache \
+                           /home/${USERNAME}/.local \
+                           /home/${USERNAME} 2>/dev/null || true
+
 USER ${USERNAME}
+WORKDIR /workspace
 
 CMD ["opencode"]
