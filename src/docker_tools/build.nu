@@ -5,23 +5,24 @@ use ../version
 export def main [
     --base
     --force
+    --no-cache
 ] {
     let cfg = (config load)
     
     if $base {
         # Building base layer
         if ($cfg.custom_base_dockerfile != null) {
-            build_custom_base --force=$force
+            build_custom_base --force=$force --no-cache=$no_cache
         } else {
-            build_ocx_base --force=$force
+            build_ocx_base --force=$force --no-cache=$no_cache
         }
     } else {
         # Building OCX layer
-        build_ocx --force=$force
+        build_ocx --force=$force --no-cache=$no_cache
     }
 }
 
-def build_ocx [--force] {
+def build_ocx [--force, --no-cache] {
     const DOCKERFILE = "src/Dockerfile.opencode"
     
     let cfg = (config load)
@@ -42,12 +43,17 @@ def build_ocx [--force] {
     }
     
     # Check if base exists, build if needed
-    if not (image_exists $base_and_name.base_image) {
-        print $"Base image (($base_and_name.base_image)) not found, building it first..."
-        if ($cfg.custom_base_dockerfile != null) {
-            build_custom_base --force=false
+    if ($force) or (not (image_exists $base_and_name.base_image)) {
+        if not (image_exists $base_and_name.base_image) {
+            print $"Base image (($base_and_name.base_image)) not found, building it first..."
         } else {
-            build_ocx_base --force=false
+            print $"Force rebuild enabled, rebuilding base image (($base_and_name.base_image))..."
+        }
+
+        if ($cfg.custom_base_dockerfile != null) {
+            build_custom_base --force=$force --no-cache=$no_cache
+        } else {
+            build_ocx_base --force=$force --no-cache=$no_cache
         }
         print "Base image ready, now building ocx..."
     }
@@ -70,23 +76,26 @@ def build_ocx [--force] {
     print $"Building OCX image: ($final_image)"
     print $"  Container user: ($user_settings.username) \(UID: ($user_settings.uid), GID: ($user_settings.gid)\)"
 
-    let cmd = [
-        "docker" "build"
-        "-f" $DOCKERFILE
-        "--build-arg" $"BASE_IMAGE=($base_and_name.base_image)"
-        "--build-arg" $"OPENCODE_VERSION=($version)"
-        "--build-arg" $"USERNAME=($user_settings.username)"
-        "--build-arg" $"UID=($user_settings.uid)"
-        "--build-arg" $"GID=($user_settings.gid)"
-        "-t" $final_image
-        "-t" $final_latest
-        "."
-    ]
+    let cmd = (
+        [
+            "docker" "build"
+            "-f" $DOCKERFILE
+            "--build-arg" $"BASE_IMAGE=($base_and_name.base_image)"
+            "--build-arg" $"OPENCODE_VERSION=($version)"
+            "--build-arg" $"USERNAME=($user_settings.username)"
+            "--build-arg" $"UID=($user_settings.uid)"
+            "--build-arg" $"GID=($user_settings.gid)"
+            "-t" $final_image
+            "-t" $final_latest
+        ] 
+        | append (if $no_cache { ["--no-cache"] } else { [] })
+        | append ["."]
+    )
 
     run-external ...$cmd
 }
 
-def build_custom_base [--force] {
+def build_custom_base [--force, --no-cache] {
     let cfg = (config load)
     let user_settings = (config resolve-user $cfg)
     
@@ -104,20 +113,23 @@ def build_custom_base [--force] {
     print $"  Dockerfile: ($resolved.path)"
     print $"  Context: ($resolved.context)"
     
-    let cmd = [
-        "docker" "build"
-        "-f" $resolved.path
-        "--build-arg" $"USERNAME=($user_settings.username)"
-        "--build-arg" $"UID=($user_settings.uid)"
-        "--build-arg" $"GID=($user_settings.gid)"
-        "-t" $base_image_name
-        $resolved.context
-    ]
+    let cmd = (
+        [
+            "docker" "build"
+            "-f" $resolved.path
+            "--build-arg" $"USERNAME=($user_settings.username)"
+            "--build-arg" $"UID=($user_settings.uid)"
+            "--build-arg" $"GID=($user_settings.gid)"
+            "-t" $base_image_name
+        ]
+        | append (if $no_cache { ["--no-cache"] } else { [] })
+        | append [$resolved.context]
+    )
     
     run-external ...$cmd
 }
 
-def build_ocx_base [--force] {
+def build_ocx_base [--force, --no-cache] {
     const BASE_IMAGE = "localhost/ocx-base:latest"
     const DOCKERFILE = "src/Dockerfile.base"
 
@@ -128,12 +140,16 @@ def build_ocx_base [--force] {
 
     print "Building base ocx image..."
 
-    let cmd = [
-        "docker" "build"
-        "-f" $DOCKERFILE
-        "-t" $BASE_IMAGE
-        "."
-    ]
+    let cmd = (
+        [
+            "docker" "build"
+            "-f" $DOCKERFILE
+            "-t" $BASE_IMAGE
+        ]
+        | append (if $no_cache { ["--no-cache"] } else { [] })
+        | append ["."]
+    )
 
     run-external ...$cmd
 }
+
