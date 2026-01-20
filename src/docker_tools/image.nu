@@ -2,7 +2,31 @@ use ../config
 use ../version
 
 export def main [] {
-    print 'TODO'
+    print "OCX Image Management
+
+USAGE:
+    ocx image <SUBCOMMAND> [OPTIONS]
+
+SUBCOMMANDS:
+    list         List all OCX images
+    prune        Remove old images, keeping only latest version
+    remove-all   Remove all OCX images
+
+OPTIONS:
+    --base       Filter/operate on base images only
+    --final      Filter/operate on final OCX images only
+    --json       Output as JSON (list only)
+
+EXAMPLES:
+    ocx image list                # List all OCX images
+    ocx image list --base         # List only base images
+    ocx image list --json         # List images in JSON format
+    ocx image prune               # Remove old images, keep latest
+    ocx image prune --base        # Prune only base images
+    ocx image remove-all          # Remove all OCX images
+    ocx image remove-all --final  # Remove only final OCX images
+
+Use 'ocx image <subcommand> --help' for more information on a specific command."
 }
 
 # List all OCX images

@@ -75,6 +75,10 @@ def "main upgrade" [--check] {
     upgrade --check=$check
 }
 
+def "main image" [] {
+    docker_tools image
+}
+
 def "main image list" [
     --base     # Show only base images
     --final    # Show only final OCX images
