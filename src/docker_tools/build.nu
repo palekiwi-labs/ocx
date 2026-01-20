@@ -23,7 +23,8 @@ export def main [
 }
 
 def build_ocx [--force, --no-cache] {
-    const DOCKERFILE = "src/Dockerfile.opencode"
+    let context = $env.FILE_PWD
+    let dockerfile = ($context | path join "Dockerfile.opencode")
     
     let cfg = (config load)
     let version = (version resolve-version $cfg.opencode_version)
@@ -79,7 +80,7 @@ def build_ocx [--force, --no-cache] {
     let cmd = (
         [
             "docker" "build"
-            "-f" $DOCKERFILE
+            "-f" $dockerfile
             "--build-arg" $"BASE_IMAGE=($base_and_name.base_image)"
             "--build-arg" $"OPENCODE_VERSION=($version)"
             "--build-arg" $"USERNAME=($user_settings.username)"
@@ -89,7 +90,7 @@ def build_ocx [--force, --no-cache] {
             "-t" $final_latest
         ] 
         | append (if $no_cache { ["--no-cache"] } else { [] })
-        | append ["."]
+        | append [$context]
     )
 
     run-external ...$cmd
@@ -131,7 +132,8 @@ def build_custom_base [--force, --no-cache] {
 
 def build_ocx_base [--force, --no-cache] {
     const BASE_IMAGE = "localhost/ocx-base:latest"
-    const DOCKERFILE = "src/Dockerfile.base"
+    let context = $env.FILE_PWD
+    let dockerfile = ($context | path join "Dockerfile.base")
 
     if (not $force) and (image_exists $BASE_IMAGE) {
         print $"Base image ($BASE_IMAGE) already exists, skipping build \(use --force to rebuild\)"
@@ -143,11 +145,11 @@ def build_ocx_base [--force, --no-cache] {
     let cmd = (
         [
             "docker" "build"
-            "-f" $DOCKERFILE
+            "-f" $dockerfile
             "-t" $BASE_IMAGE
         ]
         | append (if $no_cache { ["--no-cache"] } else { [] })
-        | append ["."]
+        | append [$context]
     )
 
     run-external ...$cmd
