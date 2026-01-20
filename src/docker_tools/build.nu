@@ -23,6 +23,8 @@ export def main [
 }
 
 def build_ocx [--force, --no-cache] {
+    # FILE_PWD points to the calling script's directory (main.nu in src/)
+    # Dockerfiles are in the same directory as main.nu
     let context = $env.FILE_PWD
     let dockerfile = ($context | path join "Dockerfile.opencode")
     
@@ -132,6 +134,8 @@ def build_custom_base [--force, --no-cache] {
 
 def build_ocx_base [--force, --no-cache] {
     const BASE_IMAGE = "localhost/ocx-base:latest"
+    # FILE_PWD points to the calling script's directory (main.nu in src/)
+    # Dockerfiles are in the same directory as main.nu
     let context = $env.FILE_PWD
     let dockerfile = ($context | path join "Dockerfile.base")
 
