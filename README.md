@@ -11,6 +11,12 @@
 - **Integrated Tooling**: Built-in commands for container management (`shell`, `stats`, `exec`).
 - **Easy Upgrades**: Built-in upgrade command to fetch and install the latest OpenCode versions.
 
+## Documentation
+
+For detailed guides and configuration options, see the [docs](docs/index.md) directory:
+- [Port Configuration](docs/port-configuration.md) - Configure and manage ports for opencode server
+- [Custom Base Image Template](docs/custom-base-template.md) - Create custom Docker base images
+
 ## Installation
 
 OCX is available as a Nix Flake.
