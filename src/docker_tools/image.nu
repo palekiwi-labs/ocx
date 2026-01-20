@@ -98,7 +98,7 @@ export def prune [
     print $"Removing ($to_remove | length) old image\(s\), keeping version ($current_version) and 'latest' tags..."
     
     for img in $to_remove {
-        print $"  Removing ($img.repository):($img.tag) \(($img.size)\)"
+        print $"  Removing ($img.repository):($img.tag) [($img.hash)] \(($img.size)\)"
         
         let result = (docker rmi $"($img.repository):($img.tag)" | complete)
         
@@ -136,7 +136,7 @@ export def remove-all [
     print $"Removing ($filtered | length) OCX image\(s\)..."
     
     for img in $filtered {
-        print $"  Removing ($img.repository):($img.tag) \(($img.size)\)"
+        print $"  Removing ($img.repository):($img.tag) [($img.hash)] \(($img.size)\)"
         
         let result = (docker rmi $"($img.repository):($img.tag)" | complete)
         
@@ -156,7 +156,7 @@ def list-ocx-images [] {
     let result = (
         docker images 
             --filter "reference=localhost/ocx*" 
-            --format "{{.Repository}}|{{.Tag}}|{{.CreatedAt}}|{{.Size}}"
+            --format "{{.Repository}}|{{.Tag}}|{{.ID}}|{{.CreatedAt}}|{{.Size}}"
         | complete
     )
     
@@ -176,8 +176,8 @@ def list-ocx-images [] {
     $result.stdout 
         | lines 
         | where { |line| not ($line | is-empty) }
-        | parse "{repository}|{tag}|{created}|{size}"
-        | rename repository tag created size
+        | parse "{repository}|{tag}|{hash}|{created}|{size}"
+        | rename repository tag hash created size
 }
 
 # Helper: Filter to only base images
