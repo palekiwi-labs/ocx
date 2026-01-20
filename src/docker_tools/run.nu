@@ -60,7 +60,13 @@ export def main [...args] {
     
     mut cmd = [
         "docker" "run" "--rm" "-it"
-        "--read-only"
+    ]
+    
+    if $cfg.read_only {
+        $cmd = ($cmd | append "--read-only")
+    }
+    
+    $cmd = ($cmd | append [
         "--tmpfs" $"/tmp:exec,nosuid,size=($cfg.tmp_size)"
         "--tmpfs" $"/workspace/tmp:exec,nosuid,size=($cfg.workspace_tmp_size)"
         "--security-opt" "no-new-privileges"
@@ -69,7 +75,7 @@ export def main [...args] {
         "--memory" $cfg.memory
         "--cpus" ($cfg.cpus | into string)
         "--pids-limit" ($cfg.pids_limit | into string)
-    ]
+    ])
     
     if $cfg.publish_port {
         $cmd = ($cmd | append ["-p" $"($port):80"])
