@@ -7,3 +7,4 @@ export use ps.nu
 export use volume.nu
 export use exec.nu
 export use stop.nu
+export use image.nu

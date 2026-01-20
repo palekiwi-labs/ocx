@@ -75,6 +75,28 @@ def "main upgrade" [--check] {
     upgrade --check=$check
 }
 
+def "main image list" [
+    --base     # Show only base images
+    --final    # Show only final OCX images
+    --json     # Output as JSON
+] {
+    docker_tools image list --base=$base --final=$final --json=$json
+}
+
+def "main image prune" [
+    --base     # Prune only base images
+    --final    # Prune only final OCX images
+] {
+    docker_tools image prune --base=$base --final=$final
+}
+
+def "main image remove-all" [
+    --base     # Remove only base images
+    --final    # Remove only final OCX images
+] {
+    docker_tools image remove-all --base=$base --final=$final
+}
+
 def print_help [] {
     print "OCX - Secure Docker wrapper for OpenCode
     
@@ -92,6 +114,7 @@ USAGE:
         ps       List running containers
         stop     Stop project container
         volume   List project volumes
+        image    Manage OCX Docker images
         upgrade  Check for and install OpenCode updates
     
 OPTIONS:
@@ -111,6 +134,12 @@ OPTIONS:
     ocx stats --all          # Show stats for all OCX containers
     ocx ps                   # Show project container status
     ocx stop                 # Stop project container
+    ocx image list           # List all OCX images
+    ocx image list --base    # List only base images
+    ocx image list --json    # List images in JSON format
+    ocx image prune          # Remove old images, keep latest version
+    ocx image prune --base   # Prune only base images
+    ocx image remove-all     # Remove all OCX images
     ocx upgrade              # Check and update to latest version
     ocx version              # Show version
     ocx help                 # Show help
