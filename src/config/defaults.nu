@@ -26,6 +26,7 @@ export const DEFAULTS = {
     
     # Security
     forbidden_paths: []  # array of relative paths to shadow-mount
+    read_only: true  # mount container root filesystem as read-only
     
     # Environment
     timezone: null  # use $env.TZ if null

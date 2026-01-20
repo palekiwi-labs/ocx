@@ -58,6 +58,9 @@ export def get-env-overrides [] {
     if ($env.OCX_ENV_FILE? | default null) != null {
         $overrides = ($overrides | append {key: "env_file", env_var: "OCX_ENV_FILE"})
     }
+    if ($env.OCX_READ_ONLY? | default null) != null {
+        $overrides = ($overrides | append {key: "read_only", env_var: "OCX_READ_ONLY"})
+    }
     
     $overrides
 }
@@ -178,6 +181,12 @@ export def apply-env-overrides [config: record] {
     let env_file_env = $env.OCX_ENV_FILE? | default null
     if $env_file_env != null {
         $result = ($result | upsert env_file $env_file_env)
+    }
+    
+    # OCX_READ_ONLY
+    let read_only_env = $env.OCX_READ_ONLY? | default null
+    if $read_only_env != null {
+        $result = ($result | upsert read_only ($read_only_env | into bool))
     }
     
     $result
