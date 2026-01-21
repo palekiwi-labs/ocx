@@ -71,8 +71,8 @@ export def main [...args] {
     }
     
     $cmd = ($cmd | append [
-        "--tmpfs" $"/tmp:exec,nosuid,size=($cfg.tmp_size)"
-        "--tmpfs" $"/workspace/tmp:exec,nosuid,size=($cfg.workspace_tmp_size)"
+        "--tmpfs" $"/tmp:exec,nosuid,size=($cfg.tmp_size),uid=($user_settings.uid),gid=($user_settings.gid)"
+        "--tmpfs" $"/workspace/tmp:exec,nosuid,size=($cfg.workspace_tmp_size),uid=($user_settings.uid),gid=($user_settings.gid)"
         "--security-opt" "no-new-privileges"
         "--cap-drop" "ALL"
         "--network" $cfg.network
