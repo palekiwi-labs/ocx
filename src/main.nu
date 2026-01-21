@@ -149,20 +149,20 @@ OPTIONS:
     ocx help                 # Show help
     
 ENVIRONMENT VARIABLES:
-    OCX_WORKSPACE          Workspace directory path (default: current directory)
-    OCX_CONTAINER_NAME     Override container name
-    OCX_PORT               Override port number
-    OCX_CONFIG_DIR         Config directory path
-    OCX_PUBLISH_PORT       Enable/disable port publishing (true/false)
     OCX_ADD_HOST_DOCKER_INTERNAL Enable host.docker.internal host (true/false, default: true)
-    OCX_FORBIDDEN          Colon-separated paths to block
-    OCX_NETWORK            Docker network mode (default: bridge)
-    OCX_MEMORY             Memory limit (default: 1024m)
-    OCX_CPUS               CPU limit (default: 1.0)
-    OCX_PIDS_LIMIT         Process limit (default: 100)
-    OCX_OPENCODE_VERSION       OpenCode version (default: latest)
-    OCX_CUSTOM_BASE_DOCKERFILE Path to custom base Dockerfile
-    OCX_ENV_FILE               Project env file name (default: ocx.env)
+    OCX_CONFIG_DIR               Config directory path
+    OCX_CONTAINER_NAME           Override container name
+    OCX_CPUS                     CPU limit (default: 1.0)
+    OCX_CUSTOM_BASE_DOCKERFILE   Path to custom base Dockerfile
+    OCX_ENV_FILE                 Project env file name (default: ocx.env)
+    OCX_FORBIDDEN                Colon-separated paths to block
+    OCX_MEMORY                   Memory limit (default: 1024m)
+    OCX_NETWORK                  Docker network mode (default: bridge)
+    OCX_OPENCODE_VERSION         OpenCode version (default: latest)
+    OCX_PIDS_LIMIT               Process limit (default: 100)
+    OCX_PORT                     Override port number
+    OCX_PUBLISH_PORT             Enable/disable port publishing (true/false)
+    OCX_WORKSPACE                Workspace directory path (default: current directory)
     
     See documentation for full list of configuration options.
 
