@@ -88,10 +88,12 @@ This will:
 OCX can be configured via JSON files or environment variables.
 
 **Priority Order:**
-1. Environment Variables
-2. Project Config (`./ocx.json`)
-3. Global Config (`~/.config/ocx/ocx.json`)
-4. Defaults
+1. Environment Variables (highest priority)*
+2. Project Config (`./ocx.json`)*
+3. Global Config (`~/.config/ocx/ocx.json`)*
+4. Defaults (lowest priority)
+
+*For array fields (like `forbidden_paths`), values are merged/combined across all levels rather than replaced. This ensures global security settings are preserved when project-specific values are added.
 
 ### Configuration File (`ocx.json`)
 

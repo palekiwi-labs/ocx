@@ -101,6 +101,36 @@ export OCX_FORBIDDEN_PATHS="/etc,/root,/var"
 }
 ```
 
+**Configuration Merging:**
+
+When `forbidden_paths` is defined in multiple configuration sources, they are **merged** (combined) rather than replaced. This ensures that global security settings are preserved when project-specific paths are added.
+
+**Example:**
+
+Global config (`~/.config/ocx/ocx.json`):
+```json
+{
+  "forbidden_paths": ["/etc", "/root", "/var"]
+}
+```
+
+Project config (`./ocx.json`):
+```json
+{
+  "forbidden_paths": [".env", ".secrets"]
+}
+```
+
+**Final result:** `["/etc", "/root", "/var", ".env", ".secrets"]`
+
+**Priority Order (all sources merged):**
+1. Defaults (empty array)
+2. Global config (adds paths)
+3. Project config (adds more paths)  
+4. Environment variable `OCX_FORBIDDEN_PATHS` (adds even more paths)
+
+Duplicates are automatically removed.
+
 **Use Cases:**
 - Prevent access to system configuration files
 - Isolate container from sensitive host directories
