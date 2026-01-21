@@ -154,6 +154,7 @@ ENVIRONMENT VARIABLES:
     OCX_PORT               Override port number
     OCX_CONFIG_DIR         Config directory path
     OCX_PUBLISH_PORT       Enable/disable port publishing (true/false)
+    OCX_ADD_HOST_DOCKER_INTERNAL Enable host.docker.internal host (true/false, default: true)
     OCX_FORBIDDEN          Colon-separated paths to block
     OCX_NETWORK            Docker network mode (default: bridge)
     OCX_MEMORY             Memory limit (default: 1024m)
