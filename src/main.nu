@@ -125,7 +125,7 @@ OPTIONS:
     -h, --help     Show this help
     -v, --version  Show version
     
-    EXAMPLES:
+EXAMPLES:
     ocx opencode             # Run OpenCode interactively
     ocx build                # Build Docker images
     ocx build --force        # Force rebuild images (includes base image)
