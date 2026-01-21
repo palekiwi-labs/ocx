@@ -16,8 +16,11 @@ export def main [
         } else {
             build_ocx_base --force=$force --no-cache=$no_cache
         }
+        # Then build OCX layer
+        print "Base build complete, now building OCX..."
+        build_ocx --force=$force --no-cache=$no_cache
     } else {
-        # Building OCX layer
+        # Building OCX layer only
         build_ocx --force=$force --no-cache=$no_cache
     }
 }
@@ -46,12 +49,8 @@ def build_ocx [--force, --no-cache] {
     }
     
     # Check if base exists, build if needed
-    if ($force) or (not (image_exists $base_and_name.base_image)) {
-        if not (image_exists $base_and_name.base_image) {
-            print $"Base image (($base_and_name.base_image)) not found, building it first..."
-        } else {
-            print $"Force rebuild enabled, rebuilding base image (($base_and_name.base_image))..."
-        }
+    if (not (image_exists $base_and_name.base_image)) {
+        print $"Base image (($base_and_name.base_image)) not found, building it first..."
 
         if ($cfg.custom_base_dockerfile != null) {
             build_custom_base --force=$force --no-cache=$no_cache

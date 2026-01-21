@@ -22,7 +22,7 @@ export def main [...args] {
     
     let port = if $cfg.port == null { ports generate } else { $cfg.port }
     let container_name = resolve-container-name $port
-    let timezone = if $cfg.timezone == null { "Asia/Taipei" } else { $cfg.timezone }
+    let timezone = if $cfg.timezone == null { "UTC" } else { $cfg.timezone }
     
     let user_settings = (config resolve-user $cfg)
     let user = $user_settings.username
@@ -71,8 +71,8 @@ export def main [...args] {
     }
     
     $cmd = ($cmd | append [
-        "--tmpfs" $"/tmp:exec,nosuid,size=($cfg.tmp_size)"
-        "--tmpfs" $"/workspace/tmp:exec,nosuid,size=($cfg.workspace_tmp_size)"
+        "--tmpfs" $"/tmp:exec,nosuid,size=($cfg.tmp_size),uid=($user_settings.uid),gid=($user_settings.gid)"
+        "--tmpfs" $"/workspace/tmp:exec,nosuid,size=($cfg.workspace_tmp_size),uid=($user_settings.uid),gid=($user_settings.gid)"
         "--security-opt" "no-new-privileges"
         "--cap-drop" "ALL"
         "--network" $cfg.network
