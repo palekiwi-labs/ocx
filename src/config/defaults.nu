@@ -28,6 +28,9 @@ export const DEFAULTS = {
     forbidden_paths: []  # array of relative paths to shadow-mount
     read_only: true  # mount container root filesystem as read-only
     
+    # Docker networking
+    add_host_docker_internal: false  # add --add-host=host.docker.internal:host-gateway
+    
     # Environment
     timezone: null  # use $env.TZ if null
     tmp_size: "500m"

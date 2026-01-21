@@ -61,6 +61,9 @@ export def get-env-overrides [] {
     if ($env.OCX_READ_ONLY? | default null) != null {
         $overrides = ($overrides | append {key: "read_only", env_var: "OCX_READ_ONLY"})
     }
+    if ($env.OCX_ADD_HOST_DOCKER_INTERNAL? | default null) != null {
+        $overrides = ($overrides | append {key: "add_host_docker_internal", env_var: "OCX_ADD_HOST_DOCKER_INTERNAL"})
+    }
     
     $overrides
 }
@@ -187,6 +190,12 @@ export def apply-env-overrides [config: record] {
     let read_only_env = $env.OCX_READ_ONLY? | default null
     if $read_only_env != null {
         $result = ($result | upsert read_only ($read_only_env | into bool))
+    }
+    
+    # OCX_ADD_HOST_DOCKER_INTERNAL
+    let add_host_docker_internal_env = $env.OCX_ADD_HOST_DOCKER_INTERNAL? | default null
+    if $add_host_docker_internal_env != null {
+        $result = ($result | upsert add_host_docker_internal ($add_host_docker_internal_env | into bool))
     }
     
     $result
