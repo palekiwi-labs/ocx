@@ -1,0 +1,20 @@
+FROM debian:bookworm-slim
+
+# Install essential tools for development
+# NOTE: curl is REQUIRED for OCX to download OpenCode binary
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    fd-find \
+    git \
+    gnupg \
+    jq \
+    ripgrep \
+    && rm -rf /var/lib/apt/lists/*
+
+# Add Nushell's official Gemfury repository and install nushell
+RUN curl -fsSL https://apt.fury.io/nushell/gpg.key | gpg --dearmor -o /etc/apt/keyrings/fury-nushell.gpg && \
+    echo "deb [signed-by=/etc/apt/keyrings/fury-nushell.gpg] https://apt.fury.io/nushell/ /" | tee /etc/apt/sources.list.d/fury-nushell.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends nushell && \
+    rm -rf /var/lib/apt/lists/*
