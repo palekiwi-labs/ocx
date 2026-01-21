@@ -135,7 +135,10 @@ export def apply-env-overrides [config: record] {
     let forbidden_env = $env.OCX_FORBIDDEN_PATHS? | default null
     if $forbidden_env != null {
         let paths = ($forbidden_env | split row ":")
-        $result = ($result | upsert forbidden_paths $paths)
+        # Merge with existing forbidden_paths from config files
+        let existing = $result.forbidden_paths
+        let merged = ($existing | append $paths | uniq)
+        $result = ($result | upsert forbidden_paths $merged)
     }
     
     # TZ (standard timezone env var)

@@ -25,7 +25,21 @@ def merge [base: record, override: record] {
         
         # Only override if the value is not null
         if $override_value != null {
-            $result = ($result | upsert $key $override_value)
+            # Check if this key exists in base and get its value
+            let base_value = if $key in ($base | columns) {
+                $base | get $key
+            } else {
+                null
+            }
+            
+            # If both are lists, merge them (append + deduplicate)
+            if (($override_value | describe) =~ "list") and (($base_value | describe) =~ "list") {
+                let merged = ($base_value | append $override_value | uniq)
+                $result = ($result | upsert $key $merged)
+            } else {
+                # For non-lists, replace as before
+                $result = ($result | upsert $key $override_value)
+            }
         }
     }
     
