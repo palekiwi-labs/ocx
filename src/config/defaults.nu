@@ -29,7 +29,7 @@ export const DEFAULTS = {
     read_only: true  # mount container root filesystem as read-only
     
     # Docker networking
-    add_host_docker_internal: false  # add --add-host=host.docker.internal:host-gateway
+    add_host_docker_internal: true  # add --add-host=host.docker.internal:host-gateway
     
     # Environment
     timezone: null  # use $env.TZ if null
