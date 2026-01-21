@@ -66,6 +66,10 @@ export def main [...args] {
         $cmd = ($cmd | append "--read-only")
     }
     
+    if $cfg.add_host_docker_internal {
+        $cmd = ($cmd | append ["--add-host" "host.docker.internal:host-gateway"])
+    }
+    
     $cmd = ($cmd | append [
         "--tmpfs" $"/tmp:exec,nosuid,size=($cfg.tmp_size)"
         "--tmpfs" $"/workspace/tmp:exec,nosuid,size=($cfg.workspace_tmp_size)"

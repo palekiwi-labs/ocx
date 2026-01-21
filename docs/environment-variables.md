@@ -82,6 +82,20 @@ export OCX_NETWORK=host
 
 **Note:** See [Security Hardening](security-hardening.md) for security implications.
 
+#### `OCX_ADD_HOST_DOCKER_INTERNAL`
+Add `--add-host=host.docker.internal:host-gateway` to enable container access to host services.
+
+**Type:** Boolean (`true`/`false`)
+
+**Example:**
+```bash
+export OCX_ADD_HOST_DOCKER_INTERNAL=true
+```
+
+**Default:** `true`
+
+**Use case:** Access services running on the host (e.g., databases, APIs) from within the container via `host.docker.internal`. This is useful for local development scenarios where the container needs to communicate with host services.
+
 ### Docker Image and Version
 
 #### `OCX_OPENCODE_VERSION`

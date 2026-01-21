@@ -101,7 +101,8 @@ Example `ocx.json`:
   "custom_base_dockerfile": "docker/Dockerfile",
   "publish_port": true,
   "opencode_version": "latest",
-  "memory": "2048m"
+  "memory": "2048m",
+  "add_host_docker_internal": true
 }
 ```
 
@@ -111,6 +112,7 @@ Example `ocx.json`:
 - `OCX_CONTAINER_NAME`: Override the container name.
 - `OCX_PORT`: Override the port number.
 - `OCX_PUBLISH_PORT`: `true`/`false` to expose ports.
+- `OCX_ADD_HOST_DOCKER_INTERNAL`: Add `--add-host=host.docker.internal:host-gateway` to enable host access from container (default: `false`).
 - `OCX_CUSTOM_BASE_DOCKERFILE`: Path to a custom Dockerfile.
 - `OCX_MEMORY`: Memory limit (default `1024m`).
 - `OCX_CPUS`: CPU limit (default `1.0`).
