@@ -150,7 +150,6 @@ EXAMPLES:
     
 ENVIRONMENT VARIABLES:
     OCX_ADD_HOST_DOCKER_INTERNAL Enable host.docker.internal host (true/false, default: true)
-    OCX_CONFIG_DIR               Config directory path
     OCX_CONTAINER_NAME           Override container name
     OCX_CPUS                     CPU limit (default: 1.0)
     OCX_CUSTOM_BASE_DOCKERFILE   Path to custom base Dockerfile
@@ -158,6 +157,7 @@ ENVIRONMENT VARIABLES:
     OCX_FORBIDDEN                Colon-separated paths to block
     OCX_MEMORY                   Memory limit (default: 1024m)
     OCX_NETWORK                  Docker network mode (default: bridge)
+    OCX_OPENCODE_CONFIG_DIR      OpenCode config directory path
     OCX_OPENCODE_VERSION         OpenCode version (default: latest)
     OCX_PIDS_LIMIT               Process limit (default: 100)
     OCX_PORT                     Override port number

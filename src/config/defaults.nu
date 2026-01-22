@@ -21,7 +21,7 @@ export const DEFAULTS = {
     gid: null       # auto-detect from `id -g` if null
     
     # Paths
-    config_dir: "~/.config/opencode"  # OpenCode container config dir (mounted into container)
+    opencode_config_dir: "~/.config/opencode"  # OpenCode container config dir (mounted into container)
     rgignore_file: null  # optional
     
     # Security

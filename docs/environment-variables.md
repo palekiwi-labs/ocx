@@ -271,14 +271,14 @@ export OCX_GID=1000
 
 ### Configuration and Environment Files
 
-#### `OCX_CONFIG_DIR`
-Path to the opencode configuration directory.
+#### `OCX_OPENCODE_CONFIG_DIR`
+Path to the OpenCode configuration directory (mounted into the container).
 
 **Type:** Directory path
 
 **Example:**
 ```bash
-export OCX_CONFIG_DIR=/home/user/.config/opencode
+export OCX_OPENCODE_CONFIG_DIR=/home/user/.config/opencode
 ```
 
 **Default:** `~/.config/opencode`
