@@ -25,8 +25,8 @@ export def get-env-overrides [] {
     if ($env.OCX_OPENCODE_VERSION? | default null) != null {
         $overrides = ($overrides | append {key: "opencode_version", env_var: "OCX_OPENCODE_VERSION"})
     }
-    if ($env.OCX_CONFIG_DIR? | default null) != null {
-        $overrides = ($overrides | append {key: "config_dir", env_var: "OCX_CONFIG_DIR"})
+    if ($env.OCX_OPENCODE_CONFIG_DIR? | default null) != null {
+        $overrides = ($overrides | append {key: "opencode_config_dir", env_var: "OCX_OPENCODE_CONFIG_DIR"})
     }
     if ($env.OCX_RGIGNORE_FILE? | default null) != null {
         $overrides = ($overrides | append {key: "rgignore_file", env_var: "OCX_RGIGNORE_FILE"})
@@ -119,10 +119,10 @@ export def apply-env-overrides [config: record] {
         $result = ($result | upsert opencode_version $opencode_version_env)
     }
     
-    # OCX_CONFIG_DIR
-    let config_dir_env = $env.OCX_CONFIG_DIR? | default null
-    if $config_dir_env != null {
-        $result = ($result | upsert config_dir $config_dir_env)
+    # OCX_OPENCODE_CONFIG_DIR
+    let opencode_config_dir_env = $env.OCX_OPENCODE_CONFIG_DIR? | default null
+    if $opencode_config_dir_env != null {
+        $result = ($result | upsert opencode_config_dir $opencode_config_dir_env)
     }
     
     # OCX_RGIGNORE_FILE

@@ -27,7 +27,7 @@ export def main [...args] {
     let user_settings = (config resolve-user $cfg)
     let user = $user_settings.username
     
-    let config_dir = $cfg.config_dir | path expand
+    let opencode_config_dir = $cfg.opencode_config_dir | path expand
     
     # Resolve env file
     let env_file_name = if $cfg.env_file != null { $cfg.env_file } else { "ocx.env" }
@@ -40,7 +40,7 @@ export def main [...args] {
     
     let config_container_path = $"/home/($user)/.config/opencode"
     let workspace_would_conflict = (
-        ($config_dir == $ws.host_path) and 
+        ($opencode_config_dir == $ws.host_path) and 
         ($config_container_path == $ws.container_path)
     )
     
@@ -56,7 +56,7 @@ export def main [...args] {
         build
     }
     
-    mkdir $config_dir
+    mkdir $opencode_config_dir
     
     mut cmd = [
         "docker" "run" "--rm" "-it"
@@ -105,7 +105,7 @@ export def main [...args] {
     $cmd = ($cmd | append [
         "-v" $"($container_name)-cache:/home/($user)/.cache:rw"
         "-v" $"($container_name)-local:/home/($user)/.local:rw"
-        "-v" $"($config_dir):($config_container_path):($config_mount_mode)"
+        "-v" $"($opencode_config_dir):($config_container_path):($config_mount_mode)"
         "-v" "/etc/localtime:/etc/localtime:ro"
     ])
     
@@ -119,7 +119,7 @@ export def main [...args] {
             $cmd = ($cmd | append ["-v" $"($rgignore_path):/home/($user)/.rgignore:ro"])
         }
     } else {
-        let default_rgignore = ($config_dir | path join ".rgignore")
+        let default_rgignore = ($opencode_config_dir | path join ".rgignore")
         if ($default_rgignore | path exists) {
             $cmd = ($cmd | append ["-v" $"($default_rgignore):/home/($user)/.rgignore:ro"])
         }
