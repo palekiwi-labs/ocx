@@ -44,7 +44,7 @@ export def main [...args] {
         ($config_container_path == $ws.container_path)
     )
     
-    let config_mount_mode = if $workspace_would_conflict { "rw" } else { "ro" }
+    let config_mount_mode = "rw"
     let skip_workspace_mount = $workspace_would_conflict
     
     if $workspace_would_conflict {
