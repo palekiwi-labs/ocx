@@ -1,4 +1,6 @@
 #!/usr/bin/env nu
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Palekiwi Labs
 
 # OCX - Secure Docker wrapper for OpenCode
 
@@ -36,12 +38,12 @@ def "main config" [
 
 def "main port" [] {
     let cfg = load
-    if $cfg.port == null { 
-        ports generate 
-    } else { 
-        $cfg.port 
+    if $cfg.port == null {
+        ports generate
+    } else {
+        $cfg.port
     }
-} 
+}
 
 def "main shell" [] {
     docker_tools shell
@@ -103,10 +105,10 @@ def "main image remove-all" [
 
 def print_help [] {
     print "OCX - Secure Docker wrapper for OpenCode
-    
+
 USAGE:
     ocx <SUBCOMMAND> [OPTIONS]
-    
+
     SUBCOMMANDS:
         opencode Run OpenCode container (alias: o)
         build    Build Docker images
@@ -120,11 +122,11 @@ USAGE:
         volume   List project volumes
         image    Manage OCX Docker images
         upgrade  Check for and install OpenCode updates
-    
+
 OPTIONS:
     -h, --help     Show this help
     -v, --version  Show version
-    
+
 EXAMPLES:
     ocx opencode             # Run OpenCode interactively
     ocx build                # Build Docker images
@@ -147,7 +149,7 @@ EXAMPLES:
     ocx upgrade              # Check and update to latest version
     ocx version              # Show version
     ocx help                 # Show help
-    
+
 ENVIRONMENT VARIABLES:
     OCX_ADD_HOST_DOCKER_INTERNAL Enable host.docker.internal host (true/false, default: true)
     OCX_CONTAINER_NAME           Override container name
@@ -163,24 +165,24 @@ ENVIRONMENT VARIABLES:
     OCX_PORT                     Override port number
     OCX_PUBLISH_PORT             Enable/disable port publishing (true/false)
     OCX_WORKSPACE                Workspace directory path (default: current directory)
-    
+
     See documentation for full list of configuration options.
 
 CONFIGURATION FILES:
     Global:  ~/.config/ocx/ocx.json
     Project: ./ocx.json
-    
+
     Config priority: env vars > project > global > defaults
 
 CUSTOM BASE IMAGES:
     Provide a Dockerfile to customize the base environment.
     Place in global config or project directory:
-    
+
     Global:  ~/.config/ocx/ruby/Dockerfile  → ocx-ruby:1.1.23
     Project: ./docker-ocx/Dockerfile        → ocx-<projectname>-docker-ocx:1.1.23
-    
+
     Config: {\"custom_base_dockerfile\": \"ruby/Dockerfile\"}
-    
+
     See docs/custom-base-template.md for Dockerfile requirements.
  "
 }
@@ -198,6 +200,6 @@ def main [
             print "unknown (VERSION file not found)"
         }
     } else {
-        print_help 
+        print_help
     }
 }

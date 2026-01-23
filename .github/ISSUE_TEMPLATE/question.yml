@@ -1,0 +1,17 @@
+name: Question
+description: Ask a question about how to use OCX
+title: "[Question]: "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please verify if the solution is already present in the documentation (docs folder).
+  
+  - type: textarea
+    id: question
+    attributes:
+      label: What is your question?
+      description: Ask your question here.
+    validations:
+      required: true
