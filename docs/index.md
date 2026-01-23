@@ -19,4 +19,5 @@ Welcome to the OCX documentation.
 
 ## Security
 
+- [Security Model](security-model.md) - Comprehensive security architecture, threat model, and design decisions
 - [Security Hardening](security-hardening.md) - Security features, configuration, and best practices for secure development environments

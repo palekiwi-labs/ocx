@@ -26,7 +26,7 @@ export const DEFAULTS = {
     
     # Security
     forbidden_paths: []  # array of relative paths to shadow-mount
-    read_only: true  # mount container root filesystem as read-only
+    read_only: false  # mount container root filesystem as read-only (set true for strict security)
     
     # Docker networking
     add_host_docker_internal: true  # add --add-host=host.docker.internal:host-gateway

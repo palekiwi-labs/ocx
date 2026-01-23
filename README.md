@@ -28,6 +28,7 @@ For detailed guides and configuration options, see the [docs](docs/index.md) dir
 - [Upgrading](docs/upgrading.md) - Upgrade OpenCode, version management, and release notes
 
 ### Security
+- [Security Model](docs/security-model.md) - Security architecture, threat model, and design decisions
 - [Security Hardening](docs/security-hardening.md) - Security features, configuration, and best practices
 
 ## Installation

@@ -396,9 +396,31 @@ Volumes persist beyond container lifecycle:
 - Persisted: Even after container removal
 - Removed: Only with explicit `docker volume rm` command
 
+### Filesystem Behavior
+
+OCX uses a **writable root filesystem by default** (`read_only: false`) for maximum tool compatibility:
+
+**With volumes (`data_volumes_mode: "git"` or `"always"`):**
+- `~/.cache` and `~/.local` are persistent (stored in Docker volumes)
+- Rest of home directory is writable but ephemeral (lost on container removal)
+- System directories are writable (though non-root user limits damage)
+
+**Without volumes (`data_volumes_mode: "never"`):**
+- Entire filesystem is writable but ephemeral
+- All data is lost when container is removed
+- Useful for CI/CD or completely clean environments
+
+**Strict mode (`read_only: true`):**
+- Requires volumes to be enabled
+- Only mounted volumes are writable
+- System and home directories are read-only
+- Enhanced security at cost of some tool compatibility
+- See [Security Model](security-model.md) for details
+
 ### Security Considerations
 
 - Volumes are stored in Docker's volume directory (typically `/var/lib/docker/volumes/`)
 - Volumes inherit permissions from the container user (mapped to your host UID/GID)
 - Shared volumes between projects can potentially leak data - only share when appropriate
-- Consider using `data_volumes_mode: "never"` for sensitive/isolated environments
+- Writable filesystem allows persistence of shell configs and tool settings (see [Security Model](security-model.md))
+- For maximum security, use `read_only: true` with volumes enabled
