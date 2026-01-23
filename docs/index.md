@@ -6,6 +6,7 @@ Welcome to the OCX documentation.
 
 - [Port Configuration](port-configuration.md) - Learn how to configure and manage ports for the opencode server
 - [Environment Variables](environment-variables.md) - Complete reference of all supported environment variables and their usage
+- [Volume Management](volume-management.md) - Configure data volumes, sharing across checkouts, and migration strategies
 
 ## Customization
 
@@ -18,4 +19,5 @@ Welcome to the OCX documentation.
 
 ## Security
 
+- [Security Model](security-model.md) - Comprehensive security architecture, threat model, and design decisions
 - [Security Hardening](security-hardening.md) - Security features, configuration, and best practices for secure development environments

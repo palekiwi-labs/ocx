@@ -18,6 +18,7 @@ For detailed guides and configuration options, see the [docs](docs/index.md) dir
 ### Configuration
 - [Port Configuration](docs/port-configuration.md) - Configure and manage ports for opencode server
 - [Environment Variables](docs/environment-variables.md) - Complete reference of all supported environment variables
+- [Volume Management](docs/volume-management.md) - Configure data volumes, sharing, and migration
 
 ### Customization
 - [Custom Base Image Template](docs/custom-base-template.md) - Create custom Docker base images
@@ -27,6 +28,7 @@ For detailed guides and configuration options, see the [docs](docs/index.md) dir
 - [Upgrading](docs/upgrading.md) - Upgrade OpenCode, version management, and release notes
 
 ### Security
+- [Security Model](docs/security-model.md) - Security architecture, threat model, and design decisions
 - [Security Hardening](docs/security-hardening.md) - Security features, configuration, and best practices
 
 ## Installation

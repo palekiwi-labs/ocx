@@ -297,6 +297,44 @@ export OCX_ENV_FILE=.env.local
 
 **Note:** Both global (`~/.config/ocx/ocx.env`) and project environment files are loaded.
 
+### Data Volumes
+
+#### `OCX_DATA_VOLUMES_MODE`
+Control when data volumes (cache and local) are created.
+
+**Type:** Enum (`always`, `git`, `never`)
+
+**Example:**
+```bash
+export OCX_DATA_VOLUMES_MODE=always
+export OCX_DATA_VOLUMES_MODE=never
+```
+
+**Default:** `git`
+
+**Values:**
+- `git` - Create volumes only for git repositories (default)
+- `always` - Create volumes for all projects (git and non-git)
+- `never` - Never create data volumes
+
+**See:** [Volume Management](volume-management.md) for detailed information
+
+#### `OCX_DATA_VOLUMES_NAME`
+Override automatic volume naming with a custom name.
+
+**Type:** String (lowercase alphanumeric + hyphens)
+
+**Example:**
+```bash
+export OCX_DATA_VOLUMES_NAME=my-shared-cache
+```
+
+**Default:** None (uses automatic naming based on git remote or directory path)
+
+**Warning:** Using the same volume name across different projects will make them share volumes, which can cause dependency conflicts.
+
+**Valid format:** Must contain only lowercase letters, numbers, and hyphens, and start with a letter or number.
+
 ### Other
 
 #### `TZ`
@@ -452,7 +490,26 @@ export OCX_CPUS=0.5
 export OCX_PIDS_LIMIT=50
 export OCX_NETWORK=none
 export OCX_PUBLISH_PORT=false
+export OCX_DATA_VOLUMES_MODE=never  # No caching in CI
 ```
+
+### 6. Share Volumes Across Related Projects
+
+```bash
+# For microservices that share dependencies
+export OCX_DATA_VOLUMES_NAME=my-team-shared-cache
+```
+
+**Use case:** Multiple related projects with compatible dependencies can share the same cache volumes for faster installs.
+
+### 7. Disable Volumes for Temporary Work
+
+```bash
+export OCX_DATA_VOLUMES_MODE=never
+ocx opencode
+```
+
+**Use case:** Quick testing, disposable environments, or when you want a completely clean state.
 
 ## Troubleshooting
 

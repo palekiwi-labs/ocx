@@ -52,6 +52,33 @@ export def validate [config: record] {
             }
         }
     }
+    
+    # Validate data_volumes_mode
+    let valid_modes = ["always", "git", "never"]
+    if $config.data_volumes_mode not-in $valid_modes {
+        error make {
+            msg: $"Invalid data_volumes_mode value: ($config.data_volumes_mode)"
+            help: $"data_volumes_mode must be one of: ($valid_modes | str join ', ')"
+        }
+    }
+    
+    # Validate data_volumes_name if set
+    if $config.data_volumes_name != null {
+        if ($config.data_volumes_name | describe) !~ "string" {
+            error make {
+                msg: $"Invalid data_volumes_name value: ($config.data_volumes_name)"
+                help: "data_volumes_name must be a string"
+            }
+        }
+        
+        # Validate Docker volume name format (lowercase alphanumeric + hyphens)
+        if not ($config.data_volumes_name =~ '^[a-z0-9][a-z0-9-]*$') {
+            error make {
+                msg: $"Invalid data_volumes_name format: ($config.data_volumes_name)"
+                help: "data_volumes_name must contain only lowercase letters, numbers, and hyphens, and start with a letter or number"
+            }
+        }
+    }
 }
 
 export def validate-memory [value: string] {

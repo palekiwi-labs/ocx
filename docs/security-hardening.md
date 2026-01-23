@@ -4,23 +4,26 @@ OCX implements multiple security layers to protect your development environment 
 
 ## Default Security Features
 
-### Read-Only Root Filesystem
+**See Also:** [OCX Security Model](security-model.md) for a comprehensive explanation of the security architecture and threat model.
 
-The container's root filesystem is mounted as read-only, preventing any modifications to the system files:
+### Writable Root Filesystem (Default)
 
-```bash
---read-only
-```
+By default, OCX containers have a **writable root filesystem** (`read_only: false`) for maximum compatibility with development tools. This design decision prioritizes developer experience while maintaining strong security through other layers.
 
-This protects against:
-- Accidental system file modifications
-- Malicious processes modifying system files
-- Inconsistencies from container restarts
+**Why writable by default:**
+- Most development tools expect to write to home directory paths (`~/.config`, `~/.npm`, `~/.bash_history`, etc.)
+- Aligns with industry standards (VS Code Dev Containers, Codespaces, Gitpod)
+- Development containers are typically short-lived and ephemeral
+- Other security layers provide robust protection
 
 **What can be modified:**
+- Home directory (`~/`)
+- System directories (though non-root user prevents most damage)
 - Your workspace directory (mounted read-write)
 - `/tmp` and `/workspace/tmp` (tmpfs, writable)
 - `.cache` and `.local` volumes (persistent)
+
+**Security consideration:** With a writable filesystem, a compromised process could modify shell startup files or tool configurations for persistence. For sensitive work, consider enabling strict mode (see below).
 
 ### Capability Dropping
 
@@ -162,20 +165,35 @@ export OCX_NETWORK="bridge"
 
 **Security Note:** Using `host` mode exposes all host network interfaces to the container. Use with caution.
 
-### Read-Only Override
+### Strict Security Mode (Read-Only Filesystem)
 
-To disable read-only root filesystem (not recommended):
+For security-sensitive projects, you can enable read-only root filesystem:
 
 ```bash
-export OCX_READ_ONLY=false
+export OCX_READ_ONLY=true
 ```
 
-**When you might need this:**
-- Certain debugging scenarios
-- Legacy applications requiring write access to system directories
-- Custom base images with specific requirements
+**Config File (`ocx.json`):**
+```json
+{
+  "read_only": true
+}
+```
 
-**Warning:** This significantly reduces security and should be avoided.
+**When to use strict mode:**
+- Working with untrusted or unreviewed code
+- Security requirements mandate immutable infrastructure
+- Long-running containers that might be targeted
+- Compliance requirements
+
+**Important:** Strict mode requires data volumes to be enabled (`data_volumes_mode: "git"` or `"always"`) to provide writable storage for `~/.cache` and `~/.local`. Without volumes, many tools will fail.
+
+**Known limitations:**
+- Some tools may need additional configuration
+- Shell history won't persist unless mounted separately
+- VS Code extensions may have issues
+
+See [Security Model](security-model.md) for detailed information about strict mode.
 
 ### Tmpfs Sizing
 
@@ -378,13 +396,14 @@ docker logs -f $(ocx ps --format "{{.ID}}")
 
 ## Security Trade-offs
 
-| Feature | Security | Convenience | Recommendation |
-|---------|----------|-------------|----------------|
-| Read-only root | High | Low | Keep enabled |
-| Capability drop | High | Medium | Keep enabled |
-| No new privileges | High | High | Keep enabled |
-| Bridge network | Medium | High | Default setting |
-| Forbidden paths | High | Medium | Configure as needed |
-| Resource limits | Medium | Medium | Set appropriately |
+| Feature | Security | Convenience | Default | Recommendation |
+|---------|----------|-------------|---------|----------------|
+| Writable root | Medium | High | Enabled | Keep for dev work |
+| Read-only root | High | Low | Disabled | Enable for sensitive projects |
+| Capability drop | High | Medium | Enabled | Always keep enabled |
+| No new privileges | High | High | Enabled | Always keep enabled |
+| Bridge network | Medium | High | Enabled | Default setting |
+| Forbidden paths | High | Medium | Empty | Configure as needed |
+| Resource limits | Medium | Medium | Set | Set appropriately |
 
-OCX is designed with security by default. Only disable features when absolutely necessary and understand the implications.
+OCX balances security with developer productivity. For sensitive work, enable strict mode (`read_only: true`). See [Security Model](security-model.md) for detailed guidance.

@@ -5,6 +5,7 @@ use ../workspace.nu
 use ../config
 use ../shadow_mounts.nu
 use ../version
+use ../volume_name.nu
 
 export def main [...args] {
     let cfg = (config load)
@@ -102,9 +103,17 @@ export def main [...args] {
         "-e" $"TZ=($timezone)"
     ])
     
+    # Add data volumes based on configuration
+    let volume_base = (volume_name resolve-volume-base-name $cfg)
+    
+    if $volume_base != null {
+        $cmd = ($cmd | append [
+            "-v" $"($volume_base)-cache:/home/($user)/.cache:rw"
+            "-v" $"($volume_base)-local:/home/($user)/.local:rw"
+        ])
+    }
+    
     $cmd = ($cmd | append [
-        "-v" $"($container_name)-cache:/home/($user)/.cache:rw"
-        "-v" $"($container_name)-local:/home/($user)/.local:rw"
         "-v" $"($opencode_config_dir):($config_container_path):($config_mount_mode)"
         "-v" "/etc/localtime:/etc/localtime:ro"
     ])
