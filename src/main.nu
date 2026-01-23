@@ -77,6 +77,19 @@ def "main upgrade" [--check] {
     upgrade --check=$check
 }
 
+def "main version" [] {
+    let version_path = ($env.FILE_PWD | path join "VERSION")
+    if ($version_path | path exists) {
+        open $version_path | str trim
+    } else {
+        print "unknown (VERSION file not found)"
+    }
+}
+
+def "main help" [] {
+    print_help
+}
+
 def "main image" [] {
     docker_tools image
 }
