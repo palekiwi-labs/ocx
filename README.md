@@ -1,5 +1,12 @@
 # OCX - Secure Docker Wrapper for OpenCode
 
+> [!WARNING]
+> **Alpha Software**: OCX is in active development. APIs and features may change. 
+> Use in production at your own risk. Feedback and contributions welcome!
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Version](https://img.shields.io/badge/version-0.1.0--alpha.1-blue.svg)](https://github.com/palekiwi-labs/ocx/releases)
+
 **OCX** is a secure, Nix-powered Docker wrapper designed to simplify running OpenCode environments. It handles the complexities of file permissions (UID/GID mapping), workspace mounting, and container management, allowing you to focus on your code.
 
 ## Key Features
@@ -171,6 +178,13 @@ OCX usually handles this automatically. If issues persist:
 2. Run `ocx build --force` to regenerate the user mapping.
 3. Check `ocx config` to verify workspace paths.
 
+## Contributing
+
+We welcome contributions! Please see our guides for more details:
+- [Contributing Guide](CONTRIBUTING.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Security Policy](SECURITY.md)
+
 ## License
 
-MIT
+MIT © [Palekiwi Labs](LICENSE)
