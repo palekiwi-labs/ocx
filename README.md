@@ -18,6 +18,7 @@ For detailed guides and configuration options, see the [docs](docs/index.md) dir
 ### Configuration
 - [Port Configuration](docs/port-configuration.md) - Configure and manage ports for opencode server
 - [Environment Variables](docs/environment-variables.md) - Complete reference of all supported environment variables
+- [Volume Management](docs/volume-management.md) - Configure data volumes, sharing, and migration
 
 ### Customization
 - [Custom Base Image Template](docs/custom-base-template.md) - Create custom Docker base images

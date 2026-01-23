@@ -41,4 +41,8 @@ export const DEFAULTS = {
 
     # Environment file
     env_file: null # e.g. "ocx.env" - if null defaults to ocx.env
+    
+    # Data volumes
+    data_volumes_mode: "git"  # "always" | "git" | "never" - controls when to create data volumes
+    data_volumes_name: null   # optional: explicit volume name override (shares across all projects if set)
 }

@@ -64,6 +64,12 @@ export def get-env-overrides [] {
     if ($env.OCX_ADD_HOST_DOCKER_INTERNAL? | default null) != null {
         $overrides = ($overrides | append {key: "add_host_docker_internal", env_var: "OCX_ADD_HOST_DOCKER_INTERNAL"})
     }
+    if ($env.OCX_DATA_VOLUMES_MODE? | default null) != null {
+        $overrides = ($overrides | append {key: "data_volumes_mode", env_var: "OCX_DATA_VOLUMES_MODE"})
+    }
+    if ($env.OCX_DATA_VOLUMES_NAME? | default null) != null {
+        $overrides = ($overrides | append {key: "data_volumes_name", env_var: "OCX_DATA_VOLUMES_NAME"})
+    }
     
     $overrides
 }
@@ -199,6 +205,18 @@ export def apply-env-overrides [config: record] {
     let add_host_docker_internal_env = $env.OCX_ADD_HOST_DOCKER_INTERNAL? | default null
     if $add_host_docker_internal_env != null {
         $result = ($result | upsert add_host_docker_internal ($add_host_docker_internal_env | into bool))
+    }
+    
+    # OCX_DATA_VOLUMES_MODE
+    let data_volumes_mode_env = $env.OCX_DATA_VOLUMES_MODE? | default null
+    if $data_volumes_mode_env != null {
+        $result = ($result | upsert data_volumes_mode $data_volumes_mode_env)
+    }
+    
+    # OCX_DATA_VOLUMES_NAME
+    let data_volumes_name_env = $env.OCX_DATA_VOLUMES_NAME? | default null
+    if $data_volumes_name_env != null {
+        $result = ($result | upsert data_volumes_name $data_volumes_name_env)
     }
     
     $result

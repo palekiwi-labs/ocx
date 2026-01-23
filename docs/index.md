@@ -6,6 +6,7 @@ Welcome to the OCX documentation.
 
 - [Port Configuration](port-configuration.md) - Learn how to configure and manage ports for the opencode server
 - [Environment Variables](environment-variables.md) - Complete reference of all supported environment variables and their usage
+- [Volume Management](volume-management.md) - Configure data volumes, sharing across checkouts, and migration strategies
 
 ## Customization
 
