@@ -39,6 +39,35 @@ This section guides you through submitting an enhancement suggestion for OCX, in
    - `chore: update dependencies`
 5. **Push and PR**: Push your branch and open a Pull Request.
 
+## Branching Strategy
+
+OCX follows **trunk-based development**:
+
+- **`master`** is the main development branch
+  - All feature branches merge here via pull requests
+  - Contains the latest development work
+  - May be ahead of the latest release tag
+  - **Not guaranteed to be stable** - users should pin to version tags
+
+- **Feature branches** for development
+  - Branch from `master`: `git checkout -b feat/my-feature`
+  - Use descriptive names: `feat/`, `fix/`, `docs/`, `chore/`
+  - Keep branches short-lived (merge within days, not weeks)
+  - Delete after merging
+
+- **Version tags** mark releases
+  - Format: `vX.Y.Z` or `vX.Y.Z-alpha.N`
+  - Created by maintainers during the release process
+  - These are the stable points users should install
+  - See [docs/RELEASING.md](docs/RELEASING.md) for the full release process
+
+### Why trunk-based?
+
+- Simple workflow with minimal overhead
+- Fast integration of changes
+- Modern CI/CD friendly
+- Clear distinction between "development" (master) and "stable" (tags)
+
 ## Development Setup
 
 OCX is distributed as a Nix Flake. The best way to develop is using Nix.

@@ -5,7 +5,7 @@
 > Use in production at your own risk. Feedback and contributions welcome!
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-0.1.0--alpha.1-blue.svg)](https://github.com/palekiwi-labs/ocx/releases)
+[![Version](https://img.shields.io/badge/version-0.1.0--alpha.2-blue.svg)](https://github.com/palekiwi-labs/ocx/releases)
 
 **OCX** is a secure, Nix-powered Docker wrapper designed to simplify running OpenCode environments. It handles the complexities of file permissions (UID/GID mapping), workspace mounting, and container management, allowing you to focus on your code.
 
@@ -42,21 +42,44 @@ For detailed guides and configuration options, see the [docs](docs/index.md) dir
 
 OCX is available as a Nix Flake.
 
+> **Important**: For reproducible builds and stability, always pin to a specific version tag. 
+> The `master` branch contains the latest development code and may include unreleased features.
+
 ### Using Nix Flakes
 
-Run directly:
+#### Stable Release (Recommended)
+
+Run a specific version:
 ```bash
-nix run github:palekiwi-labs/ocx
+nix run github:palekiwi-labs/ocx/v0.1.0-alpha.2
 ```
 
 Add to your system configuration or dev shell:
 ```nix
 {
-  inputs.ocx.url = "github:palekiwi-labs/ocx";
+  inputs.ocx.url = "github:palekiwi-labs/ocx/v0.1.0-alpha.2";
   # ...
   environment.systemPackages = [ inputs.ocx.packages.${system}.default ];
 }
 ```
+
+See [available releases](https://github.com/palekiwi-labs/ocx/releases) for version tags.
+
+#### Development/Unstable (For Testing)
+
+To use the latest development code from `master`:
+```bash
+nix run github:palekiwi-labs/ocx
+```
+
+Or in your flake:
+```nix
+{
+  inputs.ocx.url = "github:palekiwi-labs/ocx";  # tracks master branch
+}
+```
+
+**Warning**: The `master` branch may contain unreleased features and breaking changes.
 
 ## Usage
 
