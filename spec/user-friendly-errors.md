@@ -1,7 +1,7 @@
 ---
 status: todo
 branch: user-friendly-errors
-pr:
+pr: 25
 ---
 
 # User friendly errors
