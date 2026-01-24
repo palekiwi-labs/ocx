@@ -8,13 +8,22 @@ use docker_tools
 use ports.nu
 use config [load, show, show-sources]
 use upgrade.nu
+use errors.nu
 
 def --wrapped "main opencode" [...args] {
-    docker_tools run ...$args
+    try {
+        docker_tools run ...$args
+    } catch { |err|
+        errors pretty-print $err
+    }
 }
 
 def --wrapped "main o" [...args] {
-    docker_tools run ...$args
+    try {
+        docker_tools run ...$args
+    } catch { |err|
+        errors pretty-print $err
+    }
 }
 
 def "main build" [
@@ -22,76 +31,128 @@ def "main build" [
     --force(-f),
     --no-cache
 ] {
-    docker_tools build --base=$base --force=$force --no-cache=$no_cache
+    try {
+        docker_tools build --base=$base --force=$force --no-cache=$no_cache
+    } catch { |err|
+        errors pretty-print $err
+    }
 }
 
 def "main config" [
     --sources  # Show configuration with sources
     --json     # Output as JSON only
 ] {
-    if $sources {
-        show-sources --json=$json
-    } else {
-        show --json=$json
+    try {
+        if $sources {
+            show-sources --json=$json
+        } else {
+            show --json=$json
+        }
+    } catch { |err|
+        errors pretty-print $err
     }
 }
 
 def "main port" [] {
-    let cfg = load
-    if $cfg.port == null {
-        ports generate
-    } else {
-        $cfg.port
+    try {
+        let cfg = load
+        if $cfg.port == null {
+            ports generate
+        } else {
+            $cfg.port
+        }
+    } catch { |err|
+        errors pretty-print $err
     }
 }
 
 def "main shell" [] {
-    docker_tools shell
+    try {
+        docker_tools shell
+    } catch { |err|
+        errors pretty-print $err
+    }
 }
 
 def "main stats" [
     --all
 ] {
-    docker_tools stats --all=$all
+    try {
+        docker_tools stats --all=$all
+    } catch { |err|
+        errors pretty-print $err
+    }
 }
 
 def "main ps" [
     --all(-a)
 ] {
-    docker_tools ps --all=$all
+    try {
+        docker_tools ps --all=$all
+    } catch { |err|
+        errors pretty-print $err
+    }
 }
 
 def "main volume" [] {
-    docker_tools volume
+    try {
+        docker_tools volume
+    } catch { |err|
+        errors pretty-print $err
+    }
 }
 
 def --wrapped "main exec" [...args] {
-    docker_tools exec ...$args
+    try {
+        docker_tools exec ...$args
+    } catch { |err|
+        errors pretty-print $err
+    }
 }
 
 def "main stop" [] {
-    docker_tools stop
+    try {
+        docker_tools stop
+    } catch { |err|
+        errors pretty-print $err
+    }
 }
 
 def "main upgrade" [--check] {
-    upgrade --check=$check
+    try {
+        upgrade --check=$check
+    } catch { |err|
+        errors pretty-print $err
+    }
 }
 
 def "main version" [] {
-    let version_path = ($env.FILE_PWD | path join "VERSION")
-    if ($version_path | path exists) {
-        open $version_path | str trim
-    } else {
-        print "unknown (VERSION file not found)"
+    try {
+        let version_path = ($env.FILE_PWD | path join "VERSION")
+        if ($version_path | path exists) {
+            open $version_path | str trim
+        } else {
+            print "unknown (VERSION file not found)"
+        }
+    } catch { |err|
+        errors pretty-print $err
     }
 }
 
 def "main help" [] {
-    print_help
+    try {
+        print_help
+    } catch { |err|
+        errors pretty-print $err
+    }
 }
 
 def "main image" [] {
-    docker_tools image
+    try {
+        docker_tools image
+    } catch { |err|
+        errors pretty-print $err
+    }
 }
 
 def "main image list" [
@@ -99,21 +160,33 @@ def "main image list" [
     --final    # Show only final OCX images
     --json     # Output as JSON
 ] {
-    docker_tools image list --base=$base --final=$final --json=$json
+    try {
+        docker_tools image list --base=$base --final=$final --json=$json
+    } catch { |err|
+        errors pretty-print $err
+    }
 }
 
 def "main image prune" [
     --base     # Prune only base images
     --final    # Prune only final OCX images
 ] {
-    docker_tools image prune --base=$base --final=$final
+    try {
+        docker_tools image prune --base=$base --final=$final
+    } catch { |err|
+        errors pretty-print $err
+    }
 }
 
 def "main image remove-all" [
     --base     # Remove only base images
     --final    # Remove only final OCX images
 ] {
-    docker_tools image remove-all --base=$base --final=$final
+    try {
+        docker_tools image remove-all --base=$base --final=$final
+    } catch { |err|
+        errors pretty-print $err
+    }
 }
 
 def print_help [] {
@@ -203,16 +276,20 @@ CUSTOM BASE IMAGES:
 def main [
     --version(-v)
 ] {
-    if $version {
-        let version_path = ($env.FILE_PWD | path join "VERSION")
-        if ($version_path | path exists) {
-            open $version_path | str trim
+    try {
+        if $version {
+            let version_path = ($env.FILE_PWD | path join "VERSION")
+            if ($version_path | path exists) {
+                open $version_path | str trim
+            } else {
+                # Fallback if running directly without proper install structure
+                # and not in source root
+                print "unknown (VERSION file not found)"
+            }
         } else {
-            # Fallback if running directly without proper install structure
-            # and not in source root
-            print "unknown (VERSION file not found)"
+            print_help
         }
-    } else {
-        print_help
+    } catch { |err|
+        errors pretty-print $err
     }
 }
