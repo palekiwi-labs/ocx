@@ -273,9 +273,13 @@ CUSTOM BASE IMAGES:
  "
 }
 
-def main [
-    --version(-v)
-] {
+# Override built-in help to show custom help for main script
+# This intercepts the --help flag before Nushell's auto-generated help
+def help [...rest] {
+    print_help
+}
+
+def main [--version(-v)] {
     try {
         if $version {
             let version_path = ($env.FILE_PWD | path join "VERSION")

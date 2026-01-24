@@ -1,13 +1,40 @@
 ---
-status: todo
+status: done
 branch: fix/ocx-help
 pr:
 ---
 
 # Fix `ocx --help`
 
-Currentl `ocx --help` returns output that may be confusing to the user.
+Currently `ocx --help` returns output that may be confusing to the user.
 It refers to `main.nu` when it is not how the app is accessed.
+
+## Solution Implemented
+
+Added a custom `help` command override that intercepts `--help` and `-h` flags before Nushell's auto-generated help handler processes them. This allows the existing custom help message (via `print_help()`) to be displayed consistently across all invocations.
+
+### Changes Made
+
+**File: `src/main.nu`**
+
+1. Added a `help` function override at the top of the file (after imports):
+   ```nushell
+   # Override built-in help to show custom help for main script
+   # This intercepts the --help flag before Nushell's auto-generated help
+   def help [...rest] {
+       print_help
+   }
+   ```
+
+2. Added documentation comment to the `--version` flag in the `main` function for consistency.
+
+### How It Works
+
+- When users run `ocx --help` or `ocx -h`, Nushell's help system calls the custom `help` function instead of showing auto-generated help
+- The custom `help` function calls `print_help()`, which displays the well-formatted custom help message
+- All help invocations now show consistent output: `ocx --help`, `ocx -h`, `ocx help`, and `ocx` (no args)
+
+### Original Problem
 
 ```
 󰲒 ocx --help
