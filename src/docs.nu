@@ -58,7 +58,8 @@ export def main [
     print $"Found ($mdx_files | length) .mdx files to download"
 
     for $file in $mdx_files {
-        let output_file = ([$output_path $file.name] | path join)
+        let filename = ($file.name | str replace ".mdx" ".md")
+        let output_file = ([$output_path $filename] | path join)
         print $"Fetching '($file.name)' -> '($output_file)'"
 
         try {
