@@ -141,11 +141,11 @@ def "main upgrade" [--check] {
 
 def "main version" [] {
     try {
-        let version_path = ($env.FILE_PWD | path join "VERSION")
+                let version_path = ($env.FILE_PWD | path join "VERSION.txt")
         if ($version_path | path exists) {
             open $version_path | str trim
         } else {
-            print "unknown (VERSION file not found)"
+                        print "unknown (VERSION.txt file not found)"
         }
     } catch { |err|
         errors pretty-print $err
@@ -297,13 +297,13 @@ def help [...rest] {
 def main [--version(-v)] {
     try {
         if $version {
-            let version_path = ($env.FILE_PWD | path join "VERSION")
+                    let version_path = ($env.FILE_PWD | path join "VERSION.txt")
             if ($version_path | path exists) {
                 open $version_path | str trim
             } else {
                 # Fallback if running directly without proper install structure
                 # and not in source root
-                print "unknown (VERSION file not found)"
+                            print "unknown (VERSION.txt file not found)"
             }
         } else {
             print_help

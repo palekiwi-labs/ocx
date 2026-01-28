@@ -55,12 +55,12 @@ nix run . -- --version
 
 ### 2. Update Version Files
 
-Update the version in `src/VERSION`:
+Update the version in `src/VERSION.txt`:
 
 ```bash
-echo "X.Y.Z" > src/VERSION
+echo "X.Y.Z" > src/VERSION.txt
 # Or for pre-release:
-echo "X.Y.Z-alpha.N" > src/VERSION
+echo "X.Y.Z-alpha.N" > src/VERSION.txt
 ```
 
 Verify the flake picks up the new version:
@@ -72,7 +72,7 @@ nix eval .#packages.x86_64-linux.default.version
 ### 3. Commit Version Bump
 
 ```bash
-git add src/VERSION
+git add src/VERSION.txt
 git commit -m "chore: bump version to vX.Y.Z"
 git push origin master
 ```
@@ -149,7 +149,7 @@ For urgent fixes to a released version:
 
 3. Update version:
    ```bash
-   echo "X.Y.Z+1" > src/VERSION
+   echo "X.Y.Z+1" > src/VERSION.txt
    git commit -am "chore: bump version to vX.Y.Z+1"
    ```
 
@@ -173,7 +173,7 @@ To verify the current state:
 
 ```bash
 # Check current version in source
-cat src/VERSION
+cat src/VERSION.txt
 
 # Check latest tag
 git describe --tags --abbrev=0
@@ -202,6 +202,6 @@ git push origin vX.Y.Z
 
 Yes, if you delete a tag, also delete the corresponding GitHub Release from the web UI.
 
-**Q: When should I bump the version in src/VERSION?**
+**Q: When should I bump the version in src/VERSION.txt?**
 
-Only when creating a new release. The VERSION file should match the latest tag, even if `master` is ahead.
+Only when creating a new release. The VERSION.txt file should match the latest tag, even if `master` is ahead.
