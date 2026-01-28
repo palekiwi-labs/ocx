@@ -15,7 +15,7 @@
         packages = {
           default = pkgs.stdenv.mkDerivation {
             pname = "ocx";
-            version = builtins.readFile ./src/VERSION;
+                        version = builtins.readFile ./src/VERSION.txt;
             
             src = ./.;
             
