@@ -9,6 +9,7 @@ use ports.nu
 use config [load, show, show-sources]
 use upgrade.nu
 use errors.nu
+use docs.nu
 
 def --wrapped "main opencode" [...args] {
     try {
@@ -48,6 +49,18 @@ def "main config" [
         } else {
             show --json=$json
         }
+    } catch { |err|
+        errors pretty-print $err
+    }
+}
+
+def "main docs" [
+    --dir: path,      # Output directory (base)
+    --version: string, # Optional version override
+    --force     # Overwrite existing files
+] {
+    try {
+        docs --dir=$dir --version=$version --force=($force | default false)
     } catch { |err|
         errors pretty-print $err
     }
@@ -199,6 +212,7 @@ USAGE:
         opencode Run OpenCode container (alias: o)
         build    Build Docker images
         config   Show configuration (use --sources to see origins)
+        docs     Fetch and save OpenCode documentation
         port     Show the port number that will be used for the container
         shell    Open shell in running container
         exec     Execute command in running container
@@ -219,6 +233,7 @@ EXAMPLES:
     ocx build --force        # Force rebuild images (includes base image)
     ocx build --no-cache     # Build images without cache
     ocx config               # Show current configuration
+    ocx docs --dir ./docs    # Fetch documentation to ./docs
     ocx port                 # Show effective port (from config or auto-generated)
     ocx shell                # Open bash shell in running container
     ocx exec ls -la          # Execute 'ls -la' in container
