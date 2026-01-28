@@ -8,10 +8,17 @@ ARG GID=1000
 
 USER root
 
-# Download and install OpenCode (x86_64 only)
-RUN curl -fsSL "https://github.com/anomalyco/opencode/releases/download/v${OPENCODE_VERSION}/opencode-linux-x64.tar.gz" \
-  | tar -xz -C /usr/local/bin/ && \
-  chmod +x /usr/local/bin/opencode
+# Download and install OpenCode (auto-detect arch)
+RUN set -eux; \
+    ARCH=$(uname -m); \
+    case "$ARCH" in \
+        x86_64) BIN_ARCH="x64" ;; \
+        aarch64) BIN_ARCH="arm64" ;; \
+        *) echo "Unsupported architecture: $ARCH"; exit 1 ;; \
+    esac; \
+    curl -fsSL "https://github.com/anomalyco/opencode/releases/download/v${OPENCODE_VERSION}/opencode-linux-${BIN_ARCH}.tar.gz" \
+    | tar -xz -C /usr/local/bin/; \
+    chmod +x /usr/local/bin/opencode;
 
 # Ensure /usr/local/bin is in PATH (defensive for custom base images)
 ENV PATH="/usr/local/bin:${PATH}"
