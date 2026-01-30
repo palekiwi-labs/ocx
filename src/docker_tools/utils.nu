@@ -5,9 +5,7 @@ export def image_exists [name: string] {
     (docker image inspect $name | complete).exit_code == 0
 }
 
-export def resolve-container-name [port: int] {
-    let cfg = (config load)
-
+export def resolve-container-name [cfg: record, port: int] {
     if $cfg.container_name != null {
         $"($cfg.container_name)-($port)"
     } else {
@@ -16,10 +14,9 @@ export def resolve-container-name [port: int] {
     }
 }
 
-export def get-current-container-name [] {
-    let cfg = (config load)
+export def get-current-container-name [cfg: record] {
     let port = if $cfg.port == null { ports generate } else { $cfg.port }
-    resolve-container-name $port
+    resolve-container-name $cfg $port
 }
 
 export def container-is-running [container_name: string] {
@@ -31,8 +28,7 @@ export def container-is-running [container_name: string] {
     not ($running | is-empty)
 }
 
-export def get-image-name-base [] {
-    let cfg = (config load)
+export def get-image-name-base [cfg: record] {
     let final_name = if ($cfg.custom_base_dockerfile != null) {
         let resolved = (resolve-dockerfile-path $cfg.custom_base_dockerfile)
         $resolved.name

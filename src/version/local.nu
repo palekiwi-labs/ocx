@@ -1,7 +1,7 @@
 use ../docker_tools/utils.nu get-image-name-base
 
-export def get-local-image-tags []: nothing -> list<string> {
-    let image_name = (get-image-name-base)
+export def get-local-image-tags [cfg: record]: nothing -> list<string> {
+    let image_name = (get-image-name-base $cfg)
     let result = docker images $image_name --format "{{.Tag}}" | complete
 
 
@@ -24,7 +24,7 @@ export def parse-semantic-versions [tags: list<string>]: nothing -> list<string>
     }
 }
 
-export def get-local-semantic-versions []: nothing -> list<string> {
-    let tags = (get-local-image-tags)
+export def get-local-semantic-versions [cfg: record]: nothing -> list<string> {
+    let tags = (get-local-image-tags $cfg)
     parse-semantic-versions $tags
 }
