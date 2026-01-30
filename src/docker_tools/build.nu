@@ -1,4 +1,4 @@
-use ./utils.nu [image_exists, resolve-dockerfile-path]
+use ./utils.nu [image_exists, resolve-dockerfile-path, get-image-name-base]
 use ../config
 use ../version
 
@@ -33,24 +33,20 @@ def build_ocx [--force, --no-cache] {
     
     let cfg = (config load)
     let version = (version resolve-version $cfg.opencode_version)
-    
-    # Determine base image and final image name
-    let base_and_name = if ($cfg.custom_base_dockerfile != null) {
+
+    let image_base = (get-image-name-base)
+
+    # Determine base image
+    let base_image = if ($cfg.custom_base_dockerfile != null) {
         let resolved = (resolve-dockerfile-path $cfg.custom_base_dockerfile)
-        {
-            base_image: $"localhost/ocx-base-($resolved.name):latest"
-            final_name: $resolved.name
-        }
+        $"localhost/ocx-base-($resolved.name):latest"
     } else {
-        {
-            base_image: "localhost/ocx-base:latest"
-            final_name: null
-        }
+        "localhost/ocx-base:latest"
     }
-    
+
     # Check if base exists, build if needed
-    if (not (image_exists $base_and_name.base_image)) {
-        print $"Base image (($base_and_name.base_image)) not found, building it first..."
+    if (not (image_exists $base_image)) {
+        print $"Base image (($base_image)) not found, building it first..."
 
         if ($cfg.custom_base_dockerfile != null) {
             build_custom_base --force=$force --no-cache=$no_cache
@@ -59,20 +55,11 @@ def build_ocx [--force, --no-cache] {
         }
         print "Base image ready, now building ocx..."
     }
-    
+
     # Determine final image name
-    let final_image = if ($base_and_name.final_name != null) {
-        $"localhost/ocx-($base_and_name.final_name):($version)"
-    } else {
-        $"localhost/ocx:($version)"
-    }
-    
-    let final_latest = if ($base_and_name.final_name != null) {
-        $"localhost/ocx-($base_and_name.final_name):latest"
-    } else {
-        "localhost/ocx:latest"
-    }
-    
+    let final_image = $"($image_base):($version)"
+    let final_latest = $"($image_base):latest"
+
     let user_settings = (config resolve-user $cfg)
     
     print $"Building OCX image: ($final_image)"
@@ -82,7 +69,7 @@ def build_ocx [--force, --no-cache] {
         [
             "docker" "build"
             "-f" $dockerfile
-            "--build-arg" $"BASE_IMAGE=($base_and_name.base_image)"
+            "--build-arg" $"BASE_IMAGE=($base_image)"
             "--build-arg" $"OPENCODE_VERSION=($version)"
             "--build-arg" $"USERNAME=($user_settings.username)"
             "--build-arg" $"UID=($user_settings.uid)"
