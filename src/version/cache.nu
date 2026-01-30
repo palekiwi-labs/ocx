@@ -18,7 +18,7 @@ export def read-cache [] {
         
         let now = (date now | into int)
         let fetched = ($cache.fetched_at | into int)
-        let age_seconds = ($now - $fetched)
+        let age_seconds = ($now - $fetched) / 1000000000
         let age_hours = ($age_seconds / 3600)
         
         if $age_hours >= $CACHE_TTL_HOURS {
