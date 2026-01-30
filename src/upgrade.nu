@@ -16,7 +16,7 @@ export def main [--check] {
     let latest = (version normalize-version $latest_info.version)
     
     if $cfg.opencode_version == "latest" {
-        handle-latest-config $latest $latest_info $check
+        handle-latest-config $latest $latest_info $check $cfg
     } else {
         handle-explicit-config $cfg.opencode_version $latest $latest_info $check
     }
@@ -68,9 +68,10 @@ def handle-explicit-config [
 def handle-latest-config [
     latest: string,
     latest_info: record,
-    check: bool
+    check: bool,
+    cfg: record
 ] {
-    let local_versions = (version get-local-semantic-versions)
+    let local_versions = (version get-local-semantic-versions $cfg)
     
     if ($local_versions | is-empty) {
         print "No OpenCode images found (or version tags missing)."

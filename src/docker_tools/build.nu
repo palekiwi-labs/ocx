@@ -8,7 +8,7 @@ export def main [
     --no-cache
 ] {
     let cfg = (config load)
-    
+
     if $base {
         # Building base layer
         if ($cfg.custom_base_dockerfile != null) {
@@ -30,8 +30,8 @@ def build_ocx [cfg: record, --force, --no-cache] {
     # Dockerfiles are in the same directory as main.nu
     let context = $env.FILE_PWD
     let dockerfile = ($context | path join "Dockerfile.opencode")
-    
-    let version = (version resolve-version $cfg.opencode_version)
+
+    let version = (version resolve-version $cfg.opencode_version $cfg)
 
     let image_base = (get-image-name-base $cfg)
 
@@ -60,7 +60,7 @@ def build_ocx [cfg: record, --force, --no-cache] {
     let final_latest = $"($image_base):latest"
 
     let user_settings = (config resolve-user $cfg)
-    
+
     print $"Building OCX image: ($final_image)"
     print $"  Container user: ($user_settings.username) \(UID: ($user_settings.uid), GID: ($user_settings.gid)\)"
 
@@ -75,7 +75,7 @@ def build_ocx [cfg: record, --force, --no-cache] {
             "--build-arg" $"GID=($user_settings.gid)"
             "-t" $final_image
             "-t" $final_latest
-        ] 
+        ]
         | append (if $no_cache { ["--no-cache"] } else { [] })
         | append [$context]
     )
@@ -85,21 +85,21 @@ def build_ocx [cfg: record, --force, --no-cache] {
 
 def build_custom_base [cfg: record, --force, --no-cache] {
     let user_settings = (config resolve-user $cfg)
-    
+
     # Resolve Dockerfile path and derive name
     let resolved = (resolve-dockerfile-path $cfg.custom_base_dockerfile)
-    
+
     let base_image_name = $"localhost/ocx-base-($resolved.name):latest"
-    
+
     if (not $force) and (image_exists $base_image_name) {
         print $"Custom base image ($base_image_name) already exists, skipping build \(use --force to rebuild\)"
         return
     }
-    
+
     print $"Building custom base '($resolved.name)' from ($resolved.location) config"
     print $"  Dockerfile: ($resolved.path)"
     print $"  Context: ($resolved.context)"
-    
+
     let cmd = (
         [
             "docker" "build"
@@ -112,7 +112,7 @@ def build_custom_base [cfg: record, --force, --no-cache] {
         | append (if $no_cache { ["--no-cache"] } else { [] })
         | append [$resolved.context]
     )
-    
+
     run-external ...$cmd
 }
 
