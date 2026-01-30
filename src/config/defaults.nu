@@ -2,6 +2,7 @@ export const DEFAULTS = {
     # Container Identity & Version
     opencode_version: "latest"  # "latest" or specific version like "1.1.23"
     container_name: null  # auto-generate if null
+    version_cache_ttl_hours: 24  # hours to cache version check results
     
     # Resource Limits
     memory: "1024m"
