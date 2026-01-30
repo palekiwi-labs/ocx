@@ -2,7 +2,8 @@ use ./utils.nu [get-current-container-name, container-is-running]
 use ../config
 
 export def --wrapped main [...args] {
-    let container_name = (get-current-container-name)
+    let cfg = (config load)
+    let container_name = (get-current-container-name $cfg)
     
     if not (container-is-running $container_name) {
         error make {
@@ -11,7 +12,6 @@ export def --wrapped main [...args] {
         }
     }
     
-    let cfg = (config load)
     let user_settings = (config resolve-user $cfg)
     let user = $user_settings.username
 

@@ -1,6 +1,8 @@
 use ./utils.nu [get-current-container-name]
+use ../config
 
 export def main [--all] {
+    let cfg = (config load)
     if $all {
         # Stat all ocx containers
         # Using grep to filter for names starting with ocx- is a bit fragile but docker stats doesn't support regex filters nicely for names
@@ -17,7 +19,7 @@ export def main [--all] {
         
         docker stats ...$containers
     } else {
-        let name = (get-current-container-name)
+        let name = (get-current-container-name $cfg)
         docker stats $name
     }
 }

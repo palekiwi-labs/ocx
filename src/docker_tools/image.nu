@@ -62,6 +62,7 @@ export def prune [
     --base     # Prune only base images
     --final    # Prune only final OCX images
 ] {
+    let cfg = (config load)
     let images = (list-ocx-images)
     
     let filtered = if $base {
@@ -77,7 +78,7 @@ export def prune [
         return
     }
     
-    let current_version = (get-current-version)
+    let current_version = (get-current-version $cfg)
     
     # Determine which images to keep
     let to_keep = $filtered | where { |img|
@@ -193,7 +194,6 @@ def filter-final-images [] {
 }
 
 # Helper: Get current/latest version from config or version cache
-def get-current-version [] {
-    let cfg = (config load)
-    version resolve-version $cfg.opencode_version
+def get-current-version [cfg: record] {
+    version resolve-version $cfg.opencode_version $cfg
 }

@@ -3,7 +3,7 @@
 use ./config
 
 # Get workspace configuration from OCX_WORKSPACE environment variable
-export def get-workspace [] {
+export def get-workspace [cfg?: record] {
     # Check if OCX_WORKSPACE is set
     let workspace_env = $env.OCX_WORKSPACE? | default ""
     
@@ -29,7 +29,7 @@ export def get-workspace [] {
     }
     
     # Get username for path calculation
-    let cfg = (config load)
+    let cfg = if $cfg == null { (config load) } else { $cfg }
     let user_settings = (config resolve-user $cfg)
     
     # Compute container path

@@ -2,11 +2,15 @@ use ./cache.nu [read-cache, write-cache]
 use ./github.nu [fetch-latest-release]
 use ../config
 
-export def resolve-version [version: string] {
+export def resolve-version [version: string, cfg?: record] {
     let normalized = (normalize-version $version)
     
     if $normalized == "latest" {
-        get-latest-version
+        if $cfg == null {
+            get-latest-version
+        } else {
+            get-latest-version $cfg
+        }
     } else {
         if not (validate-semver $normalized) {
             error make {
@@ -20,8 +24,8 @@ export def resolve-version [version: string] {
     }
 }
 
-export def get-latest-version [] {
-    let cfg = (config load)
+export def get-latest-version [cfg?: record] {
+    let cfg = if $cfg == null { (config load) } else { $cfg }
     let cached = (read-cache $cfg.version_cache_ttl_hours)
     
     if $cached != null {

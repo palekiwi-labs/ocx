@@ -20,7 +20,7 @@ export def main [
         $cfg.opencode_version
     }
 
-    let resolved_version = (version resolve-version $version_to_fetch)
+    let resolved_version = (version resolve-version $version_to_fetch $cfg)
 
     # 2. Construct Path
     let output_path = ([$dir "opencode" $resolved_version] | path join)

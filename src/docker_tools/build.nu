@@ -12,29 +12,28 @@ export def main [
     if $base {
         # Building base layer
         if ($cfg.custom_base_dockerfile != null) {
-            build_custom_base --force=$force --no-cache=$no_cache
+            build_custom_base $cfg --force=$force --no-cache=$no_cache
         } else {
             build_ocx_base --force=$force --no-cache=$no_cache
         }
         # Then build OCX layer
         print "Base build complete, now building OCX..."
-        build_ocx --force=$force --no-cache=$no_cache
+        build_ocx $cfg --force=$force --no-cache=$no_cache
     } else {
         # Building OCX layer only
-        build_ocx --force=$force --no-cache=$no_cache
+        build_ocx $cfg --force=$force --no-cache=$no_cache
     }
 }
 
-def build_ocx [--force, --no-cache] {
+def build_ocx [cfg: record, --force, --no-cache] {
     # FILE_PWD points to the calling script's directory (main.nu in src/)
     # Dockerfiles are in the same directory as main.nu
     let context = $env.FILE_PWD
     let dockerfile = ($context | path join "Dockerfile.opencode")
     
-    let cfg = (config load)
     let version = (version resolve-version $cfg.opencode_version)
 
-    let image_base = (get-image-name-base)
+    let image_base = (get-image-name-base $cfg)
 
     # Determine base image
     let base_image = if ($cfg.custom_base_dockerfile != null) {
@@ -49,7 +48,7 @@ def build_ocx [--force, --no-cache] {
         print $"Base image (($base_image)) not found, building it first..."
 
         if ($cfg.custom_base_dockerfile != null) {
-            build_custom_base --force=$force --no-cache=$no_cache
+            build_custom_base $cfg --force=$force --no-cache=$no_cache
         } else {
             build_ocx_base --force=$force --no-cache=$no_cache
         }
@@ -84,8 +83,7 @@ def build_ocx [--force, --no-cache] {
     run-external ...$cmd
 }
 
-def build_custom_base [--force, --no-cache] {
-    let cfg = (config load)
+def build_custom_base [cfg: record, --force, --no-cache] {
     let user_settings = (config resolve-user $cfg)
     
     # Resolve Dockerfile path and derive name

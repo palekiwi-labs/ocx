@@ -9,9 +9,9 @@ use ../volume_name.nu
 
 export def main [...args] {
     let cfg = (config load)
-    let ws = workspace get-workspace
+    let ws = workspace get-workspace $cfg
     
-    let version = (version resolve-version $cfg.opencode_version)
+    let version = (version resolve-version $cfg.opencode_version $cfg)
     
     # Determine image name based on config
     let image_name = if ($cfg.custom_base_dockerfile != null) {
@@ -22,7 +22,7 @@ export def main [...args] {
     }
     
     let port = if $cfg.port == null { ports generate } else { $cfg.port }
-    let container_name = resolve-container-name $port
+    let container_name = resolve-container-name $cfg $port
     let timezone = if $cfg.timezone == null { "UTC" } else { $cfg.timezone }
     
     let user_settings = (config resolve-user $cfg)
