@@ -79,6 +79,14 @@ export def validate [config: record] {
             }
         }
     }
+    
+    # Validate version_cache_ttl_hours
+    if $config.version_cache_ttl_hours <= 0 {
+        error make {
+            msg: $"Invalid version_cache_ttl_hours value: ($config.version_cache_ttl_hours)"
+            help: "version_cache_ttl_hours must be greater than 0"
+        }
+    }
 }
 
 export def validate-memory [value: string] {

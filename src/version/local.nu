@@ -1,5 +1,9 @@
+use ../docker_tools/utils.nu get-image-name-base
+
 export def get-local-image-tags []: nothing -> list<string> {
-    let result = docker images localhost/ocx --format "{{.Tag}}" | complete
+    let image_name = (get-image-name-base)
+    let result = docker images $image_name --format "{{.Tag}}" | complete
+
 
     if $result.exit_code != 0 {
         return []

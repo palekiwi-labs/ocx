@@ -70,6 +70,9 @@ export def get-env-overrides [] {
     if ($env.OCX_DATA_VOLUMES_NAME? | default null) != null {
         $overrides = ($overrides | append {key: "data_volumes_name", env_var: "OCX_DATA_VOLUMES_NAME"})
     }
+    if ($env.OCX_VERSION_CACHE_TTL_HOURS? | default null) != null {
+        $overrides = ($overrides | append {key: "version_cache_ttl_hours", env_var: "OCX_VERSION_CACHE_TTL_HOURS"})
+    }
     
     $overrides
 }
@@ -217,6 +220,12 @@ export def apply-env-overrides [config: record] {
     let data_volumes_name_env = $env.OCX_DATA_VOLUMES_NAME? | default null
     if $data_volumes_name_env != null {
         $result = ($result | upsert data_volumes_name $data_volumes_name_env)
+    }
+    
+    # OCX_VERSION_CACHE_TTL_HOURS
+    let version_cache_ttl_hours_env = $env.OCX_VERSION_CACHE_TTL_HOURS? | default null
+    if $version_cache_ttl_hours_env != null {
+        $result = ($result | upsert version_cache_ttl_hours ($version_cache_ttl_hours_env | into int))
     }
     
     $result

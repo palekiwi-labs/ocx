@@ -265,6 +265,7 @@ ENVIRONMENT VARIABLES:
     OCX_PIDS_LIMIT               Process limit (default: 100)
     OCX_PORT                     Override port number
     OCX_PUBLISH_PORT             Enable/disable port publishing (true/false)
+    OCX_VERSION_CACHE_TTL_HOURS  Version check cache TTL in hours (default: 24)
     OCX_WORKSPACE                Workspace directory path (default: current directory)
 
     See documentation for full list of configuration options.

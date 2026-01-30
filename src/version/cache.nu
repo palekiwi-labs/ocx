@@ -1,8 +1,7 @@
 const CACHE_DIR = "~/.cache/ocx"
 const CACHE_FILE = $"($CACHE_DIR)/version-cache.json"
-const CACHE_TTL_HOURS = 24
 
-export def read-cache [] {
+export def read-cache [ttl_hours: int] {
     let cache_path = ($CACHE_FILE | path expand)
     
     if not ($cache_path | path exists) {
@@ -18,10 +17,10 @@ export def read-cache [] {
         
         let now = (date now | into int)
         let fetched = ($cache.fetched_at | into int)
-        let age_seconds = ($now - $fetched)
+        let age_seconds = ($now - $fetched) / 1000000000
         let age_hours = ($age_seconds / 3600)
         
-        if $age_hours >= $CACHE_TTL_HOURS {
+        if $age_hours >= $ttl_hours {
             return null
         }
         
@@ -34,11 +33,11 @@ export def read-cache [] {
 export def write-cache [version: string] {
     let cache_path = ($CACHE_FILE | path expand)
     let cache_dir = ($cache_path | path dirname)
-    
+
     mkdir $cache_dir
-    
+
     let now = (date now | into int)
-    
+
     {
         version: $version,
         fetched_at: $now
@@ -47,7 +46,7 @@ export def write-cache [version: string] {
 
 export def clear-cache [] {
     let cache_path = ($CACHE_FILE | path expand)
-    
+
     if ($cache_path | path exists) {
         rm $cache_path
     }

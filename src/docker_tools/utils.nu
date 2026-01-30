@@ -7,7 +7,7 @@ export def image_exists [name: string] {
 
 export def resolve-container-name [port: int] {
     let cfg = (config load)
-    
+
     if $cfg.container_name != null {
         $"($cfg.container_name)-($port)"
     } else {
@@ -23,12 +23,28 @@ export def get-current-container-name [] {
 }
 
 export def container-is-running [container_name: string] {
-    let running = (docker ps --filter $"name=^($container_name)$" --format "{{.Names}}" 
-                   | complete 
-                   | get stdout 
+    let running = (docker ps --filter $"name=^($container_name)$" --format "{{.Names}}"
+                   | complete
+                   | get stdout
                    | str trim)
-    
+
     not ($running | is-empty)
+}
+
+export def get-image-name-base [] {
+    let cfg = (config load)
+    let final_name = if ($cfg.custom_base_dockerfile != null) {
+        let resolved = (resolve-dockerfile-path $cfg.custom_base_dockerfile)
+        $resolved.name
+    } else {
+        null
+    }
+
+    if ($final_name != null) {
+        $"localhost/ocx-($final_name)"
+    } else {
+        "localhost/ocx"
+    }
 }
 
 export def resolve-dockerfile-path [dockerfile_path: string] {
@@ -37,11 +53,11 @@ export def resolve-dockerfile-path [dockerfile_path: string] {
     if ($project_path | path exists) {
         let dir = ($project_path | path dirname)
         let project_name = ($env.PWD | path basename)
-        
+
         # Determine subdirectory component for naming
         let cwd = $env.PWD
         let relative = ($dir | str replace $cwd "" | str trim -c '/')
-        
+
         # Build name: project-subdirectory or just project if at root
         let name = if ($relative | is-empty) {
             $project_name
@@ -49,7 +65,7 @@ export def resolve-dockerfile-path [dockerfile_path: string] {
             let subdir = ($relative | str replace -a '/' '-')
             $"($project_name)-($subdir)"
         }
-        
+
         return {
             path: $project_path
             context: $dir
@@ -57,22 +73,22 @@ export def resolve-dockerfile-path [dockerfile_path: string] {
             location: "project"
         }
     }
-    
+
     # Check global config
     let global_base = ("~/.config/ocx" | path expand)
     let global_path = ($global_base | path join $dockerfile_path)
-    
+
     if ($global_path | path exists) {
         let dir = ($global_path | path dirname)
-        
+
         # Extract relative path from global_base to dir
         # e.g., ~/.config/ocx/rails/production/v7 -> rails/production/v7
         let relative = ($dir | str replace $global_base "" | str trim -c '/')
-        
+
         # Convert path separators to dashes
         # e.g., rails/production/v7 -> rails-production-v7
         let name = ($relative | str replace -a '/' '-')
-        
+
         return {
             path: $global_path
             context: $dir
@@ -80,11 +96,11 @@ export def resolve-dockerfile-path [dockerfile_path: string] {
             location: "global"
         }
     }
-    
+
     # Not found - fail with clear error
     let project_checked = ($dockerfile_path | path expand)
     let global_checked = ($global_base | path join $dockerfile_path)
-    
+
     error make {
         msg: $"Custom base Dockerfile not found: ($dockerfile_path)"
         label: {

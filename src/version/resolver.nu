@@ -1,5 +1,6 @@
 use ./cache.nu [read-cache, write-cache]
 use ./github.nu [fetch-latest-release]
+use ../config
 
 export def resolve-version [version: string] {
     let normalized = (normalize-version $version)
@@ -20,7 +21,8 @@ export def resolve-version [version: string] {
 }
 
 export def get-latest-version [] {
-    let cached = (read-cache)
+    let cfg = (config load)
+    let cached = (read-cache $cfg.version_cache_ttl_hours)
     
     if $cached != null {
         return $cached.version
