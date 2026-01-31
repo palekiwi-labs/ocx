@@ -42,7 +42,7 @@ export def main [
         $"($dir)/($repo_name)"
     }
 
-    let files = fetch_docs_contents $github_api_base $version
+    let files = list_remote_docs $github_api_base $version
 
     fetch_files $output_path $version $files --force=$force
 
@@ -51,11 +51,17 @@ export def main [
     }
 }
 
-def fetch_docs_contents [api_base: string, version: string] {
+def list_remote_docs [api_base: string, version: string] {
     print $"Fetching file list from GitHub API for version ($version)..."
 
+    let ref = if ($version | str starts-with "v") {
+        $version
+    } else {
+        $"v($version)"
+    }
+
     try {
-        http get $"($api_base)?ref=v($version)"
+        http get $"($api_base)?ref=($ref)"
     } catch { |err|
         error make {
             msg: $"Cannot find documentation for version ($version)"
@@ -72,18 +78,26 @@ def fetch_files [
     let output_path = $"($output_path)/($version)"
     validate_output_path $output_path --force=$force
 
-    print $"Fetching ($files | length) files..."
+    let file_list = $files | where type == "file"
+    print $"Fetching ($file_list | length) files..."
 
-    for $file in $files {
+    let failures = ($file_list | par-each { |file|
         let filename = ($file.name | str replace ".mdx" ".md")
         let output_file = ([$output_path $filename] | path join)
-        print $"Fetching '($file.name)' -> '($output_file)'"
 
         try {
             let content = http get $file.download_url
             $content | save $output_file
+            null
         } catch {
-            print $"✗ Failed to fetch '($file.download_url)'"
+            {file: $file.name, url: $file.download_url}
+        }
+    } | compact)
+
+    if ($failures | length) > 0 {
+        print $"✗ Failed to fetch ($failures | length) files:"
+        for $fail in $failures {
+            print $"  - ($fail.file)"
         }
     }
 
@@ -126,19 +140,18 @@ def generate_skill [
     let skill_file = $"($output_path)/SKILL.md"
     print $"Generating skill file at '($skill_file)'..."
 
-    # Collect markdown file names for links
-    let md_files = ($files | each { |file|
+    let file_list = ($files | where type == "file" | where name != "SKILL.md")
+    let md_files = ($file_list | each { |file|
         ($file.name | str replace ".mdx" ".md")
     })
 
-    # Generate skill content
-    let skill_content = (generate-skill-content $name $repo_url $version $md_files)
+    let skill_content = (generate_skill_content $name $repo_url $version $md_files)
     $skill_content | save -f $skill_file
 
     print $"✓ Skill generated successfully at '($skill_file)'"
 }
 
-def generate-skill-content [
+def generate_skill_content [
     skill_name: string
     repo_url: string
     version: string
@@ -152,7 +165,7 @@ name: ($base_name)-documentation
 description: ($description)
 ---
 
-## Documentation pages for latest version:
+## Documentation pages for version ($version):
 
 ($files | each { |name|
     $"[($name)]\(./($version)/($name)\)"
