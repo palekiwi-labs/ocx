@@ -62,7 +62,15 @@ export def validate-semver [version: string]: nothing -> bool {
         return true
     }
     
-    let parts = ($version | split row ".")
+    # Remove build metadata (+...)
+    let version_core = ($version | split row "+" | first)
+    
+    # Split pre-release from version (-)
+    let base_and_pre = ($version_core | split row "-")
+    let base_version = ($base_and_pre | first)
+    
+    # Validate base version (MAJOR.MINOR.PATCH)
+    let parts = ($base_version | split row ".")
     
     if ($parts | length) != 3 {
         return false
@@ -73,7 +81,11 @@ export def validate-semver [version: string]: nothing -> bool {
             return false
         }
         
-        if ($part | into int) == null {
+        # Check if part is numeric
+        try {
+            $part | into int
+            null
+        } catch {
             return false
         }
     }

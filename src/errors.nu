@@ -31,6 +31,11 @@
 #   - Parsed JSON has: msg, help, labels, code, url, inner (all always present)
 #   - help field may be null if not provided in error make
 export def pretty-print [error: record] {
+    if "OCX_DEBUG" in $env and ($env.OCX_DEBUG == "1") {
+        print $error.rendered
+        exit 1
+    }
+
     let error_data = $error.json | from json
 
     let msg = $error_data.msg
