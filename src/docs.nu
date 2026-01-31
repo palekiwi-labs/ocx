@@ -5,11 +5,17 @@ use config
 use version
 use errors.nu
 
-const OPENCODE_GITHUB_API_BASE = "https://api.github.com/repos/anomalyco/opencode/contents/packages/web/src/content/docs"
-const OPENCODE_REPO_URL = "https://github.com/anomalyco/opencode"
+# OpenCode Docs Config
+const OPENCODE_OWNER = "anomalyco"
+const OPENCODE_REPO = "opencode"
+const OPENCODE_DOCS_PATH = "packages/web/src/content/docs"
+const OPENCODE_REPO_URL = $"https://github.com/($OPENCODE_OWNER)/($OPENCODE_REPO)"
 
-const OCX_GITHUB_API_BASE = "https://api.github.com/repos/palekiwi-labs/ocx/contents/docs"
-const OCX_REPO_URL = "https://github.com/palekiwi-labs/ocx"
+# OCX Docs Config
+const OCX_OWNER = "palekiwi-labs"
+const OCX_REPO = "ocx"
+const OCX_DOCS_PATH = "docs"
+const OCX_REPO_URL = $"https://github.com/($OCX_OWNER)/($OCX_REPO)"
 
 export def main [
     --dir: string,      # Output directory (base)
@@ -30,7 +36,9 @@ export def main [
     let cfg = config load
     let version = resolve_version $cfg $version --ocx=$ocx
 
-    let github_api_base = if $ocx { $OCX_GITHUB_API_BASE } else { $OPENCODE_GITHUB_API_BASE }
+    let owner = if $ocx { $OCX_OWNER } else { $OPENCODE_OWNER }
+    let repo = if $ocx { $OCX_REPO } else { $OPENCODE_REPO }
+    let docs_path = if $ocx { $OCX_DOCS_PATH } else { $OPENCODE_DOCS_PATH }
     let repo_url = if $ocx { $OCX_REPO_URL } else { $OPENCODE_REPO_URL }
     let repo_name = if $ocx { "ocx" } else { "opencode" }
 
@@ -42,7 +50,7 @@ export def main [
         $"($dir)/($repo_name)"
     }
 
-    let files = list_remote_docs $github_api_base $version
+    let files = list_remote_docs $owner $repo $docs_path $version
 
     fetch_files $output_path $version $files --force=$force
 
@@ -51,20 +59,36 @@ export def main [
     }
 }
 
-def list_remote_docs [api_base: string, version: string] {
+def list_remote_docs [owner: string, repo: string, docs_path: string, version: string] {
     print $"Fetching file list from GitHub API for version ($version)..."
-
     let ref = if ($version | str starts-with "v") {
         $version
-    } else {
+    } else if (version validate-semver $version) {
         $"v($version)"
+    } else {
+        $version # Branch or SHA
     }
 
+    let tree_url = $"https://api.github.com/repos/($owner)/($repo)/git/trees/($ref)?recursive=1"
+
     try {
-        http get $"($api_base)?ref=($ref)"
+        let response = http get $tree_url
+
+        let files = ($response.tree
+            | where type == "blob"
+            | where path starts-with $docs_path
+            | each { |file|
+                let relative_path = ($file.path | str substring (($docs_path | str length) + 1)..)
+                {
+                    path: $relative_path,
+                    download_url: $"https://raw.githubusercontent.com/($owner)/($repo)/($ref)/($file.path)"
+                }
+            })
+
+        $files
     } catch { |err|
         error make {
-            msg: $"Cannot find documentation for version ($version)"
+            msg: $"Cannot find documentation tree for version ($version) at ($tree_url)"
         }
     }
 }
@@ -78,19 +102,21 @@ def fetch_files [
     let output_path = $"($output_path)/($version)"
     validate_output_path $output_path --force=$force
 
-    let file_list = $files | where type == "file"
-    print $"Fetching ($file_list | length) files..."
+    print $"Fetching ($files | length) files..."
 
-    let failures = ($file_list | par-each { |file|
-        let filename = ($file.name | str replace ".mdx" ".md")
-        let output_file = ([$output_path $filename] | path join)
+    let failures = ($files | par-each { |file|
+        let output_file = ([$output_path $file.path] | path join)
+        let output_dir = ($output_file | path dirname)
 
         try {
+            # Ensure the parent directory exists
+            mkdir $output_dir
+
             let content = http get $file.download_url
             $content | save $output_file
             null
         } catch {
-            {file: $file.name, url: $file.download_url}
+            {file: $file.path, url: $file.download_url}
         }
     } | compact)
 
@@ -140,9 +166,8 @@ def generate_skill [
     let skill_file = $"($output_path)/SKILL.md"
     print $"Generating skill file at '($skill_file)'..."
 
-    let file_list = ($files | where type == "file" | where name != "SKILL.md")
-    let md_files = ($file_list | each { |file|
-        ($file.name | str replace ".mdx" ".md")
+    let md_files = ($files | each { |file|
+        ($file.path | str replace ".mdx" ".md")
     })
 
     let skill_content = (generate_skill_content $name $repo_url $version $md_files)
