@@ -75,8 +75,8 @@ def list_remote_docs [owner: string, repo: string, docs_path: string, version: s
         let response = http get $tree_url
 
         let files = ($response.tree
-            | where type == "blob"
             | where path starts-with $docs_path
+            | where type == "blob"
             | each { |file|
                 let relative_path = ($file.path | str substring (($docs_path | str length) + 1)..)
                 {
