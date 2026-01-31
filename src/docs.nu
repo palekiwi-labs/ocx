@@ -32,25 +32,24 @@ export def main [
 
     let github_api_base = if $ocx { $OCX_GITHUB_API_BASE } else { $OPENCODE_GITHUB_API_BASE }
     let repo_url = if $ocx { $OCX_REPO_URL } else { $OPENCODE_REPO_URL }
-    let name = if $ocx { "ocx" } else { "opencode" }
+    let repo_name = if $ocx { "ocx" } else { "opencode" }
 
     let output_path = if $skill {
         let opencode_config_dir = ($cfg.opencode_config_dir | path expand)
         let base_path = if $project { "./opencode" } else { $opencode_config_dir }
-        $"($base_path)/skills/($name)-documentation"
+        $"($base_path)/skills/($repo_name)-documentation"
     } else {
-        $"($dir)/($name)"
+        $"($dir)/($repo_name)"
     }
 
     let files = fetch_docs_contents $github_api_base $version
 
-    fetch_files $"($output_path)/($version)" $files --force=$force
+    fetch_files $output_path $version $files --force=$force
 
     if $skill {
-        generate_skill $name $output_path $files $version $repo_url
+        generate_skill $repo_name $output_path $files $version $repo_url
     }
 }
-
 
 def fetch_docs_contents [api_base: string, version: string] {
     print $"Fetching file list from GitHub API for version ($version)..."
@@ -64,7 +63,13 @@ def fetch_docs_contents [api_base: string, version: string] {
     }
 }
 
-def fetch_files [output_path: string, files: list<record>, --force] {
+def fetch_files [
+    output_path: string
+    version:string
+    files: list<record>
+    --force
+] {
+    let output_path = $"($output_path)/($version)"
     validate_output_path $output_path --force=$force
 
     print $"Fetching ($files | length) files..."
