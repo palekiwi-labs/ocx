@@ -5,9 +5,11 @@ use config
 use version
 use errors.nu
 
-const GITHUB_API_BASE = "https://api.github.com/repos/anomalyco/opencode/contents/packages/web/src/content/docs"
+const OPENCODE_GITHUB_API_BASE = "https://api.github.com/repos/anomalyco/opencode/contents/packages/web/src/content/docs"
 const OPENCODE_REPO_URL = "https://github.com/anomalyco/opencode"
-const SKILL_NAME = "opencode-documentation"
+
+const OCX_GITHUB_API_BASE = "https://api.github.com/repos/palekiwi-labs/ocx/contents/docs"
+const OCX_REPO_URL = "https://github.com/palekiwi-labs/ocx"
 
 export def main [
     --dir: string,      # Output directory (base)
@@ -16,6 +18,7 @@ export def main [
     --skill,           # Create agent skill instead of regular docs
     --global,          # Create skill in global config (~/.config/opencode)
     --project,         # Create skill in project config (./.opencode)
+    --ocx,             # Download OCX documentation instead of OpenCode
 ] {
     # 1. Load Config
     let cfg = (config load)
@@ -35,28 +38,45 @@ export def main [
     # 3. Resolve Version
     let version_to_fetch = if $version != null {
         $version
+    } else if $ocx {
+        # For OCX docs, default to current version from VERSION.txt
+        let version_path = ($env.FILE_PWD | path join "VERSION.txt")
+        open $version_path | str trim
     } else {
         $cfg.opencode_version
     }
 
-    let resolved_version = (version resolve-version $version_to_fetch $cfg)
+    let resolved_version = if $ocx {
+        # For OCX, just use the version directly (no need to resolve via GitHub releases for OCX)
+        $version_to_fetch
+    } else {
+        # For OpenCode, resolve version through the resolver
+        (version resolve-version $version_to_fetch $cfg)
+    }
 
-    # 4. Construct Paths based on mode
+    # 4. Configure based on --ocx flag
+    let github_api_base = if $ocx { $OCX_GITHUB_API_BASE } else { $OPENCODE_GITHUB_API_BASE }
+    let repo_url = if $ocx { $OCX_REPO_URL } else { $OPENCODE_REPO_URL }
+    let skill_name = if $ocx { "ocx" } else { "opencode" }
+    let doc_dir = if $ocx { "ocx" } else { "opencode" }
+    let file_ext = if $ocx { ".md" } else { ".mdx" }
+
+    # 5. Construct Paths based on mode
     let output_path = if $skill {
         if $use_global {
-            [$opencode_config_dir "skills" $SKILL_NAME $resolved_version] | path join
+            [$opencode_config_dir "skills" $skill_name $resolved_version] | path join
         } else {
-            ["./.opencode/skills" $SKILL_NAME $resolved_version] | path join
+            ["./.opencode/skills" $skill_name $resolved_version] | path join
         }
     } else {
-        [$dir "opencode" $resolved_version] | path join
+        [$dir $doc_dir $resolved_version] | path join
     }
 
     let skill_root = if $skill {
         if $use_global {
-            [$opencode_config_dir "skills" $SKILL_NAME] | path join
+            [$opencode_config_dir "skills" $skill_name] | path join
         } else {
-            ["./.opencode/skills" $SKILL_NAME] | path join
+            ["./.opencode/skills" $skill_name] | path join
         }
     } else {
         null
@@ -79,7 +99,7 @@ export def main [
     mkdir $output_path
 
     # 6. Fetch & Download Loop
-    let api_url = $"($GITHUB_API_BASE)?ref=v($resolved_version)"
+    let api_url = $"($github_api_base)?ref=v($resolved_version)"
     print $"Fetching file list from GitHub API for version ($resolved_version)..."
 
     let dir_contents = try {
@@ -89,11 +109,11 @@ export def main [
         return
     }
 
-    let mdx_files = ($dir_contents | where type == "file" and name =~ '\.mdx$')
+    let files = ($dir_contents | where type == "file" and ($it.name | str ends-with $file_ext))
 
-    print $"Found ($mdx_files | length) .mdx files to download"
+    print $"Found ($files | length) ($file_ext) files to download"
 
-    for $file in $mdx_files {
+    for $file in $files {
         let filename = ($file.name | str replace ".mdx" ".md")
         let output_file = ([$output_path $filename] | path join)
         print $"Fetching '($file.name)' -> '($output_file)'"
@@ -114,22 +134,30 @@ export def main [
         print $"Generating skill file at '($skill_file)'..."
 
         # Collect markdown file names for links
-        let md_files = ($mdx_files | each { |file|
+        let md_files = ($files | each { |file|
             ($file.name | str replace ".mdx" ".md")
         })
 
         # Generate skill content
-        let skill_content = (generate-skill-content $resolved_version $md_files)
+        let skill_content = (generate-skill-content $skill_name $repo_url $resolved_version $md_files)
         $skill_content | save -f $skill_file
 
         print $"✓ Skill generated successfully at '($skill_file)'"
     }
 }
 
-def generate-skill-content [version: string, files: list<string>] {
+def generate-skill-content [
+    skill_name: string
+    repo_url: string
+    version: string
+    files: list<string>
+] {
+    let base_name = ($skill_name | str replace "-documentation" "")
+    let description = $"provides documentation pages to help answer user questions about ($base_name)"
+
     $"---
-name: opencode documentation
-description: provides documentation pages to help answer user questions about opencode
+name: ($base_name)-documentation
+description: ($description)
 ---
 
 ## Documentation pages for latest version:
@@ -140,6 +168,6 @@ description: provides documentation pages to help answer user questions about op
 
 ## Source
 
-Repository: [($OPENCODE_REPO_URL)]\(https://github.com/anomalyco/opencode\)
+Repository: [($repo_url)]\(($repo_url)\)
 "
 }

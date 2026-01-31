@@ -61,9 +61,10 @@ def "main docs" [
     --skill,           # Create agent skill instead of regular docs
     --global,          # Create skill in global config (~/.config/opencode)
     --project,         # Create skill in project config (./.opencode)
+    --ocx,             # Download OCX documentation instead of OpenCode
 ] {
     try {
-        docs --dir=$dir --version=$version --force=$force --skill=$skill --global=$global --project=$project
+        docs --dir=$dir --version=$version --force=$force --skill=$skill --global=$global --project=$project --ocx=$ocx
     } catch { |err|
         errors pretty-print $err
     }
@@ -230,15 +231,18 @@ OPTIONS:
     -h, --help     Show this help
     -v, --version  Show version
 
-EXAMPLES:
+    EXAMPLES:
     ocx opencode                    # Run OpenCode interactively
     ocx build                       # Build Docker images
     ocx build --force               # Force rebuild images (includes base image)
     ocx build --no-cache            # Build images without cache
     ocx config                      # Show current configuration
-    ocx docs --dir ./docs           # Fetch documentation to ./docs
+    ocx docs --dir ./docs           # Fetch OpenCode documentation to ./docs
+    ocx docs --ocx --dir ./docs     # Fetch OCX documentation to ./docs
     ocx docs --skill                # Create opencode documentation skill (global)
     ocx docs --skill --project      # Create opencode documentation skill (project)
+    ocx docs --ocx --skill          # Create OCX documentation skill (global)
+    ocx docs --ocx --skill --project # Create OCX documentation skill (project)
     ocx port                        # Show effective port (from config or auto-generated)
     ocx shell                       # Open bash shell in running container
     ocx exec ls -la                 # Execute 'ls -la' in container
