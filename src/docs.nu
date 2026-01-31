@@ -11,22 +11,14 @@ const OPENCODE_REPO_URL = "https://github.com/anomalyco/opencode"
 const OCX_GITHUB_API_BASE = "https://api.github.com/repos/palekiwi-labs/ocx/contents/docs"
 const OCX_REPO_URL = "https://github.com/palekiwi-labs/ocx"
 
-def resolve_version [cfg: record, --version: string = "latest", --ocx] {
-    if $ocx {
-        open ($env.FILE_PWD | path join "VERSION.txt") | str trim
-    } else {
-        version resolve-version $version $cfg
-    }
-}
-
 export def main [
     --dir: string,      # Output directory (base)
-    --version: string, # Optional version override
-    --force,           # Overwrite existing files
-    --skill,           # Create agent skill instead of regular docs
-    --global,          # Create skill in global config (~/.config/opencode)
-    --project,         # Create skill in project config (./.opencode)
-    --ocx,             # Download OCX documentation instead of OpenCode
+    --version: string,  # Optional version override
+    --force,            # Overwrite existing files
+    --skill,            # Create agent skill instead of regular docs
+    --global,           # Create skill in global config (~/.config/opencode)
+    --project,          # Create skill in project config (./.opencode)
+    --ocx,              # Download OCX documentation instead of OpenCode
 ] {
     # Validate: if not in skill mode, dir is required
     if not $skill and ($dir == null) {
@@ -35,70 +27,47 @@ export def main [
         }
     }
 
-    let cfg = (config load)
-    let resolved_version = resolve_version $cfg --version=$version --ocx=$ocx
+    let cfg = config load
+    let version = resolve_version $cfg $version --ocx=$ocx
 
-    let use_global = $skill and not $project
-    let opencode_config_dir = ($cfg.opencode_config_dir | path expand)
-
-    # 4. Configure based on --ocx flag
     let github_api_base = if $ocx { $OCX_GITHUB_API_BASE } else { $OPENCODE_GITHUB_API_BASE }
     let repo_url = if $ocx { $OCX_REPO_URL } else { $OPENCODE_REPO_URL }
-    let skill_name = if $ocx { "ocx" } else { "opencode" }
-    let doc_dir = if $ocx { "ocx" } else { "opencode" }
-    let file_ext = if $ocx { ".md" } else { ".mdx" }
+    let name = if $ocx { "ocx" } else { "opencode" }
 
-    # 5. Construct Paths based on mode
     let output_path = if $skill {
-        if $use_global {
-            [$opencode_config_dir "skills" $skill_name $resolved_version] | path join
-        } else {
-            ["./.opencode/skills" $skill_name $resolved_version] | path join
-        }
+        let opencode_config_dir = ($cfg.opencode_config_dir | path expand)
+        let base_path = if $project { "./opencode" } else { $opencode_config_dir }
+        $"($base_path)/skills/($name)-documentation"
     } else {
-        [$dir $doc_dir $resolved_version] | path join
+        $"($dir)/($name)"
     }
 
-    let skill_root = if $skill {
-        if $use_global {
-            [$opencode_config_dir "skills" $skill_name] | path join
-        } else {
-            ["./.opencode/skills" $skill_name] | path join
-        }
-    } else {
-        null
+    let files = fetch_docs_contents $github_api_base $version
+
+    fetch_files $"($output_path)/($version)" $files --force=$force
+
+    if $skill {
+        generate_skill $name $output_path $files $version $repo_url
     }
+}
 
-    # 5. Safety Checks
-    if ($output_path | path exists) {
-        if not $force {
-            error make {
-                msg: $"Directory '($output_path)' already exists and is not empty."
-                label: {
-                    text: "Use the --force flag to overwrite the contents of this directory."
-                }
-            }
-        }
-        print $"Cleaning directory '($output_path)'..."
-        rm -r $output_path
-    }
 
-    mkdir $output_path
+def fetch_docs_contents [api_base: string, version: string] {
+    print $"Fetching file list from GitHub API for version ($version)..."
 
-    # 6. Fetch & Download Loop
-    let api_url = $"($github_api_base)?ref=v($resolved_version)"
-    print $"Fetching file list from GitHub API for version ($resolved_version)..."
-
-    let dir_contents = try {
-        http get $api_url
+    try {
+        http get $"($api_base)?ref=v($version)"
     } catch { |err|
-        errors pretty-print $err
-        return
+        error make {
+            msg: $"Cannot find documentation for version ($version)"
+        }
     }
+}
 
-    let files = ($dir_contents | where type == "file" and ($it.name | str ends-with $file_ext))
+def fetch_files [output_path: string, files: list<record>, --force] {
+    validate_output_path $output_path --force=$force
 
-    print $"Found ($files | length) ($file_ext) files to download"
+    print $"Fetching ($files | length) files..."
 
     for $file in $files {
         let filename = ($file.name | str replace ".mdx" ".md")
@@ -114,23 +83,54 @@ export def main [
     }
 
     print $"✓ Documentation downloaded successfully to '($output_path)'"
+}
 
-    # 7. Generate SKILL.md if in skill mode
-    if $skill and ($skill_root != null) {
-        let skill_file = [$skill_root "SKILL.md"] | path join
-        print $"Generating skill file at '($skill_file)'..."
-
-        # Collect markdown file names for links
-        let md_files = ($files | each { |file|
-            ($file.name | str replace ".mdx" ".md")
-        })
-
-        # Generate skill content
-        let skill_content = (generate-skill-content $skill_name $repo_url $resolved_version $md_files)
-        $skill_content | save -f $skill_file
-
-        print $"✓ Skill generated successfully at '($skill_file)'"
+def resolve_version [cfg: record, version?: string, --ocx] {
+    let version = $version | default "latest"
+    if $ocx {
+        open ($env.FILE_PWD | path join "VERSION.txt") | str trim
+    } else {
+        version resolve-version $version $cfg
     }
+}
+
+def generate_skill [
+    name: string
+    output_path: string
+    files: list<record>
+    version: string
+    repo_url: string
+] {
+    let skill_file = $"($output_path)/SKILL.md"
+    print $"Generating skill file at '($skill_file)'..."
+
+    # Collect markdown file names for links
+    let md_files = ($files | each { |file|
+        ($file.name | str replace ".mdx" ".md")
+    })
+
+    # Generate skill content
+    let skill_content = (generate-skill-content $name $repo_url $version $md_files)
+    $skill_content | save -f $skill_file
+
+    print $"✓ Skill generated successfully at '($skill_file)'"
+}
+
+def validate_output_path [output_path: string, --force] {
+    if ($output_path | path exists) {
+        if not $force {
+            error make {
+                msg: $"Directory '($output_path)' already exists and is not empty."
+                label: {
+                    text: "Use the --force flag to overwrite the contents of this directory."
+                }
+            }
+        }
+        print $"Cleaning directory '($output_path)'..."
+        rm -r $output_path
+    }
+
+    mkdir $output_path
 }
 
 def generate-skill-content [
