@@ -11,7 +11,7 @@ status: todo
 Support the following flags:
 - `--skill`: creates a properly configured agent skill for "opencode documentation"
 - `--global`: creates the skill in global opencode config directory (`~/.config/opencode/`)
-- `--project`: creates the skill in project opencode config directory (`./opencode/`)
+- `--project`: creates the skill in project opencode config directory (`.opencode/`)
 - `--force`: forces re-creation of the skill directory tree if already exists
 
 If `--skill` is provided without `--global` or `--project`, default to `--global`.
