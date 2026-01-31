@@ -19,6 +19,7 @@ export def main [
 ] {
     # 1. Load Config
     let cfg = (config load)
+    let opencode_config_dir = ($cfg.opencode_config_dir | path expand)
 
     # 2. Determine Mode and Paths
     # If skill mode is active without explicit location, default to global
@@ -43,7 +44,7 @@ export def main [
     # 4. Construct Paths based on mode
     let output_path = if $skill {
         if $use_global {
-            [$cfg.opencode_config_dir "skills" $SKILL_NAME $resolved_version] | path join
+            [$opencode_config_dir "skills" $SKILL_NAME $resolved_version] | path join
         } else {
             ["./.opencode/skills" $SKILL_NAME $resolved_version] | path join
         }
@@ -53,7 +54,7 @@ export def main [
 
     let skill_root = if $skill {
         if $use_global {
-            [$cfg.opencode_config_dir "skills" $SKILL_NAME] | path join
+            [$opencode_config_dir "skills" $SKILL_NAME] | path join
         } else {
             ["./.opencode/skills" $SKILL_NAME] | path join
         }
@@ -119,7 +120,7 @@ export def main [
 
         # Generate skill content
         let skill_content = (generate-skill-content $resolved_version $md_files)
-        $skill_content | save $skill_file
+        $skill_content | save -f $skill_file
 
         print $"✓ Skill generated successfully at '($skill_file)'"
     }
@@ -134,11 +135,11 @@ description: provides documentation pages to help answer user questions about op
 ## Documentation pages for latest version:
 
 ($files | each { |name|
-    $"[($name)](./($version)/($name))"
+    $"[($name)]\(./($version)/($name)\)"
 } | str join "\n")
 
 ## Source
 
-Repository: [($OPENCODE_REPO_URL)](https://github.com/anomalyco/opencode)
+Repository: [($OPENCODE_REPO_URL)]\(https://github.com/anomalyco/opencode\)
 "
 }
