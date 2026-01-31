@@ -99,6 +99,23 @@ def resolve_version [cfg: record, version?: string, --ocx] {
     }
 }
 
+def validate_output_path [output_path: string, --force] {
+    if ($output_path | path exists) {
+        if not $force {
+            error make {
+                msg: $"Directory '($output_path)' already exists and is not empty."
+                label: {
+                    text: "Use the --force flag to overwrite the contents of this directory."
+                }
+            }
+        }
+        print $"Cleaning directory '($output_path)'..."
+        rm -r $output_path
+    }
+
+    mkdir $output_path
+}
+
 def generate_skill [
     name: string
     output_path: string
@@ -119,23 +136,6 @@ def generate_skill [
     $skill_content | save -f $skill_file
 
     print $"✓ Skill generated successfully at '($skill_file)'"
-}
-
-def validate_output_path [output_path: string, --force] {
-    if ($output_path | path exists) {
-        if not $force {
-            error make {
-                msg: $"Directory '($output_path)' already exists and is not empty."
-                label: {
-                    text: "Use the --force flag to overwrite the contents of this directory."
-                }
-            }
-        }
-        print $"Cleaning directory '($output_path)'..."
-        rm -r $output_path
-    }
-
-    mkdir $output_path
 }
 
 def generate-skill-content [
