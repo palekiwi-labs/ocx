@@ -20,10 +20,10 @@ Example:
 ~/.config/opencode/skills/
 ~/.config/opencode/skills/opencode-documentation/
 ~/.config/opencode/skills/opencode-documentation/SKILL.md
-~/.config/opencode/skills/opencode-documentation/v.1.1.47/
-~/.config/opencode/skills/opencode-documentation/v.1.1.47/agents.md
-~/.config/opencode/skills/opencode-documentation/v.1.1.47/cli.md
-~/.config/opencode/skills/opencode-documentation/v.1.1.47/config.md
+~/.config/opencode/skills/opencode-documentation/1.1.47/
+~/.config/opencode/skills/opencode-documentation/1.1.47/agents.md
+~/.config/opencode/skills/opencode-documentation/1.1.47/cli.md
+~/.config/opencode/skills/opencode-documentation/1.1.47/config.md
 ...
 ```
 
@@ -35,9 +35,9 @@ name: opencode documentation
 description: provides documentation pages to help answer user questions about opencode
 ---
 
-## Documentation pages:
+## Documentation pages for latest version:
 
-[agents](./agents.md)
-[cli](./cli.md)
-[config](./config.md)
+[agents](./1.1.47/agents.md)
+[cli](./1.1.47/cli.md)
+[config](./1.1.47/config.md)
 ```
