@@ -11,6 +11,14 @@ const OPENCODE_REPO_URL = "https://github.com/anomalyco/opencode"
 const OCX_GITHUB_API_BASE = "https://api.github.com/repos/palekiwi-labs/ocx/contents/docs"
 const OCX_REPO_URL = "https://github.com/palekiwi-labs/ocx"
 
+def resolve_version [cfg: record, --version: string = "latest", --ocx] {
+    if $ocx {
+        open ($env.FILE_PWD | path join "VERSION.txt") | str trim
+    } else {
+        version resolve-version $version $cfg
+    }
+}
+
 export def main [
     --dir: string,      # Output directory (base)
     --version: string, # Optional version override
@@ -20,14 +28,6 @@ export def main [
     --project,         # Create skill in project config (./.opencode)
     --ocx,             # Download OCX documentation instead of OpenCode
 ] {
-    # 1. Load Config
-    let cfg = (config load)
-    let opencode_config_dir = ($cfg.opencode_config_dir | path expand)
-
-    # 2. Determine Mode and Paths
-    # If skill mode is active without explicit location, default to global
-    let use_global = $skill and not $project
-
     # Validate: if not in skill mode, dir is required
     if not $skill and ($dir == null) {
         error make {
@@ -35,24 +35,11 @@ export def main [
         }
     }
 
-    # 3. Resolve Version
-    let version_to_fetch = if $version != null {
-        $version
-    } else if $ocx {
-        # For OCX docs, default to current version from VERSION.txt
-        let version_path = ($env.FILE_PWD | path join "VERSION.txt")
-        open $version_path | str trim
-    } else {
-        $cfg.opencode_version
-    }
+    let cfg = (config load)
+    let resolved_version = resolve_version $cfg --version=$version --ocx=$ocx
 
-    let resolved_version = if $ocx {
-        # For OCX, just use the version directly (no need to resolve via GitHub releases for OCX)
-        $version_to_fetch
-    } else {
-        # For OpenCode, resolve version through the resolver
-        (version resolve-version $version_to_fetch $cfg)
-    }
+    let use_global = $skill and not $project
+    let opencode_config_dir = ($cfg.opencode_config_dir | path expand)
 
     # 4. Configure based on --ocx flag
     let github_api_base = if $ocx { $OCX_GITHUB_API_BASE } else { $OPENCODE_GITHUB_API_BASE }
