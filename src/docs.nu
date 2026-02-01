@@ -131,10 +131,10 @@ def fetch_files [
 }
 
 def resolve_version [cfg: record, version?: string, --ocx] {
-    let version = $version | default "latest"
     if $ocx {
-        open ($env.FILE_PWD | path join "VERSION.txt") | str trim
+        $version | default { open ($env.FILE_PWD | path join "VERSION.txt") | str trim }
     } else {
+        let version = $version | default "latest"
         version resolve-version $version $cfg
     }
 }
