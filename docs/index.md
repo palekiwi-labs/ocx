@@ -2,6 +2,11 @@
 
 Welcome to the OCX documentation.
 
+## Tutorials
+
+- [Setting up ocx in your project](tutorials/setting-up-ocx-in-your-project.md) - A step-by-step guide to configuring ocx for a new repository
+- [Personalizing your project with overrides](tutorials/personalizing-your-project-with-overrides.md) - How to add personal agents and commands without affecting team configuration
+
 ## Configuration
 
 - [Port Configuration](port-configuration.md) - Learn how to configure and manage ports for the opencode server
