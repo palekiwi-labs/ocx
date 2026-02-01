@@ -80,6 +80,31 @@ export def validate [config: record] {
         }
     }
     
+    # Validate extra_data_volumes
+    if ($config.extra_data_volumes | describe) !~ "record" {
+        error make {
+            msg: "Invalid extra_data_volumes value"
+            help: "extra_data_volumes must be a record mapping volume suffixes to container paths"
+        }
+    }
+    
+    for key in ($config.extra_data_volumes | columns) {
+        if not ($key =~ '^[a-z0-9][a-z0-9-]*$') {
+            error make {
+                msg: $"Invalid extra_data_volumes key format: ($key)"
+                help: "Volume suffixes must contain only lowercase letters, numbers, and hyphens"
+            }
+        }
+        
+        let path_val = ($config.extra_data_volumes | get $key)
+        if ($path_val | describe) !~ "string" {
+            error make {
+                msg: $"Invalid extra_data_volumes path for ($key)"
+                help: "Container path must be a string"
+            }
+        }
+    }
+    
     # Validate version_cache_ttl_hours
     if $config.version_cache_ttl_hours <= 0 {
         error make {

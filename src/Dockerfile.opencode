@@ -5,6 +5,7 @@ ARG OPENCODE_VERSION=1.1.23
 ARG USERNAME=user
 ARG UID=1000
 ARG GID=1000
+ARG EXTRA_DIRS=""
 
 ARG TARGETARCH
 
@@ -42,11 +43,13 @@ RUN set -e; \
     # Create OCX directories
     mkdir -p /workspace \
              /home/${USERNAME}/.cache \
-             /home/${USERNAME}/.local && \
+             /home/${USERNAME}/.local \
+             ${EXTRA_DIRS} && \
     chown -R ${UID}:${GID} /workspace \
                            /home/${USERNAME}/.cache \
                            /home/${USERNAME}/.local \
-                           /home/${USERNAME} 2>/dev/null || true
+                           /home/${USERNAME} \
+                           ${EXTRA_DIRS} 2>/dev/null || true
 
 USER ${USERNAME}
 WORKDIR /workspace

@@ -119,6 +119,26 @@ export OCX_DATA_VOLUMES_NAME=my-shared-cache
 
 **Valid use case:** Sharing volumes across related projects that have compatible dependencies (e.g., microservices in the same ecosystem).
 
+### Extra Data Volumes
+
+You can configure additional persistent volumes beyond the standard `cache` and `local` volumes using `extra_data_volumes`. This is useful for persisting language-specific directories like `~/.cargo` (Rust) or `~/.npm` (Node.js) if they don't reside in `~/.cache` or `~/.local`.
+
+**Configuration file (`ocx.json`):**
+```json
+{
+  "extra_data_volumes": {
+    "cargo": "~/.cargo",
+    "npm": "~/.npm"
+  }
+}
+```
+
+**How it works:**
+- **Keys (e.g., `cargo`):** Used as a suffix for the volume name (e.g., `ocx-git-<repo>-cargo`). Must contain only lowercase letters, numbers, and hyphens.
+- **Values (e.g., `~/.cargo`):** The path inside the container where the volume will be mounted. Tilde expansion (`~/`) is supported and resolves to the container user's home directory.
+
+**Note:** The directories specified in `extra_data_volumes` will be automatically created and owned by the container user during the image build process if they don't already exist.
+
 ## Managing Volumes
 
 ### List Project Volumes

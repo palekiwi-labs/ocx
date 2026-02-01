@@ -1,4 +1,4 @@
-use ./utils.nu [image_exists, resolve-dockerfile-path, get-image-name-base]
+use ./utils.nu [image_exists, resolve-dockerfile-path, get-image-name-base, resolve-extra-volumes]
 use ../config
 use ../version
 
@@ -61,8 +61,15 @@ def build_ocx [cfg: record, --force, --no-cache] {
 
     let user_settings = (config resolve-user $cfg)
 
+    # Resolve extra data directories from config to bake them into the image
+    let extra_volumes = (resolve-extra-volumes $cfg $user_settings.username)
+    let extra_dirs_arg = ($extra_volumes | get path | str join " ")
+
     print $"Building OCX image: ($final_image)"
     print $"  Container user: ($user_settings.username) \(UID: ($user_settings.uid), GID: ($user_settings.gid)\)"
+    if ($extra_dirs_arg != "") {
+        print $"  Injecting extra volume directories: ($extra_dirs_arg)"
+    }
 
     let cmd = (
         [
@@ -73,6 +80,7 @@ def build_ocx [cfg: record, --force, --no-cache] {
             "--build-arg" $"USERNAME=($user_settings.username)"
             "--build-arg" $"UID=($user_settings.uid)"
             "--build-arg" $"GID=($user_settings.gid)"
+            "--build-arg" $"EXTRA_DIRS=($extra_dirs_arg)"
             "-t" $final_image
             "-t" $final_latest
         ]

@@ -1,4 +1,4 @@
-use ./utils.nu [image_exists, resolve-container-name, resolve-dockerfile-path]
+use ./utils.nu [image_exists, resolve-container-name, resolve-dockerfile-path, resolve-extra-volumes]
 use ./build.nu
 use ../ports.nu
 use ../workspace.nu
@@ -111,6 +111,14 @@ export def main [...args] {
             "-v" $"($volume_base)-cache:/home/($user)/.cache:rw"
             "-v" $"($volume_base)-local:/home/($user)/.local:rw"
         ])
+        
+        # Add extra data volumes
+        let extra_volumes = (resolve-extra-volumes $cfg $user)
+        for vol in $extra_volumes {
+            $cmd = ($cmd | append [
+                "-v" $"($volume_base)-($vol.key):($vol.path):rw"
+            ])
+        }
     }
     
     $cmd = ($cmd | append [

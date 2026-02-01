@@ -265,7 +265,10 @@ ENVIRONMENT VARIABLES:
     OCX_CONTAINER_NAME           Override container name
     OCX_CPUS                     CPU limit (default: 1.0)
     OCX_CUSTOM_BASE_DOCKERFILE   Path to custom base Dockerfile
+    OCX_DATA_VOLUMES_MODE        Volume mode (git, always, never)
+    OCX_DATA_VOLUMES_NAME        Override volume name
     OCX_ENV_FILE                 Project env file name (default: ocx.env)
+    OCX_EXTRA_DATA_VOLUMES       JSON string for extra volumes
     OCX_FORBIDDEN                Colon-separated paths to block
     OCX_MEMORY                   Memory limit (default: 1024m)
     OCX_NETWORK                  Docker network mode (default: bridge)
