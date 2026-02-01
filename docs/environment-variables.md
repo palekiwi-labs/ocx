@@ -123,7 +123,7 @@ export OCX_CUSTOM_BASE_DOCKERFILE=docker-ocx/Dockerfile
 
 **Default:** None (uses default base)
 
-**See:** [Custom Base Image Template](custom-base-template.md) for details
+**See:** [Custom Base Images](custom-base-images.md) for details
 
 ### Resource Limits
 
@@ -334,6 +334,20 @@ export OCX_DATA_VOLUMES_NAME=my-shared-cache
 **Warning:** Using the same volume name across different projects will make them share volumes, which can cause dependency conflicts.
 
 **Valid format:** Must contain only lowercase letters, numbers, and hyphens, and start with a letter or number.
+
+#### `OCX_EXTRA_DATA_VOLUMES`
+Configure extra data volumes as a JSON string.
+
+**Type:** JSON string
+
+**Example:**
+```bash
+export OCX_EXTRA_DATA_VOLUMES='{"cargo":"~/.cargo","npm":"~/.npm"}'
+```
+
+**Default:** None
+
+**Note:** This provides an environment variable alternative to the `extra_data_volumes` setting in `ocx.json`. See [Volume Management](volume-management.md#extra-data-volumes) for more details.
 
 ### Other
 

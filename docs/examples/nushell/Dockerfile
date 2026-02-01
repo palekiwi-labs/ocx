@@ -1,9 +1,13 @@
-FROM rust:latest
+FROM debian:trixie-slim
 
 # Install essential tools for development
-# NOTE: rust:latest includes: curl, git, ca-certificates, gnupg, build-essential
+# NOTE: curl is REQUIRED for OCX to download OpenCode binary
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
     fd-find \
+    git \
+    gnupg \
     jq \
     ripgrep \
     && rm -rf /var/lib/apt/lists/*

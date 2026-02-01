@@ -105,3 +105,20 @@ export def resolve-dockerfile-path [dockerfile_path: string] {
         help: $"Create a Dockerfile at one of these locations.\nSee docs/custom-base-template.md for templates."
     }
 }
+
+export def resolve-extra-volumes [cfg: record, user: string] {
+    if $cfg.extra_data_volumes == null {
+        return []
+    }
+
+    $cfg.extra_data_volumes | columns | each {|key|
+        let raw_path = ($cfg.extra_data_volumes | get $key)
+        let container_path = if ($raw_path | str starts-with "~/") {
+            $"/home/($user)($raw_path | str substring 1..)"
+        } else {
+            $raw_path
+        }
+
+        { key: $key, path: $container_path }
+    }
+}

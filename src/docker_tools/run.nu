@@ -1,4 +1,4 @@
-use ./utils.nu [image_exists, resolve-container-name, resolve-dockerfile-path]
+use ./utils.nu [image_exists, resolve-container-name, resolve-dockerfile-path, resolve-extra-volumes]
 use ./build.nu
 use ../ports.nu
 use ../workspace.nu
@@ -113,17 +113,10 @@ export def main [...args] {
         ])
         
         # Add extra data volumes
-        for key in ($cfg.extra_data_volumes | columns) {
-            let container_path_raw = ($cfg.extra_data_volumes | get $key)
-            # Expand ~ to /home/($user) for convenience
-            let container_path = if ($container_path_raw | str starts-with "~/") {
-                $"/home/($user)($container_path_raw | str substring 1..)"
-            } else {
-                $container_path_raw
-            }
-            
+        let extra_volumes = (resolve-extra-volumes $cfg $user)
+        for vol in $extra_volumes {
             $cmd = ($cmd | append [
-                "-v" $"($volume_base)-($key):($container_path):rw"
+                "-v" $"($volume_base)-($vol.key):($vol.path):rw"
             ])
         }
     }
