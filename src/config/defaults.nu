@@ -31,6 +31,7 @@ export const DEFAULTS = {
     # Data Volumes
     data_volumes_mode: "git"  # "always" | "git" | "never" - controls when to create data volumes
     data_volumes_name: null   # optional: explicit volume name override (shares across all projects if set)
+    extra_data_volumes: {}    # optional: record of extra volumes to mount e.g. { "cargo": "~/.cargo" }
     
     # Security
     read_only: false  # mount container root filesystem as read-only (set true for strict security)

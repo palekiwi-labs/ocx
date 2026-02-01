@@ -111,6 +111,21 @@ export def main [...args] {
             "-v" $"($volume_base)-cache:/home/($user)/.cache:rw"
             "-v" $"($volume_base)-local:/home/($user)/.local:rw"
         ])
+        
+        # Add extra data volumes
+        for key in ($cfg.extra_data_volumes | columns) {
+            let container_path_raw = ($cfg.extra_data_volumes | get $key)
+            # Expand ~ to /home/($user) for convenience
+            let container_path = if ($container_path_raw | str starts-with "~/") {
+                $"/home/($user)($container_path_raw | str substring 1..)"
+            } else {
+                $container_path_raw
+            }
+            
+            $cmd = ($cmd | append [
+                "-v" $"($volume_base)-($key):($container_path):rw"
+            ])
+        }
     }
     
     $cmd = ($cmd | append [
