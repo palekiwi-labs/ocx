@@ -8,8 +8,8 @@ In many projects, `opencode.json` and the `.opencode/` directory are tracked by 
 
 OpenCode recognizes two primary variables for injecting local configuration:
 
-- **`OPENCODE_CONFIG`**: Points to a JSON file that merges with the global and project-level `opencode.json`.
-- **`OPENCODE_CONFIG_DIR`**: Points to a directory containing additional agents, commands, and prompts.
+- [**`OPENCODE_CONFIG`**](https://opencode.ai/docs/config/#custom-path): Points to a JSON file that merges with the global and project-level `opencode.json`.
+- [**`OPENCODE_CONFIG_DIR`**](https://opencode.ai/docs/config/#custom-directory): Points to a directory containing additional agents, commands, and prompts.
 
 ## Implementation Guide
 

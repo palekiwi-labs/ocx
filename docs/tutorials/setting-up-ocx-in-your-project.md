@@ -26,7 +26,7 @@ You can also specify a custom Dockerfile if your project requires specific syste
 
 ### `ocx.env`
 
-This file is the default mechanism for loading [environment variables](../environment-variables.md) into the `ocx` container. It is commonly used for:
+This file is the default mechanism for loading environment variables into the container. It is the primary way to provide environment variables for [OpenCode configuration](https://opencode.ai/docs/config) and is commonly used for:
 - API keys required by OpenCode agents.
 - Personal customizations and path overrides.
 
