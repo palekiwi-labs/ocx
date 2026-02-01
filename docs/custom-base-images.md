@@ -1,4 +1,4 @@
-# Custom Base Image Template
+# Custom Base Images
 
 ## Requirements
 
@@ -26,100 +26,27 @@ Your custom base image only needs **3 simple requirements**:
 
 **Why user tools?** OCX creates a container user matching your host UID to ensure file permissions work correctly.
 
-## Basic Template
+## Ready-to-Use Examples
 
-```dockerfile
-FROM ubuntu:22.04
+For your convenience, we provide ready-to-use Dockerfile examples for common development environments. You can copy these directly into your project or use them as a starting point.
 
-# Install your dependencies
-# NOTE: curl is REQUIRED for OCX to download OpenCode binary
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    git \
-    # Add your packages here \
-    && rm -rf /var/lib/apt/lists/*
+To use an example, copy the files from the desired directory into your project's `docker-ocx` folder and set your configuration accordingly:
 
-# That's all! OCX automatically handles user creation and directory setup.
+- **Nushell**: A modern shell environment with useful tools like `fd-find`, `ripgrep`, and `jq` pre-installed.
+  - [`Dockerfile`](./examples/nushell/Dockerfile)
+- **Ruby**: A Ruby environment with `ruby-lsp` and common linters (`rubocop`, `erb_lint`) pre-installed.
+  - [`Dockerfile`](./examples/ruby/Dockerfile)
+  - [`Gemfile`](./examples/ruby/Gemfile)
+- **Rust**: A Rust development environment with essential tools like `fd-find`, `ripgrep`, and `jq`.
+  - [`Dockerfile`](./examples/rust/Dockerfile)
+
+To use an example, copy the files from the desired directory into your project's `docker-ocx` folder and set your configuration accordingly:
+
+```json
+{
+  "custom_base_dockerfile": "docker-ocx/Dockerfile"
+}
 ```
-
-No user creation needed! OCX creates the user automatically with your host UID/GID.
-
-## Ruby/Rails Example
-
-```dockerfile
-FROM ruby:3.4-slim
-
-# Install system packages
-# NOTE: curl is REQUIRED for OCX to download OpenCode binary
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    postgresql-client \
-    git \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
-# Pre-install gems (optional - speeds up first run)
-# Run as root since OCX user doesn't exist yet
-WORKDIR /tmp
-COPY Gemfile* ./
-RUN bundle install
-```
-
-Clean and simple! OCX handles all user setup automatically.
-
-## Node.js Example
-
-```dockerfile
-FROM node:20-slim
-
-# Install system packages (curl usually pre-installed in node images)
-# NOTE: curl is REQUIRED for OCX to download OpenCode binary
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    git \
-    && rm -rf /var/lib/apt/lists/*
-
-# Pre-install global packages (optional)
-RUN npm install -g typescript ts-node
-```
-
-No user management needed! Even though the Node.js image has a `node` user, OCX creates your user automatically.
-
-## Python Example
-
-```dockerfile
-FROM python:3.12-slim
-
-# Install system packages (curl usually pre-installed in python images)
-# NOTE: curl is REQUIRED for OCX to download OpenCode binary
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    git \
-    && rm -rf /var/lib/apt/lists/*
-
-# Pre-install packages (optional)
-COPY requirements.txt /tmp/
-RUN pip install -r /tmp/requirements.txt
-```
-
-Simple and clean! OCX creates your user and sets up directories automatically.
-
-## Wrapping Existing Images
-
-You can use any existing Docker image as a base! Just ensure curl is installed:
-
-```dockerfile
-FROM your-existing-image:latest
-
-USER root
-
-# Ensure curl is installed (required for OCX)
-# Try apt first, fallback to apk for Alpine
-RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/* || \
-    apk add --no-cache curl 2>/dev/null || true
-```
-
-That's it! OCX handles everything else automatically.
 
 ## How OCX Handles UID/GID Conflicts
 
@@ -148,22 +75,7 @@ You don't need to worry about this - OCX handles it automatically!
 
 ### Global Config (Shared Across Projects)
 
-Place your Dockerfile in `~/.config/ocx/<name>/Dockerfile`:
-
-```bash
-mkdir -p ~/.config/ocx/ruby
-cat > ~/.config/ocx/ruby/Dockerfile <<'EOF'
-FROM ruby:3.4-alpine
-ARG USERNAME=user
-ARG UID=1000
-ARG GID=1000
-RUN apk add --no-cache bash build-base postgresql-client git
-RUN addgroup -g ${GID} ${USERNAME} && \
-    adduser -D -u ${UID} -G ${USERNAME} -s /bin/bash ${USERNAME}
-USER ${USERNAME}
-WORKDIR /workspace
-EOF
-```
+Place your Dockerfile in `~/.config/ocx/<name>/Dockerfile`. See the [Ready-to-Use Examples](#ready-to-use-examples) for templates.
 
 **Config in any project:**
 ```json
@@ -172,22 +84,11 @@ EOF
 }
 ```
 
-**Result:** All projects using this config share `ocx-ruby:1.1.23`
+**Result:** All projects using this config share `ocx-ruby:<opencode-version>`
 
 ### Project-Local (Project-Specific)
 
-Place your Dockerfile in your project directory:
-
-```bash
-mkdir -p docker-ocx
-cat > docker-ocx/Dockerfile <<'EOF'
-FROM ruby:3.4-alpine
-ARG USERNAME=user
-ARG UID=1000
-ARG GID=1000
-# ... custom setup for this project
-EOF
-```
+Place your Dockerfile in your project directory. See the [Ready-to-Use Examples](#ready-to-use-examples) for templates.
 
 **Config:**
 ```json
@@ -196,7 +97,7 @@ EOF
 }
 ```
 
-**Result:** Project gets unique image like `ocx-myproject-docker-ocx:1.1.23`
+**Result:** Project gets unique image like `ocx-myproject-docker-ocx:<opencode-version>`
 
 ## Build Context
 
@@ -231,10 +132,6 @@ RUN cd /tmp && bundle install
 # Debian/Ubuntu
 RUN apt-get update && apt-get install -y --no-install-recommends curl
 
-# Alpine
-RUN apk add --no-cache curl
-
-# Fedora/CentOS
 RUN yum install -y curl
 ```
 
@@ -247,9 +144,6 @@ RUN yum install -y curl
 ```dockerfile
 # Debian/Ubuntu
 RUN apt-get update && apt-get install -y --no-install-recommends passwd
-
-# Alpine (uses different commands - busybox)
-# Alpine should work out of the box with adduser/addgroup
 
 # Fedora/CentOS
 RUN yum install -y shadow-utils
@@ -272,7 +166,3 @@ RUN yum install -y shadow-utils
 1. Check Docker volume permissions: `docker volume inspect {container-name}-local`
 2. Try running with relaxed security: Add to your config: `{"network": "host"}`
 3. Check SELinux labels if on Fedora/RHEL: `ls -Z` on workspace
-
-## Examples
-
-See `.agents/custom-base-image/82a433c/example-dockerfile` and `example-docker-compose.yml` for a real Rails project example.

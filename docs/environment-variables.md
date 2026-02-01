@@ -123,7 +123,7 @@ export OCX_CUSTOM_BASE_DOCKERFILE=docker-ocx/Dockerfile
 
 **Default:** None (uses default base)
 
-**See:** [Custom Base Image Template](custom-base-template.md) for details
+**See:** [Custom Base Images](custom-base-images.md) for details
 
 ### Resource Limits
 

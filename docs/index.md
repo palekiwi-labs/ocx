@@ -10,7 +10,7 @@ Welcome to the OCX documentation.
 
 ## Customization
 
-- [Custom Base Image Template](custom-base-template.md) - Guide for creating custom Docker base images with OCX
+- [Custom Base Images](custom-base-images.md) - Guide for creating custom Docker base images with OCX
 
 ## Operations
 
