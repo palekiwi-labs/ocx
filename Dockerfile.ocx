@@ -1,13 +1,14 @@
-FROM debian:bookworm-slim
+FROM rust:latest
+
+# Build arguments for user creation (can be overridden by ocx build)
+ARG USERNAME=user
+ARG UID=1000
+ARG GID=1000
 
 # Install essential tools for development
-# NOTE: curl is REQUIRED for OCX to download OpenCode binary
+# NOTE: rust:latest includes: curl, git, ca-certificates, gnupg, build-essential
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates \
-    curl \
     fd-find \
-    git \
-    gnupg \
     jq \
     ripgrep \
     && rm -rf /var/lib/apt/lists/*
@@ -18,3 +19,9 @@ RUN curl -fsSL https://apt.fury.io/nushell/gpg.key | gpg --dearmor -o /etc/apt/k
     apt-get update && \
     apt-get install -y --no-install-recommends nushell && \
     rm -rf /var/lib/apt/lists/*
+
+# Pre-create the cargo directory to ensure permissions are correct when the volume is mounted
+RUN groupadd -g ${GID} ${USERNAME} || true && \
+    useradd -u ${UID} -g ${GID} -m -s /bin/bash ${USERNAME} || true && \
+    mkdir -p /home/${USERNAME}/.cargo && \
+    chown ${UID}:${GID} /home/${USERNAME}/.cargo
