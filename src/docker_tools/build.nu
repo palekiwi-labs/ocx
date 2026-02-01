@@ -1,4 +1,4 @@
-use ./utils.nu [image_exists, resolve-dockerfile-path, get-image-name-base]
+use ./utils.nu [image_exists, resolve-dockerfile-path, get-image-name-base, resolve-extra-volumes]
 use ../config
 use ../version
 
@@ -62,19 +62,8 @@ def build_ocx [cfg: record, --force, --no-cache] {
     let user_settings = (config resolve-user $cfg)
 
     # Resolve extra data directories from config to bake them into the image
-    mut extra_dirs = []
-    if ($cfg.extra_data_volumes != null) {
-        for key in ($cfg.extra_data_volumes | columns) {
-            let container_path_raw = ($cfg.extra_data_volumes | get $key)
-            let container_path = if ($container_path_raw | str starts-with "~/") {
-                $"/home/($user_settings.username)($container_path_raw | str substring 1..)"
-            } else {
-                $container_path_raw
-            }
-            $extra_dirs = ($extra_dirs | append $container_path)
-        }
-    }
-    let extra_dirs_arg = ($extra_dirs | str join " ")
+    let extra_volumes = (resolve-extra-volumes $cfg $user_settings.username)
+    let extra_dirs_arg = ($extra_volumes | get path | str join " ")
 
     print $"Building OCX image: ($final_image)"
     print $"  Container user: ($user_settings.username) \(UID: ($user_settings.uid), GID: ($user_settings.gid)\)"
