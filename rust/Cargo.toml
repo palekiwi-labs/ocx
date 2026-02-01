@@ -1,0 +1,13 @@
+[workspace]
+members = ["shared", "client", "server"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+authors = ["Palekiwi Labs"]
+license = "MIT"
+
+[workspace.dependencies]
+# Shared library available to all crates
+host-exec-shared = { path = "./shared" }

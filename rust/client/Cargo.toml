@@ -1,0 +1,13 @@
+[package]
+name = "host-exec"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "host-exec"
+path = "src/main.rs"
+
+[dependencies]
+host-exec-shared = { workspace = true }
