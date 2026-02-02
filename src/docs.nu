@@ -166,9 +166,7 @@ def generate_skill [
     let skill_file = $"($output_path)/SKILL.md"
     print $"Generating skill file at '($skill_file)'..."
 
-    let md_files = ($files | each { |file|
-        ($file.path | str replace ".mdx" ".md")
-    })
+    let md_files = $files | get path
 
     let skill_content = (generate_skill_content $name $repo_url $version $md_files)
     $skill_content | save -f $skill_file
