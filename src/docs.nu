@@ -47,7 +47,7 @@ export def main [
         let base_path = if $project { "./opencode" } else { $opencode_config_dir }
         $"($base_path)/skills/($repo_name)-documentation"
     } else {
-        $"($dir)/($repo_name)"
+        [$dir $repo_name] | path join
     }
 
     let files = list_remote_docs $owner $repo $docs_path $version
@@ -99,7 +99,7 @@ def fetch_files [
     files: list<record>
     --force
 ] {
-    let output_path = $"($output_path)/($version)"
+    let output_path = [$output_path $version] | path join
     validate_output_path $output_path --force=$force
 
     print $"Fetching ($files | length) files..."
@@ -166,9 +166,7 @@ def generate_skill [
     let skill_file = $"($output_path)/SKILL.md"
     print $"Generating skill file at '($skill_file)'..."
 
-    let md_files = ($files | each { |file|
-        ($file.path | str replace ".mdx" ".md")
-    })
+    let md_files = $files | get path
 
     let skill_content = (generate_skill_content $name $repo_url $version $md_files)
     $skill_content | save -f $skill_file
