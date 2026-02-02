@@ -47,7 +47,7 @@ export def main [
         let base_path = if $project { "./opencode" } else { $opencode_config_dir }
         $"($base_path)/skills/($repo_name)-documentation"
     } else {
-        $"($dir)/($repo_name)"
+        [$dir $repo_name] | path join
     }
 
     let files = list_remote_docs $owner $repo $docs_path $version
@@ -99,7 +99,7 @@ def fetch_files [
     files: list<record>
     --force
 ] {
-    let output_path = $"($output_path)/($version)"
+    let output_path = [$output_path $version] | path join
     validate_output_path $output_path --force=$force
 
     print $"Fetching ($files | length) files..."
