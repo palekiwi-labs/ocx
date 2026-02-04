@@ -6,6 +6,7 @@ use ../config
 use ../shadow_mounts.nu
 use ../version
 use ../volume_name.nu
+use ../opencode_env.nu
 
 export def main [...args] {
     let cfg = (config load)
@@ -102,6 +103,10 @@ export def main [...args] {
         "-e" "TMPDIR=/workspace/tmp"
         "-e" $"TZ=($timezone)"
     ])
+    
+    # Add OpenCode passthrough environment variables
+    let opencode_env_args = (opencode_env generate-docker-args)
+    $cmd = ($cmd | append $opencode_env_args)
     
     # Add data volumes based on configuration
     let volume_base = (volume_name resolve-volume-base-name $cfg)
