@@ -10,6 +10,7 @@ use config [load, show, show-sources]
 use upgrade.nu
 use errors.nu
 use docs.nu
+use host_exec
 
 def --wrapped "main opencode" [...args] {
     try {
@@ -206,6 +207,37 @@ def "main image remove-all" [
     }
 }
 
+def "main host-exec" [
+    --test-server    # Test the server binary
+    --test-client    # Test the client binary
+    ...args          # Arguments to pass to client binary
+] {
+    try {
+        if $test_server {
+            host_exec test-server
+        } else if $test_client {
+            host_exec test-client ...$args
+        } else {
+            print "host-exec - Host command execution utilities"
+            print ""
+            print "USAGE:"
+            print "    ocx host-exec --test-server    # Test the server binary"
+            print "    ocx host-exec --test-client    # Test the client binary"
+            print "    ocx host-exec --test-client -- arg1 arg2  # Test with arguments"
+            print ""
+            print "DESCRIPTION:"
+            print "    This command tests the host-exec binaries that enable"
+            print "    secure command execution from containers to the host."
+            print ""
+            print "BINARIES:"
+            print $"    Server: (host_exec get-server-binary-path)"
+            print $"    Client: (host_exec get-client-binary-path)"
+        }
+    } catch { |err|
+        errors pretty-print $err
+    }
+}
+
 def print_help [] {
     print "OCX - Secure Docker wrapper for OpenCode
 
@@ -213,19 +245,20 @@ USAGE:
     ocx <SUBCOMMAND> [OPTIONS]
 
     SUBCOMMANDS:
-        opencode Run OpenCode container (alias: o)
-        build    Build Docker images
-        config   Show configuration (use --sources to see origins)
-        docs     Fetch and save OpenCode documentation
-        port     Show the port number that will be used for the container
-        shell    Open shell in running container
-        exec     Execute command in running container
-        stats    Show container stats
-        ps       List running containers
-        stop     Stop project container
-        volume   List project volumes
-        image    Manage OCX Docker images
-        upgrade  Check for and install OpenCode updates
+        opencode  Run OpenCode container (alias: o)
+        build     Build Docker images
+        config    Show configuration (use --sources to see origins)
+        docs      Fetch and save OpenCode documentation
+        port      Show the port number that will be used for the container
+        shell     Open shell in running container
+        exec      Execute command in running container
+        stats     Show container stats
+        ps        List running containers
+        stop      Stop project container
+        volume    List project volumes
+        image     Manage OCX Docker images
+        host-exec Test host execution binaries
+        upgrade   Check for and install OpenCode updates
 
 OPTIONS:
     -h, --help     Show this help
@@ -256,6 +289,8 @@ OPTIONS:
     ocx image prune                 # Remove old images, keep latest version
     ocx image prune --base          # Prune only base images
     ocx image remove-all            # Remove all OCX images
+    ocx host-exec --test-server     # Test host-exec server binary
+    ocx host-exec --test-client     # Test host-exec client binary
     ocx upgrade                     # Check and update to latest version
     ocx version                     # Show version
     ocx help                        # Show help
