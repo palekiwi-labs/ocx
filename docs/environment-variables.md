@@ -364,6 +364,249 @@ export TZ=UTC
 
 **Default:** Host timezone
 
+## OpenCode Passthrough Environment Variables
+
+OCX automatically passes through OpenCode-specific environment variables from your host environment to the container. This allows you to configure OpenCode's behavior, authenticate with LLM providers, and customize its operation.
+
+### How It Works
+
+When you run `ocx opencode` or `ocx exec`, OCX checks for OpenCode-specific environment variables in your host environment and passes them through to the container if they exist. This works seamlessly with the `ocx.env` files:
+
+**Precedence Order (highest to lowest):**
+1. Host environment variables (e.g., `ANTHROPIC_API_KEY=xyz ocx opencode`)
+2. Project env file (`./ocx.env`)
+3. Global env file (`~/.config/ocx/ocx.env`)
+
+This means you can store API keys in `ocx.env` files and temporarily override them with environment variables when needed.
+
+### Important Notes
+
+1. **Path-based variables** (`OPENCODE_CONFIG`, `OPENCODE_CONFIG_DIR`, `OPENCODE_MODELS_PATH`) must use paths inside the container, not host paths. The OpenCode config directory is mounted at `/home/username/.config/opencode` by default.
+
+2. **API keys and secrets** should be stored in `ocx.env` files (which should not be committed to version control) rather than in shell profiles.
+
+3. **Optional variables** - You only need to set the variables you actually use. OCX only passes through variables that exist in your environment.
+
+### Supported Variables
+
+#### LLM Provider API Keys & Credentials
+
+| Variable | Provider |
+| :--- | :--- |
+| `ANTHROPIC_API_KEY` | Anthropic Claude models |
+| `OPENAI_API_KEY` | OpenAI models |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Google Gemini models |
+| `AZURE_OPENAI_API_KEY` | Azure OpenAI deployments |
+| `AWS_BEARER_TOKEN_BEDROCK` | Bearer token for Amazon Bedrock auth |
+| `AWS_REGION` | AWS region for Bedrock |
+| `AWS_PROFILE` | AWS credentials profile for Bedrock |
+| `OPENROUTER_API_KEY` | OpenRouter models |
+| `MISTRAL_API_KEY` | Mistral models |
+| `GROQ_API_KEY` | Groq models |
+| `XAI_API_KEY` | xAI models |
+| `DEEPSEEK_API_KEY` | DeepSeek models |
+| `TOGETHER_API_KEY` | Together AI models |
+| `PERPLEXITY_API_KEY` | Perplexity models |
+| `FIREWORKS_API_KEY` | Fireworks AI models |
+| `AICORE_SERVICE_KEY` | SAP AI Core authentication |
+| `AICORE_DEPLOYMENT_ID` | SAP AI Core deployment target |
+| `GITLAB_TOKEN` | GitLab Duo authentication |
+| `GITLAB_INSTANCE_URL` | GitLab instance endpoint |
+
+#### External Integration
+
+| Variable | Description |
+| :--- | :--- |
+| `GITHUB_TOKEN` | Used by GitHub tools and for fetching updates |
+| `USE_GITHUB_TOKEN` | Boolean flag to explicitly enable use of `GITHUB_TOKEN` |
+
+#### OpenCode Configuration & Behavior
+
+| Variable | Description | Default |
+| :--- | :--- | :--- |
+| `OPENCODE_AUTO_SHARE` | Automatically share newly created sessions | `false` |
+| `OPENCODE_DISABLE_AUTOUPDATE` | Disable automatic updates of OpenCode | `false` |
+| `OPENCODE_DISABLE_PRUNE` | Disable automatic pruning of old tool outputs | `false` |
+| `OPENCODE_DISABLE_AUTOCOMPACT` | Disable automatic context compaction | `false` |
+| `OPENCODE_DISABLE_TERMINAL_TITLE` | Disable updating terminal title | `false` |
+| `OPENCODE_DISABLE_PROJECT_CONFIG` | Ignore `opencode.json` files in project tree | `false` |
+| `OPENCODE_DISABLE_SHARE` | Disable all session sharing capabilities | `false` |
+| `OPENCODE_EXPERIMENTAL` | Enable experimental features | `false` |
+| `OPENCODE_PERMISSION` | Inline JSON string defining tool/action permissions | `undefined` |
+| `OPENCODE_MODELS_URL` | URL to fetch available model definitions from | `undefined` |
+| `OPENCODE_GIT_BASH_PATH` | Explicit path to bash executable (useful on Windows) | `undefined` |
+| `OPENCODE_SERVER_USERNAME` | Username for basic auth on OpenCode server | `undefined` |
+| `OPENCODE_SERVER_PASSWORD` | Password for basic auth on OpenCode server | `undefined` |
+
+#### Path-Based Configuration
+
+These variables require **container paths**, not host paths:
+
+| Variable | Description |
+| :--- | :--- |
+| `OPENCODE_CONFIG` | Custom path to configuration file (container path) |
+| `OPENCODE_CONFIG_DIR` | Path to directory containing configuration (container path) |
+| `OPENCODE_CONFIG_CONTENT` | Inline JSON string containing full configuration |
+| `OPENCODE_MODELS_PATH` | Local file path for model definitions (container path) |
+
+**Note:** The default OpenCode config directory is mounted at `/home/username/.config/opencode` in the container.
+
+#### System Settings
+
+| Variable | Description |
+| :--- | :--- |
+| `HTTP_PROXY` | HTTP proxy configuration |
+| `HTTPS_PROXY` | HTTPS proxy configuration |
+| `SHELL` | Shell used for bash tool execution |
+| `EDITOR` | Editor for session exports or file editing |
+| `VISUAL` | Visual editor (fallback to `EDITOR`) |
+| `LANG` | Locale setting for terminal |
+| `LC_ALL` | Locale override |
+| `TMUX` | Detect if running inside tmux for clipboard |
+| `STY` | Detect if running inside screen for clipboard |
+
+### Common Usage Examples
+
+#### Setting Up API Keys
+
+**Using global env file (`~/.config/ocx/ocx.env`):**
+```bash
+ANTHROPIC_API_KEY=sk-ant-...
+OPENAI_API_KEY=sk-...
+GITHUB_TOKEN=ghp_...
+```
+
+**Temporary override:**
+```bash
+ANTHROPIC_API_KEY=sk-ant-different-key ocx opencode
+```
+
+#### Enable Experimental Features
+
+**In shell profile (`~/.bashrc` or `~/.zshrc`):**
+```bash
+export OPENCODE_EXPERIMENTAL=true
+export OPENCODE_DISABLE_AUTOUPDATE=true
+```
+
+**Or in `ocx.env`:**
+```bash
+OPENCODE_EXPERIMENTAL=true
+OPENCODE_DISABLE_AUTOUPDATE=true
+```
+
+#### Using Proxy Settings
+
+```bash
+export HTTP_PROXY=http://proxy.company.com:8080
+export HTTPS_PROXY=http://proxy.company.com:8080
+ocx opencode
+```
+
+#### Using Inline Configuration
+
+```bash
+export OPENCODE_CONFIG_CONTENT='{"defaultModel":"claude-sonnet-4"}'
+ocx opencode
+```
+
+#### Multiple LLM Providers
+
+Store all your API keys in `~/.config/ocx/ocx.env`:
+```bash
+ANTHROPIC_API_KEY=sk-ant-...
+OPENAI_API_KEY=sk-...
+GOOGLE_GENERATIVE_AI_API_KEY=...
+DEEPSEEK_API_KEY=...
+```
+
+Then switch models in OpenCode using the model selector without changing configuration.
+
+#### Path-Based Variables (Advanced)
+
+If you need to use a custom config location inside the container:
+
+```bash
+# The config dir is mounted at /home/username/.config/opencode
+export OPENCODE_CONFIG=/home/username/.config/opencode/custom.json
+ocx opencode
+```
+
+### Security Best Practices
+
+1. **Never commit `ocx.env` files** containing API keys to version control:
+   ```bash
+   echo "ocx.env" >> .gitignore
+   ```
+
+2. **Use restrictive permissions** on env files:
+   ```bash
+   chmod 600 ~/.config/ocx/ocx.env
+   chmod 600 ./ocx.env
+   ```
+
+3. **Store secrets in env files**, not shell profiles:
+   - Shell profiles may be synced or shared
+   - Env files can be easily excluded from version control
+   - Easier to rotate keys by editing files
+
+4. **Use different API keys** for different projects if needed:
+   ```bash
+   # In project-a/ocx.env
+   ANTHROPIC_API_KEY=sk-ant-project-a-key
+   
+   # In project-b/ocx.env
+   ANTHROPIC_API_KEY=sk-ant-project-b-key
+   ```
+
+### Troubleshooting
+
+#### API Key Not Working
+
+1. Check if the variable is set:
+   ```bash
+   echo $ANTHROPIC_API_KEY
+   ```
+
+2. Verify it's being passed to the container:
+   ```bash
+   ocx exec -- env | grep ANTHROPIC_API_KEY
+   ```
+
+3. Check file precedence:
+   ```bash
+   ocx config --sources
+   ```
+
+#### Path Variables Not Found
+
+Remember that `OPENCODE_CONFIG`, `OPENCODE_CONFIG_DIR`, and `OPENCODE_MODELS_PATH` require container paths:
+
+**Wrong:**
+```bash
+export OPENCODE_CONFIG=~/.config/opencode/custom.json  # Host path
+```
+
+**Correct:**
+```bash
+export OPENCODE_CONFIG=/home/username/.config/opencode/custom.json  # Container path
+```
+
+#### Proxy Not Working
+
+Make sure both `HTTP_PROXY` and `HTTPS_PROXY` are set:
+```bash
+export HTTP_PROXY=http://proxy:8080
+export HTTPS_PROXY=http://proxy:8080
+ocx opencode
+```
+
+Some corporate proxies may require authentication:
+```bash
+export HTTP_PROXY=http://user:pass@proxy:8080
+export HTTPS_PROXY=http://user:pass@proxy:8080
+```
+
 ## Usage Examples
 
 ### Quick Override for One Command
