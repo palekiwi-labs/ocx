@@ -14,34 +14,42 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     xz-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Create dedicated user for Nix installation (Single-user Mode)
-# Use high UID (9999) to avoid conflicts with regular users in downstream Dockerfiles
-# Regular users typically start at UID 1000, so this keeps them available
-RUN useradd -u 9999 -m -s /bin/bash nixuser
+# Accept OCX build arguments for user creation
+# OCX passes these during build, matching the host user's UID/GID
+ARG USERNAME=user
+ARG UID=1000
+ARG GID=1000
+
+# Create the user that will be used by OCX
+# OCX will reuse this user with --non-unique flag if it already exists
+RUN groupadd -g ${GID} --non-unique ${USERNAME} 2>/dev/null || true && \
+    useradd -u ${UID} -g ${GID} -m -s /bin/bash ${USERNAME}
 
 # Pre-create /nix directory for single-user installation
 # The Nix installer expects this directory to exist and be owned by the installing user
-RUN mkdir -m 0755 /nix && chown nixuser /nix
+RUN mkdir -m 0755 /nix && chown ${USERNAME}:${GID} /nix
 
-# Switch to nixuser for Nix installation
-USER nixuser
-WORKDIR /home/nixuser
+# Switch to the OCX user for Nix installation
+USER ${USERNAME}
+WORKDIR /home/${USERNAME}
 
-# Install Nix as nixuser (Single-user Mode)
+# Install Nix as the OCX user (Single-user Mode)
 # Single-user installation is simpler for containers and doesn't require a daemon
 RUN curl -L https://nixos.org/nix/install | sh
 
-# Set PATH to include Nix binaries for nixuser
+# Set PATH to include Nix binaries
 # Single-user Nix installs to ~/.nix-profile/bin
-ENV PATH="/home/nixuser/.nix-profile/bin:${PATH}"
+# Note: This is set for the build process and non-interactive use
+# Interactive shells will also source ~/.nix-profile/etc/profile.d/nix.sh automatically
+ENV PATH="/home/${USERNAME}/.nix-profile/bin:${PATH}"
 
-# Enable Flakes and Configure for nixuser
-RUN mkdir -p /home/nixuser/.config/nix && \
-    echo "experimental-features = nix-command flakes" >> /home/nixuser/.config/nix/nix.conf
+# Enable Flakes and Configure
+RUN mkdir -p /home/${USERNAME}/.config/nix && \
+    echo "experimental-features = nix-command flakes" >> /home/${USERNAME}/.config/nix/nix.conf
 
-# Install tools via Nix as nixuser
-# PATH now includes nix binaries, so we can call nix directly
-RUN nix profile install \
+# Install base tools via Nix
+# These are available via Nix and also copied to /usr/local/bin below
+RUN nix profile add \
     nixpkgs#ast-grep \
     nixpkgs#fd \
     nixpkgs#gh \
@@ -53,12 +61,12 @@ RUN nix profile install \
 USER root
 WORKDIR /
 
-# Expose Nix binaries to all users
-# 1. Nix installs binaries to /home/nixuser/.nix-profile/bin (symlinks to /nix/store)
+# Optional: Expose Nix binaries to /usr/local/bin for convenience
+# This allows tools to work even without Nix environment sourced
+# 1. Nix installs binaries to /home/${USERNAME}/.nix-profile/bin (symlinks to /nix/store)
 # 2. We copy the symlinks to /usr/local/bin, which is in PATH and accessible
 # 3. The symlink targets (/nix/store/...) are world-readable
-# 4. This makes the tools available to all users without needing Nix itself
-RUN cp -P /home/nixuser/.nix-profile/bin/* /usr/local/bin/
+RUN cp -P /home/${USERNAME}/.nix-profile/bin/* /usr/local/bin/
 
-# Clean up apt lists again just in case (good practice)
+# Clean up apt lists
 RUN rm -rf /var/lib/apt/lists/*
