@@ -1,0 +1,69 @@
+FROM debian:trixie-slim
+
+# Install essential tools for bootstrapping Nix and OCX requirements
+# curl: Required for Nix install and OCX binary download
+# xz-utils: Required for Nix install
+# ca-certificates: Required for SSL
+# git: Required for Nix flakes
+# gnupg: Recommended for security
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    git \
+    gnupg \
+    xz-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+# Accept OCX build arguments for user creation
+# OCX passes these during build, matching the host user's UID/GID
+ARG USERNAME=user
+ARG UID=1000
+ARG GID=1000
+
+# Create the user that will be used by OCX
+# OCX will reuse this user with --non-unique flag if it already exists
+RUN groupadd -g ${GID} --non-unique ${USERNAME} 2>/dev/null || true && \
+    useradd -u ${UID} -g ${GID} -m -s /bin/bash ${USERNAME}
+
+# Pre-create /nix directory for single-user installation
+# The Nix installer expects this directory to exist and be owned by the installing user
+RUN mkdir -m 0755 /nix && chown ${USERNAME}:${GID} /nix
+
+# Switch to the OCX user for Nix installation
+USER ${USERNAME}
+WORKDIR /home/${USERNAME}
+
+# Install Nix as the OCX user (Single-user Mode)
+# Single-user installation is simpler for containers and doesn't require a daemon
+RUN curl -L https://nixos.org/nix/install | sh
+
+# Set PATH to include Nix binaries
+# Single-user Nix installs to ~/.nix-profile/bin
+# Note: This is set for the build process and non-interactive use
+# Interactive shells will also source ~/.nix-profile/etc/profile.d/nix.sh automatically
+ENV PATH="/home/${USERNAME}/.nix-profile/bin:${PATH}"
+
+# Enable Flakes and Configure
+RUN mkdir -p /home/${USERNAME}/.config/nix && \
+    echo "experimental-features = nix-command flakes" >> /home/${USERNAME}/.config/nix/nix.conf
+
+# Install base tools via Nix
+# These are available via Nix and also copied to /usr/local/bin below
+RUN nix profile add \
+    nixpkgs#fd \
+    nixpkgs#jq \
+    nixpkgs#ripgrep
+
+# Switch back to root
+USER root
+WORKDIR /
+
+# Optional: Expose Nix binaries to /usr/local/bin for convenience
+# This allows tools to work even without Nix environment sourced
+# 1. Nix installs binaries to /home/${USERNAME}/.nix-profile/bin (symlinks to /nix/store)
+# 2. We copy the symlinks to /usr/local/bin, which is in PATH and accessible
+# 3. The symlink targets (/nix/store/...) are world-readable
+RUN cp -P /home/${USERNAME}/.nix-profile/bin/* /usr/local/bin/
+
+# Clean up apt lists
+RUN rm -rf /var/lib/apt/lists/*

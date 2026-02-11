@@ -34,6 +34,9 @@ To use an example, copy the files from the desired directory into your project's
 
 - **Nushell**: A modern shell environment with useful tools like `fd-find`, `ripgrep`, and `jq` pre-installed.
   - [`Dockerfile`](./examples/nushell/Dockerfile)
+- **Nix**: A Nix-based environment with modern development tools (ast-grep, fd, gh, jq, nushell, ripgrep). Two approaches available:
+  - [`Dockerfile.build-user`](./examples/nix/Dockerfile.build-user) - **(Recommended)** Cleaner approach where tools are available without Nix complexity. User doesn't need to know about Nix. Can't install additional Nix packages without rebuild.
+  - [`Dockerfile.final-user`](./examples/nix/Dockerfile.final-user) - Full Nix environment available for the OCX user. Can install additional Nix packages at runtime. Better for Nix users or those who want flexibility.
 - **Ruby**: A Ruby environment with `ruby-lsp` and common linters (`rubocop`, `erb_lint`) pre-installed.
   - [`Dockerfile`](./examples/ruby/Dockerfile)
   - [`Gemfile`](./examples/ruby/Gemfile)
