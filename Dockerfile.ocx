@@ -6,24 +6,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-ARG USERNAME=user
-ARG UID=1000
-ARG GID=1000
-
-RUN groupadd -g ${GID} --non-unique ${USERNAME} 2>/dev/null || true && \
-    useradd -u ${UID} -g ${GID} -m -s /bin/bash ${USERNAME}
-
-USER ${USERNAME}
-WORKDIR /home/${USERNAME}
-
-# Configure Nix to enable flakes (host's Nix will be mounted at /nix)
-RUN mkdir -p /home/${USERNAME}/.config/nix && \
-    echo "experimental-features = nix-command flakes" >> /home/${USERNAME}/.config/nix/nix.conf
+# Configure Nix system-wide to enable flakes (host's Nix will be mounted at /nix)
+RUN mkdir -p /etc/nix && \
+    echo "experimental-features = nix-command flakes" > /etc/nix/nix.conf
 
 # Set PATH to include host's Nix binaries
 # - NixOS system profile: /nix/var/nix/profiles/system/sw/bin
 # - Multi-user Nix profile: /nix/var/nix/profiles/default/bin
 ENV PATH="/nix/var/nix/profiles/system/sw/bin:/nix/var/nix/profiles/default/bin:${PATH}"
-
-USER root
-WORKDIR /
