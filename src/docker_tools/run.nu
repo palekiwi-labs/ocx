@@ -173,7 +173,7 @@ export def main [...args] {
     $cmd = ($cmd | append [
         "--workdir" $ws.container_path
         "--name" $container_name
-        $image_name "opencode" ...$args
+        $image_name ...$cfg.opencode_command ...$args
     ])
     
     run-external ...$cmd
