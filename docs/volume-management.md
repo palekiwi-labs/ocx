@@ -31,10 +31,10 @@ ocx-git-<sanitized-remote-url>-local
 - Volume names: `ocx-git-github-com-palekiwi-labs-ocx-cache` and `ocx-git-github-com-palekiwi-labs-ocx-local`
 
 **Benefits:**
-- ✅ Same volumes shared across different checkouts of the same repository
-- ✅ Efficient disk usage - no duplicate caches
-- ✅ Faster setup when switching between branches in different directories
-- ✅ Works with git worktrees
+- Same volumes shared across different checkouts of the same repository
+- Efficient disk usage - no duplicate caches
+- Faster setup when switching between branches in different directories
+- Works with git worktrees
 
 **Important:** Different branches of the same repository share the same volumes. This is usually beneficial (faster installs), but can cause issues if branches have incompatible dependencies.
 
@@ -121,23 +121,158 @@ export OCX_DATA_VOLUMES_NAME=my-shared-cache
 
 ### Extra Data Volumes
 
-You can configure additional persistent volumes beyond the standard `cache` and `local` volumes using `extra_data_volumes`. This is useful for persisting language-specific directories like `~/.cargo` (Rust) or `~/.npm` (Node.js) if they don't reside in `~/.cache` or `~/.local`.
+You can configure additional persistent volumes or bind mounts using `extra_data_volumes`. This supports both Docker named volumes and host directory bind mounts.
 
-**Configuration file (`ocx.json`):**
+#### Configuration Format
+
+Each entry in `extra_data_volumes` is a record with the following fields:
+
+| Field | Required | Type | Description |
+|-------|----------|------|-------------|
+| `target` | Yes | string | Container path where volume/directory will be mounted. Supports `~/` prefix. |
+| `source` | Conditional | string | For volumes: Docker volume name (defaults to `${volume_base}-${key}`). For bind: absolute host path (required). |
+| `mode` | No | string | Mount mode: `"rw"` (read-write, default) or `"ro"` (read-only). |
+| `type` | No | string | Mount type: `"volume"` (Docker volume, default) or `"bind"` (host bind mount). |
+
+#### Examples
+
+**Docker Named Volumes** (traditional persistent storage):
+
 ```json
 {
   "extra_data_volumes": {
-    "cargo": "~/.cargo",
-    "npm": "~/.npm"
+    "cargo": {
+      "target": "~/.cargo",
+      "mode": "rw",
+      "type": "volume"
+    },
+    "npm": {
+      "target": "~/.npm",
+      "type": "volume"
+    }
   }
 }
 ```
 
-**How it works:**
-- **Keys (e.g., `cargo`):** Used as a suffix for the volume name (e.g., `ocx-git-<repo>-cargo`). Must contain only lowercase letters, numbers, and hyphens.
-- **Values (e.g., `~/.cargo`):** The path inside the container where the volume will be mounted. Tilde expansion (`~/`) is supported and resolves to the container user's home directory.
+This creates:
+- `ocx-git-<repo>-cargo` -> `/home/user/.cargo` (read-write)
+- `ocx-git-<repo>-npm` -> `/home/user/.npm` (read-write)
 
-**Note:** The directories specified in `extra_data_volumes` will be automatically created and owned by the container user during the image build process if they don't already exist.
+**Host Bind Mounts** (share host directories):
+
+```json
+{
+  "extra_data_volumes": {
+    "nix-store": {
+      "source": "/nix/store",
+      "target": "/nix/store",
+      "mode": "ro",
+      "type": "bind"
+    },
+    "nix-var": {
+      "source": "/nix/var",
+      "target": "/nix/var",
+      "mode": "ro",
+      "type": "bind"
+    }
+  }
+}
+```
+
+This mounts:
+- Host `/nix/store` -> Container `/nix/store` (read-only)
+- Host `/nix/var` -> Container `/nix/var` (read-only)
+
+**Mixed Configuration:**
+
+```json
+{
+  "extra_data_volumes": {
+    "cargo": {
+      "target": "~/.cargo",
+      "type": "volume"
+    },
+    "shared-tools": {
+      "source": "/opt/shared-tools",
+      "target": "/opt/tools",
+      "mode": "ro",
+      "type": "bind"
+    }
+  }
+}
+```
+
+#### Use Cases
+
+**Sharing Nix Store** (from host to container):
+
+Read-only sharing eliminates package duplication while maintaining security:
+
+```json
+{
+  "extra_data_volumes": {
+    "nix-store": {
+      "source": "/nix/store",
+      "target": "/nix/store",
+      "mode": "ro",
+      "type": "bind"
+    },
+    "nix-var": {
+      "source": "/nix/var",
+      "target": "/nix/var",
+      "mode": "ro",
+      "type": "bind"
+    }
+  }
+}
+```
+
+**Workflow:**
+1. Build packages on host: `nix develop`
+2. Start container with shared store
+3. Container reuses host packages (zero duplication, maximum security)
+
+**Language-specific Package Caches:**
+
+```json
+{
+  "extra_data_volumes": {
+    "cargo": {
+      "target": "~/.cargo",
+      "type": "volume"
+    },
+    "go-pkg": {
+      "target": "~/go/pkg",
+      "type": "volume"
+    }
+  }
+}
+```
+
+#### Validation Rules
+
+- **Keys**: Must contain only lowercase letters, numbers, and hyphens
+- **target**: Required, must be a string path, supports `~/` expansion
+- **source**:
+  - Optional for `type: "volume"` (defaults to `${volume_base}-${key}`)
+  - Required for `type: "bind"` (must be absolute path starting with `/`)
+- **mode**: Must be `"rw"` or `"ro"` (defaults to `"rw"`)
+- **type**: Must be `"volume"` or `"bind"` (defaults to `"volume"`)
+
+#### Environment Variable
+
+```bash
+export OCX_EXTRA_DATA_VOLUMES='{"cargo":{"target":"~/.cargo","type":"volume"}}'
+```
+
+#### Important Notes
+
+1. **Bind Mount Security**: Read-only bind mounts (`mode: "ro"`) are essential when sharing host directories with untrusted code
+2. **Volume Lifecycle**: Docker volumes persist after container removal; bind mounts reflect host state immediately
+3. **Directory Creation**:
+   - Volume targets are created during image build
+   - Bind mount sources must exist on host (not created by ocx)
+4. **Volume Base Dependency**: Volume-type mounts require `data_volumes_mode` != `"never"`
 
 ## Managing Volumes
 
@@ -376,7 +511,7 @@ docker system df -v
    ```bash
    # Start container
    ocx opencode
-   
+
    # Inside container
    rm -rf ~/.cache/*
    ```

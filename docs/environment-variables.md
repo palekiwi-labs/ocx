@@ -336,16 +336,45 @@ export OCX_DATA_VOLUMES_NAME=my-shared-cache
 **Valid format:** Must contain only lowercase letters, numbers, and hyphens, and start with a letter or number.
 
 #### `OCX_EXTRA_DATA_VOLUMES`
+
 Configure extra data volumes as a JSON string.
 
-**Type:** JSON string
+**Type:** JSON string (record)
 
-**Example:**
+**Format:** JSON record mapping keys to mount configurations.
+
+Each configuration is a record with:
+- `target` (required): Container mount path
+- `source` (optional): Volume name or host path
+- `mode` (optional): "rw" or "ro" (default: "rw")
+- `type` (optional): "volume" or "bind" (default: "volume")
+
+**Examples:**
+
+Docker volume:
 ```bash
-export OCX_EXTRA_DATA_VOLUMES='{"cargo":"~/.cargo","npm":"~/.npm"}'
+export OCX_EXTRA_DATA_VOLUMES='{"cargo":{"target":"~/.cargo","type":"volume"}}'
 ```
 
-**Default:** None
+Host bind mount (read-only):
+```bash
+export OCX_EXTRA_DATA_VOLUMES='{"nix-store":{"source":"/nix/store","target":"/nix/store","mode":"ro","type":"bind"}}'
+```
+
+Multiple volumes:
+```bash
+export OCX_EXTRA_DATA_VOLUMES='{
+  "cargo":{"target":"~/.cargo"},
+  "nix-store":{"source":"/nix/store","target":"/nix/store","mode":"ro","type":"bind"}
+}'
+```
+
+**Default:** `{}`
+
+**Validation:**
+- Keys: lowercase letters, numbers, hyphens only
+- Bind mounts require absolute source paths
+- Invalid configs cause immediate errors
 
 **Note:** This provides an environment variable alternative to the `extra_data_volumes` setting in `ocx.json`. See [Volume Management](volume-management.md#extra-data-volumes) for more details.
 

@@ -63,7 +63,12 @@ def build_ocx [cfg: record, --force, --no-cache] {
 
     # Resolve extra data directories from config to bake them into the image
     let extra_volumes = (resolve-extra-volumes $cfg $user_settings.username)
-    let extra_dirs_arg = ($extra_volumes | get path | str join " ")
+
+    # Only include target paths for volume-type mounts (not bind mounts)
+    let volume_dirs = ($extra_volumes
+        | where type == "volume"
+        | get target)
+    let extra_dirs_arg = ($volume_dirs | str join " ")
 
     print $"Building OCX image: ($final_image)"
     print $"  Container user: ($user_settings.username) \(UID: ($user_settings.uid), GID: ($user_settings.gid)\)"
