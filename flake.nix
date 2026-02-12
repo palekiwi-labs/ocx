@@ -41,6 +41,20 @@
             };
           };
         };
+
+        devShells = {
+          ocx = pkgs.mkShell {
+            buildInputs = with pkgs; [
+              ast-grep
+              cowsay
+              fd
+              gh
+              jq
+              nushell
+              ripgrep
+            ];
+          };
+        };
       }
     );
 }
