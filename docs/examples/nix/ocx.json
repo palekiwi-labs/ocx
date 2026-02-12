@@ -1,15 +1,9 @@
 {
-  "custom_base_dockerfile": "Dockerfile.ocx",
+  "custom_base_dockerfile": "Dockerfile.mounted-nix",
   "extra_data_volumes": {
-    "nix-store": {
-      "source": "/nix/store",
-      "target": "/nix/store",
-      "mode": "ro",
-      "type": "bind"
-    },
-    "nix-var": {
-      "source": "/nix/var",
-      "target": "/nix/var",
+    "nix": {
+      "source": "/nix",
+      "target": "/nix",
       "mode": "ro",
       "type": "bind"
     }
