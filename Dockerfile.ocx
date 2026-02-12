@@ -10,12 +10,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN mkdir -p /etc/nix && \
     cat > /etc/nix/nix.conf <<EOF
 experimental-features = nix-command flakes
-restrict-eval = true
-allow-import-from-derivation = false
-accept-flake-config = false
-allowed-uris = https://cache.nixos.org https://github.com
 sandbox = true
-trusted-users = 
+trusted-users =
 EOF
 
 # Set PATH to include host's Nix binaries
