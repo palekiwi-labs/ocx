@@ -73,12 +73,15 @@ export def get-env-overrides [] {
      if ($env.OCX_VERSION_CACHE_TTL_HOURS? | default null) != null {
          $overrides = ($overrides | append {key: "version_cache_ttl_hours", env_var: "OCX_VERSION_CACHE_TTL_HOURS"})
      }
-    if ($env.OCX_EXTRA_DATA_VOLUMES? | default null) != null {
-        $overrides = ($overrides | append {key: "extra_data_volumes", env_var: "OCX_EXTRA_DATA_VOLUMES"})
-    }
-     
-     $overrides
- }
+     if ($env.OCX_EXTRA_DATA_VOLUMES? | default null) != null {
+         $overrides = ($overrides | append {key: "extra_data_volumes", env_var: "OCX_EXTRA_DATA_VOLUMES"})
+     }
+     if ($env.OCX_OPENCODE_COMMAND? | default null) != null {
+         $overrides = ($overrides | append {key: "opencode_command", env_var: "OCX_OPENCODE_COMMAND"})
+     }
+      
+      $overrides
+  }
 
 export def apply-env-overrides [config: record] {
     mut result = $config
@@ -231,11 +234,17 @@ export def apply-env-overrides [config: record] {
          $result = ($result | upsert version_cache_ttl_hours ($version_cache_ttl_hours_env | into int))
      }
     
-    # OCX_EXTRA_DATA_VOLUMES
-    let extra_data_volumes_env = $env.OCX_EXTRA_DATA_VOLUMES? | default null
-    if $extra_data_volumes_env != null {
-        $result = ($result | upsert extra_data_volumes ($extra_data_volumes_env | from json))
-    }
-     
-     $result
- }
+     # OCX_EXTRA_DATA_VOLUMES
+     let extra_data_volumes_env = $env.OCX_EXTRA_DATA_VOLUMES? | default null
+     if $extra_data_volumes_env != null {
+         $result = ($result | upsert extra_data_volumes ($extra_data_volumes_env | from json))
+     }
+
+     # OCX_OPENCODE_COMMAND
+     let opencode_command_env = $env.OCX_OPENCODE_COMMAND? | default null
+     if $opencode_command_env != null {
+         $result = ($result | upsert opencode_command ($opencode_command_env | from json))
+     }
+      
+      $result
+  }
