@@ -120,9 +120,25 @@ export def main [...args] {
         # Add extra data volumes
         let extra_volumes = (resolve-extra-volumes $cfg $user)
         for vol in $extra_volumes {
-            $cmd = ($cmd | append [
-                "-v" $"($volume_base)-($vol.key):($vol.path):rw"
-            ])
+            if $vol.type == "volume" and $volume_base == null {
+                print $"Warning: Skipping volume mount '($vol.key)' because data_volumes_mode is 'never'"
+                continue
+            }
+            
+            let mount_spec = if $vol.type == "bind" {
+                # Bind mount: source:target:mode
+                $"($vol.source):($vol.target):($vol.mode)"
+            } else {
+                # Volume mount: ${volume_base}-${source_or_key}:target:mode
+                let vol_name = if $vol.source != null {
+                    $vol.source
+                } else {
+                    $"($volume_base)-($vol.key)"
+                }
+                $"($vol_name):($vol.target):($vol.mode)"
+            }
+            
+            $cmd = ($cmd | append ["-v" $mount_spec])
         }
     }
     
