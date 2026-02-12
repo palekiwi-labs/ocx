@@ -84,7 +84,7 @@ export def validate [config: record] {
     if ($config.extra_data_volumes | describe) !~ "record" {
         error make {
             msg: "Invalid extra_data_volumes value"
-            help: "extra_data_volumes must be a record mapping volume suffixes to container paths"
+            help: "extra_data_volumes must be a record mapping keys to volume configurations"
         }
     }
     
@@ -92,17 +92,12 @@ export def validate [config: record] {
         if not ($key =~ '^[a-z0-9][a-z0-9-]*$') {
             error make {
                 msg: $"Invalid extra_data_volumes key format: ($key)"
-                help: "Volume suffixes must contain only lowercase letters, numbers, and hyphens"
+                help: "Volume keys must contain only lowercase letters, numbers, and hyphens"
             }
         }
         
-        let path_val = ($config.extra_data_volumes | get $key)
-        if ($path_val | describe) !~ "string" {
-            error make {
-                msg: $"Invalid extra_data_volumes path for ($key)"
-                help: "Container path must be a string"
-            }
-        }
+        let vol_config = ($config.extra_data_volumes | get $key)
+        validate-volume-config $key $vol_config
     }
     
     # Validate version_cache_ttl_hours
@@ -110,6 +105,82 @@ export def validate [config: record] {
         error make {
             msg: $"Invalid version_cache_ttl_hours value: ($config.version_cache_ttl_hours)"
             help: "version_cache_ttl_hours must be greater than 0"
+        }
+    }
+}
+
+export def validate-volume-config [key: string, config: any] {
+    # Must be a record
+    if ($config | describe) !~ "record" {
+        error make {
+            msg: $"Invalid extra_data_volumes configuration for '($key)'"
+            help: "Each value must be a record with 'target' field (required) and optional 'source', 'mode', 'type' fields"
+        }
+    }
+    
+    # Required: target field
+    if ($config.target? == null) {
+        error make {
+            msg: $"Missing required 'target' field for extra_data_volumes key '($key)'"
+            help: "Specify the container path where the volume/directory will be mounted"
+        }
+    }
+    
+    if ($config.target | describe) !~ "string" {
+        error make {
+            msg: $"Invalid 'target' field for extra_data_volumes key '($key)'"
+            help: "Target must be a string path"
+        }
+    }
+    
+    # Optional: source field
+    if ($config.source? != null) {
+        if ($config.source | describe) !~ "string" {
+            error make {
+                msg: $"Invalid 'source' field for extra_data_volumes key '($key)'"
+                help: "Source must be a string (volume name or host path)"
+            }
+        }
+    }
+    
+    # Optional: mode field
+    if ($config.mode? != null) {
+        if $config.mode not-in ["rw", "ro"] {
+            error make {
+                msg: $"Invalid 'mode' field for extra_data_volumes key '($key)': ($config.mode)"
+                help: "Mode must be 'rw' (read-write) or 'ro' (read-only)"
+            }
+        }
+    }
+    
+    # Optional: type field
+    if ($config.type? != null) {
+        if $config.type not-in ["volume", "bind"] {
+            error make {
+                msg: $"Invalid 'type' field for extra_data_volumes key '($key)': ($config.type)"
+                help: "Type must be 'volume' (Docker volume) or 'bind' (host bind mount)"
+            }
+        }
+    }
+    
+    # Type-specific validations
+    let vol_type = ($config.type? | default "volume")
+    
+    if $vol_type == "bind" {
+        # Bind mounts require source
+        if ($config.source? == null) {
+            error make {
+                msg: $"Missing required 'source' field for bind mount '($key)'"
+                help: "Bind mounts require a source host path"
+            }
+        }
+        
+        # Bind mount source must be absolute path
+        if not ($config.source | str starts-with "/") {
+            error make {
+                msg: $"Invalid 'source' path for bind mount '($key)': ($config.source)"
+                help: "Bind mount source must be an absolute path starting with '/'"
+            }
         }
     }
 }

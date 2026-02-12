@@ -112,13 +112,35 @@ export def resolve-extra-volumes [cfg: record, user: string] {
     }
 
     $cfg.extra_data_volumes | columns | each {|key|
-        let raw_path = ($cfg.extra_data_volumes | get $key)
-        let container_path = if ($raw_path | str starts-with "~/") {
-            $"/home/($user)($raw_path | str substring 1..)"
+        let vol_config = ($cfg.extra_data_volumes | get $key)
+        
+        # Extract fields with defaults
+        let target = $vol_config.target
+        let mode = ($vol_config.mode? | default "rw")
+        let vol_type = ($vol_config.type? | default "volume")
+        
+        # Expand tilde in target path
+        let container_target = if ($target | str starts-with "~/") {
+            $"/home/($user)($target | str substring 1..)"
         } else {
-            $raw_path
+            $target
         }
-
-        { key: $key, path: $container_path }
+        
+        # Determine source
+        let source = if ($vol_config.source? != null) {
+            $vol_config.source
+        } else {
+            # Default source for volumes: ${volume_base}-${key}
+            # For bind mounts, source is required (caught by validation)
+            null
+        }
+        
+        {
+            key: $key,
+            source: $source,
+            target: $container_target,
+            mode: $mode,
+            type: $vol_type
+        }
     }
 }

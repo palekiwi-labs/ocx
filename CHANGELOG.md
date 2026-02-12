@@ -7,6 +7,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### BREAKING CHANGES
+
+#### Extra Data Volumes Configuration Format
+
+The `extra_data_volumes` configuration has been redesigned to support both Docker volumes and host bind mounts with read-only/read-write modes.
+
+**Old Format (No Longer Supported):**
+```json
+{
+  "extra_data_volumes": {
+    "cargo": "~/.cargo",
+    "npm": "~/.npm"
+  }
+}
+```
+
+**New Format:**
+```json
+{
+  "extra_data_volumes": {
+    "cargo": {
+      "target": "~/.cargo",
+      "type": "volume"
+    },
+    "npm": {
+      "target": "~/.npm",
+      "type": "volume"
+    }
+  }
+}
+```
+
+**Migration:**
+Replace each string value with a record containing at minimum the `target` field:
+
+```bash
+# Before
+"key": "path"
+
+# After
+"key": {"target": "path"}
+```
+
+**New Capabilities:**
+- Host bind mounts: `{"source": "/host/path", "target": "/container/path", "type": "bind"}`
+- Read-only mounts: `{"mode": "ro"}`
+- Custom volume names: `{"source": "my-volume", "target": "/path", "type": "volume"}`
+
+**Rationale:**
+Enables sharing host directories (like Nix store) with containers while maintaining security through read-only mounts.
+
+### Added
+
+- Support for host bind mounts in `extra_data_volumes`
+- Support for read-only mode in `extra_data_volumes`
+- Support for custom volume names in `extra_data_volumes`
+- Examples for sharing Nix store with containers
+
 ## [0.1.0-alpha.1] - 2026-01-23
 
 ### Added
