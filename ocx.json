@@ -1,3 +1,11 @@
 {
-  "custom_base_dockerfile": "Dockerfile.ocx"
+  "custom_base_dockerfile": "Dockerfile.ocx",
+  "extra_data_volumes": {
+    "nix": {
+      "source": "/nix",
+      "target": "/nix",
+      "mode": "ro",
+      "type": "bind"
+    }
+  }
 }

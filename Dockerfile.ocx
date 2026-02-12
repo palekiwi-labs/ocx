@@ -4,8 +4,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
     git \
-    gnupg \
-    xz-utils \
     && rm -rf /var/lib/apt/lists/*
 
 ARG USERNAME=user
@@ -15,28 +13,17 @@ ARG GID=1000
 RUN groupadd -g ${GID} --non-unique ${USERNAME} 2>/dev/null || true && \
     useradd -u ${UID} -g ${GID} -m -s /bin/bash ${USERNAME}
 
-RUN mkdir -m 0755 /nix && chown ${USERNAME}:${GID} /nix
-
 USER ${USERNAME}
 WORKDIR /home/${USERNAME}
 
-# Install Nix as the OCX user (Single-user Mode)
-RUN curl -L https://nixos.org/nix/install | sh
-
-# Set PATH to include Nix binaries
-# Single-user Nix installs to ~/.nix-profile/bin
-# Note: This is set for the build process and non-interactive use
-# Interactive shells will also source ~/.nix-profile/etc/profile.d/nix.sh automatically
-ENV PATH="/home/${USERNAME}/.nix-profile/bin:${PATH}"
-
-# Enable Flakes and Configure
+# Configure Nix to enable flakes (host's Nix will be mounted at /nix)
 RUN mkdir -p /home/${USERNAME}/.config/nix && \
     echo "experimental-features = nix-command flakes" >> /home/${USERNAME}/.config/nix/nix.conf
 
+# Set PATH to include host's Nix binaries
+# - NixOS system profile: /nix/var/nix/profiles/system/sw/bin
+# - Multi-user Nix profile: /nix/var/nix/profiles/default/bin
+ENV PATH="/nix/var/nix/profiles/system/sw/bin:/nix/var/nix/profiles/default/bin:${PATH}"
+
 USER root
 WORKDIR /
-
-RUN cp -P /home/${USERNAME}/.nix-profile/bin/* /usr/local/bin/
-
-# Clean up apt lists
-RUN rm -rf /var/lib/apt/lists/*
