@@ -1,5 +1,6 @@
 {
   "custom_base_dockerfile": "Dockerfile.ocx",
+  "opencode_command": ["nix", "develop", ".#ocx", "-c", "opencode"],
   "extra_data_volumes": {
     "nix": {
       "source": "/nix",
