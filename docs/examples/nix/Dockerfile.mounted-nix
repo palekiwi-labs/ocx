@@ -1,17 +1,22 @@
 FROM debian:trixie-slim
 
+# Install essential tools for OCX and Nix operations
+# - curl: Required for OCX binary download
+# - git: Required for Nix flakes
+# - ca-certificates: Required for SSL
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Configure Nix system-wide to enable flakes (host's Nix will be mounted at /nix)
+# Configure Nix system-wide to enable flakes
+# Note: The host's Nix installation will be mounted at /nix via ocx.json
 RUN mkdir -p /etc/nix && \
     cat > /etc/nix/nix.conf <<EOF
 experimental-features = nix-command flakes
 sandbox = true
-trusted-users =
+trusted-users = root
 EOF
 
 # Set PATH to include host's Nix binaries

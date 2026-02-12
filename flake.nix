@@ -15,23 +15,23 @@
         packages = {
           default = pkgs.stdenv.mkDerivation {
             pname = "ocx";
-                        version = builtins.readFile ./src/VERSION.txt;
-            
+            version = builtins.readFile ./src/VERSION.txt;
+
             src = ./.;
-            
+
             nativeBuildInputs = [ pkgs.makeWrapper ];
-            
+
             installPhase = ''
               mkdir -p $out/bin $out/share/ocx
-              
+
               # Bundle all source files and dependencies
               cp -r src $out/share/ocx/
-              
+
               # Create wrapper that sets up proper environment
               makeWrapper ${pkgs.nushell}/bin/nu $out/bin/ocx \
                 --add-flags "$out/share/ocx/src/main.nu"
             '';
-            
+
             meta = with pkgs.lib; {
               description = "Secure Docker wrapper for OpenCode";
               homepage = "https://github.com/palekiwi-labs/ocx";
@@ -39,6 +39,20 @@
               platforms = platforms.unix;
               mainProgram = "ocx";
             };
+          };
+        };
+
+        devShells = {
+          ocx = pkgs.mkShell {
+            buildInputs = with pkgs; [
+              ast-grep
+              cowsay
+              fd
+              gh
+              jq
+              nushell
+              ripgrep
+            ];
           };
         };
       }

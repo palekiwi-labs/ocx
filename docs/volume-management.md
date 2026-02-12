@@ -163,15 +163,9 @@ This creates:
 ```json
 {
   "extra_data_volumes": {
-    "nix-store": {
-      "source": "/nix/store",
-      "target": "/nix/store",
-      "mode": "ro",
-      "type": "bind"
-    },
-    "nix-var": {
-      "source": "/nix/var",
-      "target": "/nix/var",
+    "nix": {
+      "source": "/nix",
+      "target": "/nix",
       "mode": "ro",
       "type": "bind"
     }
@@ -180,8 +174,7 @@ This creates:
 ```
 
 This mounts:
-- Host `/nix/store` -> Container `/nix/store` (read-only)
-- Host `/nix/var` -> Container `/nix/var` (read-only)
+- Host `/nix` -> Container `/nix` (read-only)
 
 **Mixed Configuration:**
 
@@ -211,15 +204,9 @@ Read-only sharing eliminates package duplication while maintaining security:
 ```json
 {
   "extra_data_volumes": {
-    "nix-store": {
-      "source": "/nix/store",
-      "target": "/nix/store",
-      "mode": "ro",
-      "type": "bind"
-    },
-    "nix-var": {
-      "source": "/nix/var",
-      "target": "/nix/var",
+    "nix": {
+      "source": "/nix",
+      "target": "/nix",
       "mode": "ro",
       "type": "bind"
     }
