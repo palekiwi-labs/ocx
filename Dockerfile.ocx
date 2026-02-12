@@ -8,7 +8,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Configure Nix system-wide to enable flakes (host's Nix will be mounted at /nix)
 RUN mkdir -p /etc/nix && \
-    echo "experimental-features = nix-command flakes" > /etc/nix/nix.conf
+    cat > /etc/nix/nix.conf <<EOF
+experimental-features = nix-command flakes
+restrict-eval = true
+allow-import-from-derivation = false
+accept-flake-config = false
+allowed-uris = https://cache.nixos.org https://github.com
+sandbox = true
+trusted-users = 
+EOF
 
 # Set PATH to include host's Nix binaries
 # - NixOS system profile: /nix/var/nix/profiles/system/sw/bin
