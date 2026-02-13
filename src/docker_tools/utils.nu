@@ -1,5 +1,6 @@
 use ../config
 use ../ports.nu
+use ../git_utils.nu
 
 export def image_exists [name: string] {
     (docker image inspect $name | complete).exit_code == 0
@@ -48,7 +49,19 @@ export def resolve-dockerfile-path [dockerfile_path: string] {
     let project_path = ($dockerfile_path | path expand)
     if ($project_path | path exists) {
         let dir = ($project_path | path dirname)
-        let project_name = ($env.PWD | path basename)
+
+        # Use git root basename if inside a git repository
+        # This ensures worktrees share the same image name
+        let project_name = if (git_utils is-git-repo) {
+            let git_root = (git_utils get-git-root-path)
+            if $git_root != null {
+                $git_root | path basename
+            } else {
+                $env.PWD | path basename
+            }
+        } else {
+            $env.PWD | path basename
+        }
 
         # Determine subdirectory component for naming
         let cwd = $env.PWD
@@ -113,19 +126,19 @@ export def resolve-extra-volumes [cfg: record, user: string] {
 
     $cfg.extra_data_volumes | columns | each {|key|
         let vol_config = ($cfg.extra_data_volumes | get $key)
-        
+
         # Extract fields with defaults
         let target = $vol_config.target
         let mode = ($vol_config.mode? | default "rw")
         let vol_type = ($vol_config.type? | default "volume")
-        
+
         # Expand tilde in target path
         let container_target = if ($target | str starts-with "~/") {
             $"/home/($user)($target | str substring 1..)"
         } else {
             $target
         }
-        
+
         # Determine source
         let source = if ($vol_config.source? != null) {
             $vol_config.source
@@ -134,7 +147,7 @@ export def resolve-extra-volumes [cfg: record, user: string] {
             # For bind mounts, source is required (caught by validation)
             null
         }
-        
+
         {
             key: $key,
             source: $source,
