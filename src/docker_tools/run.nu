@@ -1,4 +1,4 @@
-use ./utils.nu [image_exists, resolve-container-name, resolve-dockerfile-path, resolve-extra-volumes]
+use ./utils.nu [image_exists, resolve-container-name, resolve-dockerfile-path, resolve-extra-volumes, get-image-name-base]
 use ./build.nu
 use ../ports.nu
 use ../workspace.nu
@@ -15,12 +15,8 @@ export def main [...args] {
     let version = (version resolve-version $cfg.opencode_version $cfg)
 
     # Determine image name based on config
-    let image_name = if ($cfg.custom_base_dockerfile != null) {
-        let resolved = (resolve-dockerfile-path $cfg.custom_base_dockerfile)
-        $"localhost/ocx-($resolved.name):($version)"
-    } else {
-        $"localhost/ocx:($version)"
-    }
+    let image_base = (get-image-name-base $cfg)
+    let image_name = $"($image_base):($version)"
 
     let port = if $cfg.port == null { ports generate } else { $cfg.port }
     let container_name = resolve-container-name $cfg $port
