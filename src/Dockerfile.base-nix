@@ -1,0 +1,20 @@
+FROM debian:trixie-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Configure Nix system-wide to enable flakes (host's Nix will be mounted at /nix)
+RUN mkdir -p /etc/nix && \
+    cat > /etc/nix/nix.conf <<EOF
+experimental-features = nix-command flakes
+sandbox = true
+trusted-users =
+EOF
+
+# Set PATH to include host's Nix binaries
+# - NixOS system profile: /nix/var/nix/profiles/system/sw/bin
+# - Multi-user Nix profile: /nix/var/nix/profiles/default/bin
+ENV PATH="/nix/var/nix/profiles/system/sw/bin:/nix/var/nix/profiles/default/bin:${PATH}"
