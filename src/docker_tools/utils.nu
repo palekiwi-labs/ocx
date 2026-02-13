@@ -50,29 +50,60 @@ export def resolve-dockerfile-path [dockerfile_path: string] {
     if ($project_path | path exists) {
         let dir = ($project_path | path dirname)
 
-        # Use git root basename if inside a git repository
-        # This ensures worktrees share the same image name
-        let project_name = if (git_utils is-git-repo) {
-            let git_root = (git_utils get-git-root-path)
-            if $git_root != null {
-                $git_root | path basename
+        # Use git remote URL if inside a git repository
+        # This ensures worktrees share the same image name (same remote = same image)
+        let base_info = if (git_utils is-git-repo) {
+            let remote_url = (git_utils get-git-remote-url)
+            if $remote_url != null {
+                # Extract repo name from sanitized remote URL
+                # e.g., "github-com-palekiwi-labs-ocx" -> "ocx"
+                let parts = ($remote_url | split row '-')
+                let repo_name = ($parts | last)
+                {
+                    name: $repo_name
+                    path: $env.PWD  # Use PWD for path checks (same as non-git)
+                }
             } else {
-                $env.PWD | path basename
+                # No remote configured - fallback to directory name
+                {
+                    name: ($env.PWD | path basename)
+                    path: $env.PWD
+                }
             }
         } else {
-            $env.PWD | path basename
+            {
+                name: ($env.PWD | path basename)
+                path: $env.PWD
+            }
         }
 
         # Determine subdirectory component for naming
-        let cwd = $env.PWD
-        let relative = ($dir | str replace $cwd "" | str trim -c '/')
+        # Only calculate relative path if Dockerfile is actually inside base path
+        # Git worktrees are separate directories, so treat them as root level
+        let is_inside = if ($dir == $base_info.path) {
+            # Same directory - at root
+            true
+        } else if ($dir | str starts-with $"($base_info.path)/") {
+            # Starts with base_path/ - is a subdirectory
+            true
+        } else {
+            # Not inside base path (e.g., git worktree in sibling directory)
+            false
+        }
+
+        let relative = if $is_inside {
+            ($dir | str replace $base_info.path "" | str trim -c '/')
+        } else {
+            # Outside base path - treat as root level
+            ""
+        }
 
         # Build name: project-subdirectory or just project if at root
         let name = if ($relative | is-empty) {
-            $project_name
+            $base_info.name
         } else {
             let subdir = ($relative | str replace -a '/' '-')
-            $"($project_name)-($subdir)"
+            $"($base_info.name)-($subdir)"
         }
 
         return {
