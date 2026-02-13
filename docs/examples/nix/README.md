@@ -1,5 +1,11 @@
 # Nix Development Container Examples
 
+> **Note:** The mounted-nix approach is now available as a built-in variant. For most users, we recommend using the simpler configuration:
+> ```json
+> {"base_variant": "nix"}
+> ```
+> This automatically configures the mounted-nix setup with a single line. The examples below remain useful for understanding the approach or for advanced customization.
+
 This directory contains several strategies for using Nix with OCX. Nix provides a powerful way to manage reproducible development environments.
 
 ## Available Strategies

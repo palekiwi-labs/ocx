@@ -1,6 +1,74 @@
 # Custom Base Images
 
-## Requirements
+## Built-in Base Variants
+
+OCX provides pre-built base variants for common development environments:
+
+### Standard Variant (Default)
+
+Minimal Debian base with essential tools:
+- ca-certificates, curl, git
+- fd-find, ripgrep, jq
+- gnupg for package verification
+
+**Configuration:**
+```json
+{
+  "base_variant": "standard"
+}
+```
+
+Or omit entirely (standard is the default).
+
+### Nix Variant
+
+Nix-enabled environment using your host's `/nix` store:
+- Mounts host's `/nix` directory (read-only)
+- Pre-configured for Nix flakes
+- Zero duplication - uses packages already on your system
+- Requires Nix installed on host
+
+**Configuration:**
+```json
+{
+  "base_variant": "nix"
+}
+```
+
+**Requirements:**
+- Nix must be installed on host system
+- `/nix` directory must exist
+
+**Benefits:**
+- No Nix installation in container
+- Shares host's package store (saves disk space)
+- Same tool versions as host
+- Fast builds (no package downloads)
+
+**Example with custom command:**
+```json
+{
+  "base_variant": "nix",
+  "opencode_command": ["nix", "develop", ".#ocx", "-c", "opencode"]
+}
+```
+
+### When to Use Built-in Variants vs Custom Base
+
+**Use built-in variants when:**
+- You want a quick, standardized setup
+- Nix variant: You already have Nix on your host
+- You don't need additional tools or customization
+
+**Use custom base when:**
+- You need language-specific tools (Ruby, Rust, etc.)
+- You want to install additional system packages
+- You need a different base distribution (Ubuntu, Fedora, etc.)
+- You want to customize the environment beyond what variants provide
+
+**Note:** `base_variant` and `custom_base_dockerfile` are mutually exclusive. Choose one approach.
+
+## Requirements for Custom Base Images
 
 Your custom base image only needs **3 simple requirements**:
 
@@ -34,8 +102,8 @@ To use an example, copy the files from the desired directory into your project's
 
 - **Nushell**: A modern shell environment with useful tools like `fd-find`, `ripgrep`, and `jq` pre-installed.
   - [`Dockerfile`](./examples/nushell/Dockerfile)
-- **Nix**: A Nix-based environment with modern development tools (ast-grep, fd, gh, jq, nushell, ripgrep). Two approaches available:
-  - [`Dockerfile.build-user`](./examples/nix/Dockerfile.build-user) - **(Recommended)** Cleaner approach where tools are available without Nix complexity. User doesn't need to know about Nix. Can't install additional Nix packages without rebuild.
+- **Nix**: A Nix-based environment with modern development tools (ast-grep, fd, gh, jq, nushell, ripgrep). **Note:** The mounted-nix approach is now available as a built-in variant with `"base_variant": "nix"` (see above). The examples below are useful for understanding or advanced customization:
+  - [`Dockerfile.build-user`](./examples/nix/Dockerfile.build-user) - Cleaner approach where tools are available without Nix complexity. User doesn't need to know about Nix. Can't install additional Nix packages without rebuild.
   - [`Dockerfile.final-user`](./examples/nix/Dockerfile.final-user) - Full Nix environment available for the OCX user. Can install additional Nix packages at runtime. Better for Nix users or those who want flexibility.
 - **Ruby**: A Ruby environment with `ruby-lsp` and common linters (`rubocop`, `erb_lint`) pre-installed.
   - [`Dockerfile`](./examples/ruby/Dockerfile)
