@@ -262,7 +262,6 @@ OPTIONS:
 
 ENVIRONMENT VARIABLES:
     OCX_ADD_HOST_DOCKER_INTERNAL Enable host.docker.internal host (true/false, default: true)
-    OCX_BASE_VARIANT             Base variant (standard, nix)
     OCX_CONTAINER_NAME           Override container name
     OCX_CPUS                     CPU limit (default: 1.0)
     OCX_CUSTOM_BASE_DOCKERFILE   Path to custom base Dockerfile
@@ -298,7 +297,7 @@ CUSTOM BASE IMAGES:
 
     Config: {\"custom_base_dockerfile\": \"ruby/Dockerfile\"}
 
-    See docs/custom-base-images.md for more information.
+    See docs/custom-base-template.md for Dockerfile requirements.
  "
 }
 

@@ -26,7 +26,6 @@ export const DEFAULTS = {
     opencode_config_dir: "~/.config/opencode"  # OpenCode container config dir (mounted into container)
     opencode_command: ["opencode"]  # command to execute in container
     rgignore_file: null  # optional
-    base_variant: "standard"  # "standard" | "nix" - built-in base variant
     custom_base_dockerfile: null  # e.g., "ruby/Dockerfile" - path to custom base Dockerfile
     env_file: null # e.g. "ocx.env" - if null defaults to ocx.env
     

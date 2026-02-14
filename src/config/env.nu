@@ -52,9 +52,6 @@ export def get-env-overrides [] {
     if ($env.OCX_GID? | default null) != null {
         $overrides = ($overrides | append {key: "gid", env_var: "OCX_GID"})
     }
-    if ($env.OCX_BASE_VARIANT? | default null) != null {
-        $overrides = ($overrides | append {key: "base_variant", env_var: "OCX_BASE_VARIANT"})
-    }
     if ($env.OCX_CUSTOM_BASE_DOCKERFILE? | default null) != null {
         $overrides = ($overrides | append {key: "custom_base_dockerfile", env_var: "OCX_CUSTOM_BASE_DOCKERFILE"})
     }
@@ -193,12 +190,6 @@ export def apply-env-overrides [config: record] {
     let gid_env = $env.OCX_GID? | default null
     if $gid_env != null {
         $result = ($result | upsert gid ($gid_env | into int))
-    }
-    
-    # OCX_BASE_VARIANT
-    let base_variant_env = $env.OCX_BASE_VARIANT? | default null
-    if $base_variant_env != null {
-        $result = ($result | upsert base_variant $base_variant_env)
     }
     
     # OCX_CUSTOM_BASE_DOCKERFILE

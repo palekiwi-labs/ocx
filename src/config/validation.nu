@@ -53,23 +53,6 @@ export def validate [config: record] {
         }
     }
     
-    # Validate base_variant
-    let valid_variants = ["standard", "nix"]
-    if $config.base_variant not-in $valid_variants {
-        error make {
-            msg: $"Invalid base_variant value: ($config.base_variant)"
-            help: $"base_variant must be one of: ($valid_variants | str join ', ')"
-        }
-    }
-    
-    # Validate mutual exclusivity: base_variant and custom_base_dockerfile
-    if ($config.base_variant != "standard") and ($config.custom_base_dockerfile != null) {
-        error make {
-            msg: "Cannot use both 'base_variant' and 'custom_base_dockerfile'"
-            help: $"Choose either base_variant: '($config.base_variant)' OR custom_base_dockerfile: '($config.custom_base_dockerfile)'"
-        }
-    }
-    
     # Validate data_volumes_mode
     let valid_modes = ["always", "git", "never"]
     if $config.data_volumes_mode not-in $valid_modes {
