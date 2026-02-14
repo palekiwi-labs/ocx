@@ -32,8 +32,6 @@ export def get-image-name-base [cfg: record] {
     let final_name = if ($cfg.custom_base_dockerfile != null) {
         let resolved = (resolve-dockerfile-path $cfg.custom_base_dockerfile)
         $resolved.name
-    } else if ($cfg.base_variant == "nix") {
-        "nix"
     } else {
         null
     }
@@ -109,38 +107,12 @@ export def resolve-dockerfile-path [dockerfile_path: string] {
 }
 
 export def resolve-extra-volumes [cfg: record, user: string] {
-    # Auto-configure /nix mount for nix variant
-    let volumes_config = if ($cfg.base_variant == "nix") {
-        # Check if user hasn't already configured nix volume
-        if "nix" not-in ($cfg.extra_data_volumes | columns) {
-            # Verify /nix exists on host
-            if not ("/nix" | path exists) {
-                error make {
-                    msg: "The 'nix' base variant requires /nix directory on host"
-                    help: "Install Nix from https://nixos.org/download or use base_variant: 'standard'"
-                }
-            }
-            
-            # Auto-inject nix mount
-            ($cfg.extra_data_volumes | insert "nix" {
-                source: "/nix"
-                target: "/nix"
-                mode: "ro"
-                type: "bind"
-            })
-        } else {
-            $cfg.extra_data_volumes
-        }
-    } else {
-        $cfg.extra_data_volumes
-    }
-    
-    if $volumes_config == null {
+    if $cfg.extra_data_volumes == null {
         return []
     }
 
-    $volumes_config | columns | each {|key|
-        let vol_config = ($volumes_config | get $key)
+    $cfg.extra_data_volumes | columns | each {|key|
+        let vol_config = ($cfg.extra_data_volumes | get $key)
         
         # Extract fields with defaults
         let target = $vol_config.target

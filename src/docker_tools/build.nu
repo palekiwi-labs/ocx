@@ -13,8 +13,6 @@ export def main [
         # Building base layer
         if ($cfg.custom_base_dockerfile != null) {
             build_custom_base $cfg --force=$force --no-cache=$no_cache
-        } else if ($cfg.base_variant == "nix") {
-            build_nix_base --force=$force --no-cache=$no_cache
         } else {
             build_ocx_base --force=$force --no-cache=$no_cache
         }
@@ -41,8 +39,6 @@ def build_ocx [cfg: record, --force, --no-cache] {
     let base_image = if ($cfg.custom_base_dockerfile != null) {
         let resolved = (resolve-dockerfile-path $cfg.custom_base_dockerfile)
         $"localhost/ocx-base-($resolved.name):latest"
-    } else if ($cfg.base_variant == "nix") {
-        "localhost/ocx-base-nix:latest"
     } else {
         "localhost/ocx-base:latest"
     }
@@ -53,8 +49,6 @@ def build_ocx [cfg: record, --force, --no-cache] {
 
         if ($cfg.custom_base_dockerfile != null) {
             build_custom_base $cfg --force=$force --no-cache=$no_cache
-        } else if ($cfg.base_variant == "nix") {
-            build_nix_base --force=$force --no-cache=$no_cache
         } else {
             build_ocx_base --force=$force --no-cache=$no_cache
         }
@@ -148,39 +142,6 @@ def build_ocx_base [--force, --no-cache] {
     }
 
     print "Building base ocx image..."
-
-    let cmd = (
-        [
-            "docker" "build"
-            "-f" $dockerfile
-            "-t" $BASE_IMAGE
-        ]
-        | append (if $no_cache { ["--no-cache"] } else { [] })
-        | append [$context]
-    )
-
-    run-external ...$cmd
-}
-
-def build_nix_base [--force, --no-cache] {
-    const BASE_IMAGE = "localhost/ocx-base-nix:latest"
-    let context = $env.FILE_PWD
-    let dockerfile = ($context | path join "Dockerfile.base-nix")
-
-    # Check if /nix exists on host
-    if not ("/nix" | path exists) {
-        error make {
-            msg: "The 'nix' base variant requires Nix to be installed on the host system"
-            help: "Install Nix from https://nixos.org/download or use base_variant: 'standard'"
-        }
-    }
-
-    if (not $force) and (image_exists $BASE_IMAGE) {
-        print $"Nix base image ($BASE_IMAGE) already exists, skipping build \(use --force to rebuild\)"
-        return
-    }
-
-    print "Building nix base image..."
 
     let cmd = (
         [
