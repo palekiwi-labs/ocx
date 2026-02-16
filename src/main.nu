@@ -208,7 +208,6 @@ def "main image remove-all" [
 }
 
 def "main nix" [] {
-    try {
         print "OCX Nix Management
 
 USAGE:
@@ -230,9 +229,6 @@ EXAMPLES:
     ocx nix shell      # Open shell for inspection
     ocx nix update     # Update default flake to latest OpenCode
 "
-    } catch { |err|
-        errors pretty-print $err
-    }
 }
 
 def "main nix status" [] {
