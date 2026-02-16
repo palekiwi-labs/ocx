@@ -87,11 +87,15 @@ export def ensure-running [cfg: record] {
     # Start daemon container
     print $"Starting nix daemon container: ($container_name)"
     
-    docker run -d \
-        --name $container_name \
-        --rm \
-        -v $"($volume_name):/nix:rw" \
+    let cmd = [
+        "docker" "run" "-d"
+        "--name" $container_name
+        "--rm"
+        "-v" $"($volume_name):/nix:rw"
         $NIX_DAEMON_IMAGE
+    ]
+    
+    run-external ...$cmd
     
     # Give the daemon a moment to start
     sleep 1sec
@@ -151,7 +155,7 @@ export def status [cfg: record] {
     if ($vol_exists | is-empty) {
         print $"  Volume ($volume_name) does not exist yet"
     } else {
-        docker volume inspect $volume_name | from json | select -i Name Mountpoint Driver CreatedAt
+        docker volume inspect $volume_name | from json | select Name Mountpoint Driver CreatedAt
     }
 }
 
