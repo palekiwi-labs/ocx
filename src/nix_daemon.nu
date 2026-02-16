@@ -9,8 +9,7 @@ use config
 const NIX_DAEMON_IMAGE = "localhost/ocx-nix-daemon:latest"
 
 # Check if nix workflow is enabled in config
-export def is-enabled [] {
-    let cfg = (config load)
+export def is-enabled [cfg: record] {
     $cfg.nix_enabled
 }
 
@@ -66,9 +65,7 @@ def build-nix-daemon [--force, --no-cache] {
 }
 
 # Ensure the nix daemon container is running
-export def ensure-running [] {
-    let cfg = (config load)
-    
+export def ensure-running [cfg: record] {
     if not $cfg.nix_enabled {
         return
     }
@@ -112,8 +109,7 @@ export def ensure-running [] {
 }
 
 # Stop the nix daemon container
-export def stop [] {
-    let cfg = (config load)
+export def stop [cfg: record] {
     let container_name = (get-container-name $cfg)
     
     if (is-running $container_name) {
@@ -125,8 +121,7 @@ export def stop [] {
 }
 
 # Show status of nix daemon and volume
-export def status [] {
-    let cfg = (config load)
+export def status [cfg: record] {
     let container_name = (get-container-name $cfg)
     let volume_name = (get-volume-name $cfg)
     

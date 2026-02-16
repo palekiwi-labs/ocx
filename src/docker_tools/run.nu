@@ -13,7 +13,7 @@ export def main [...args] {
     let cfg = (config load)
     
     # Ensure nix daemon is running if nix workflow is enabled
-    nix_daemon ensure-running
+    nix_daemon ensure-running $cfg
     
     let ws = workspace get-workspace $cfg
 

@@ -233,7 +233,8 @@ EXAMPLES:
 
 def "main nix status" [] {
     try {
-        nix_daemon status
+        let cfg = load
+        nix_daemon status $cfg
     } catch { |err|
         errors pretty-print $err
     }
@@ -241,7 +242,8 @@ def "main nix status" [] {
 
 def "main nix start" [] {
     try {
-        nix_daemon ensure-running
+        let cfg = load
+        nix_daemon ensure-running $cfg
         print "Nix daemon started successfully"
     } catch { |err|
         errors pretty-print $err
@@ -250,7 +252,8 @@ def "main nix start" [] {
 
 def "main nix stop" [] {
     try {
-        nix_daemon stop
+        let cfg = load
+        nix_daemon stop $cfg
     } catch { |err|
         errors pretty-print $err
     }
@@ -258,8 +261,9 @@ def "main nix stop" [] {
 
 def "main nix restart" [] {
     try {
-        nix_daemon stop
-        nix_daemon ensure-running
+        let cfg = load
+        nix_daemon stop $cfg
+        nix_daemon ensure-running $cfg
         print "Nix daemon restarted successfully"
     } catch { |err|
         errors pretty-print $err
