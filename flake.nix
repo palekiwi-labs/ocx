@@ -4,9 +4,10 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
     flake-utils.url = "github:numtide/flake-utils";
+    opencode.url = "github:anomalyco/opencode";
   };
 
-  outputs = { nixpkgs, flake-utils, ... }:
+  outputs = { nixpkgs, flake-utils, opencode, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
@@ -45,6 +46,8 @@
         devShells = {
           ocx = pkgs.mkShell {
             buildInputs = with pkgs; [
+              opencode.packages.${system}.default
+
               ast-grep
               fd
               gh
