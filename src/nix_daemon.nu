@@ -163,3 +163,20 @@ export def status [cfg: record] {
 export def build [--force, --no-cache] {
     build-nix-daemon --force=$force --no-cache=$no_cache
 }
+
+# Open a shell in the nix daemon container
+export def shell [cfg: record] {
+    let container_name = (get-container-name $cfg)
+    
+    if not (is-running $container_name) {
+        error make {
+            msg: "Nix daemon is not running"
+            label: {
+                text: $"Container ($container_name) is not running. Start it with: ocx nix start"
+            }
+        }
+    }
+    
+    print $"Opening shell in nix daemon container: ($container_name)"
+    run-external "docker" "exec" "-it" $container_name "bash"
+}

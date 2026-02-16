@@ -219,12 +219,14 @@ SUBCOMMANDS:
     start     Start nix daemon container
     stop      Stop nix daemon container
     restart   Restart nix daemon container
+    shell     Open shell in nix daemon container
 
 EXAMPLES:
     ocx nix status     # Check if nix daemon is running
     ocx nix start      # Manually start nix daemon
     ocx nix stop       # Stop nix daemon
     ocx nix restart    # Restart nix daemon
+    ocx nix shell      # Open shell for inspection
 "
     } catch { |err|
         errors pretty-print $err
@@ -263,6 +265,15 @@ def "main nix restart" [] {
         let cfg = load
         nix_daemon stop $cfg
         nix_daemon ensure-running $cfg
+    } catch { |err|
+        errors pretty-print $err
+    }
+}
+
+def "main nix shell" [] {
+    try {
+        let cfg = load
+        nix_daemon shell $cfg
     } catch { |err|
         errors pretty-print $err
     }
@@ -322,6 +333,7 @@ OPTIONS:
     ocx nix status                  # Show nix daemon status
     ocx nix start                   # Start nix daemon
     ocx nix stop                    # Stop nix daemon
+    ocx nix shell                   # Open shell in nix daemon
     ocx upgrade                     # Check and update to latest version
     ocx version                     # Show version
     ocx help                        # Show help
