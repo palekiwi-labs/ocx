@@ -7,9 +7,14 @@ use ../shadow_mounts.nu
 use ../version
 use ../volume_name.nu
 use ../opencode_env.nu
+use ../nix_daemon.nu
 
 export def main [...args] {
     let cfg = (config load)
+    
+    # Ensure nix daemon is running if nix workflow is enabled
+    nix_daemon ensure-running $cfg
+    
     let ws = workspace get-workspace $cfg
 
     let version = (version resolve-version $cfg.opencode_version $cfg)
@@ -140,6 +145,12 @@ export def main [...args] {
 
             $cmd = ($cmd | append ["-v" $mount_spec])
         }
+    }
+    
+    # Add nix volume if nix workflow is enabled
+    if $cfg.nix_enabled {
+        let nix_volume = (nix_daemon get-volume-name $cfg)
+        $cmd = ($cmd | append ["-v" $"($nix_volume):/nix:ro"])
     }
 
     $cmd = ($cmd | append [

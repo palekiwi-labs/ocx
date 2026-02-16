@@ -40,6 +40,11 @@ export const DEFAULTS = {
     #   type (optional): "volume" (default) or "bind"
     extra_data_volumes: {}
     
+    # Nix Workflow
+    nix_enabled: false  # enable nix workflow with master nix-daemon container
+    nix_volume_name: "ocx-nix"  # named volume for shared /nix store
+    nix_daemon_container_name: "ocx-nix-daemon"  # master nix daemon container name
+    
     # Security
     read_only: false  # mount container root filesystem as read-only (set true for strict security)
     forbidden_paths: []  # array of relative paths to shadow-mount

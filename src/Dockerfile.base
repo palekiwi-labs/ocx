@@ -1,4 +1,4 @@
-FROM debian:bookworm-slim
+FROM debian:trixie-slim
 
 # Install essential tools for development
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -10,3 +10,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     jq \
     ripgrep \
     && rm -rf /var/lib/apt/lists/*
+
+# Configure Nix system-wide to enable flakes
+# (Nix store will be mounted from nix-daemon volume if nix workflow is enabled)
+RUN mkdir -p /etc/nix && \
+    echo "experimental-features = nix-command flakes" > /etc/nix/nix.conf
+
+# Add Nix to PATH (will be available if /nix is mounted)
+ENV PATH="/nix/var/nix/profiles/default/bin:${PATH}"

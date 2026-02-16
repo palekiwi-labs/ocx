@@ -79,6 +79,15 @@ export def get-env-overrides [] {
      if ($env.OCX_OPENCODE_COMMAND? | default null) != null {
          $overrides = ($overrides | append {key: "opencode_command", env_var: "OCX_OPENCODE_COMMAND"})
      }
+     if ($env.OCX_NIX_ENABLED? | default null) != null {
+         $overrides = ($overrides | append {key: "nix_enabled", env_var: "OCX_NIX_ENABLED"})
+     }
+     if ($env.OCX_NIX_VOLUME_NAME? | default null) != null {
+         $overrides = ($overrides | append {key: "nix_volume_name", env_var: "OCX_NIX_VOLUME_NAME"})
+     }
+     if ($env.OCX_NIX_DAEMON_CONTAINER_NAME? | default null) != null {
+         $overrides = ($overrides | append {key: "nix_daemon_container_name", env_var: "OCX_NIX_DAEMON_CONTAINER_NAME"})
+     }
       
       $overrides
   }
@@ -244,6 +253,24 @@ export def apply-env-overrides [config: record] {
      let opencode_command_env = $env.OCX_OPENCODE_COMMAND? | default null
      if $opencode_command_env != null {
          $result = ($result | upsert opencode_command ($opencode_command_env | from json))
+     }
+     
+     # OCX_NIX_ENABLED
+     let nix_enabled_env = $env.OCX_NIX_ENABLED? | default null
+     if $nix_enabled_env != null {
+         $result = ($result | upsert nix_enabled ($nix_enabled_env | into bool))
+     }
+     
+     # OCX_NIX_VOLUME_NAME
+     let nix_volume_name_env = $env.OCX_NIX_VOLUME_NAME? | default null
+     if $nix_volume_name_env != null {
+         $result = ($result | upsert nix_volume_name $nix_volume_name_env)
+     }
+     
+     # OCX_NIX_DAEMON_CONTAINER_NAME
+     let nix_daemon_container_name_env = $env.OCX_NIX_DAEMON_CONTAINER_NAME? | default null
+     if $nix_daemon_container_name_env != null {
+         $result = ($result | upsert nix_daemon_container_name $nix_daemon_container_name_env)
      }
       
       $result

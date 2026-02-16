@@ -1,6 +1,7 @@
 use ./utils.nu [image_exists, resolve-dockerfile-path, get-image-name-base, resolve-extra-volumes]
 use ../config
 use ../version
+use ../nix_daemon.nu
 
 export def main [
     --base
@@ -16,6 +17,13 @@ export def main [
         } else {
             build_ocx_base --force=$force --no-cache=$no_cache
         }
+        
+        # Build nix-daemon if nix is enabled
+        if $cfg.nix_enabled {
+            print "Building nix daemon..."
+            nix_daemon build --force=$force --no-cache=$no_cache
+        }
+        
         # Then build OCX layer
         print "Base build complete, now building OCX..."
         build_ocx $cfg --force=$force --no-cache=$no_cache
