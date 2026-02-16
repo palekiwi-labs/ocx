@@ -4,22 +4,19 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-    opencode.url = "github:anomalyco/opencode/dev";
+    opencode.url = "github:anomalyco/opencode";
   };
 
   outputs = { nixpkgs, flake-utils, opencode, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = import nixpkgs {
-          inherit system;
-          overlays = [ opencode.overlays.default ];
-        };
+        pkgs = import nixpkgs { inherit system; };
       in
       {
         devShells.default = pkgs.mkShell {
           name = "ocx-default";
           buildInputs = with pkgs; [
-            pkgs.opencode
+            opencode.packages.${system}.default
 
             # dev utils
             ast-grep
