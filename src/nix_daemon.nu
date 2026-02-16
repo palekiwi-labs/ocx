@@ -30,7 +30,7 @@ def image-exists [name: string] {
 
 # Check if the nix daemon container is running
 export def is-running [container_name: string] {
-    let running = (docker ps --filter $"name=^($container_name)$" 
+    let running = (docker ps --filter $"name=^($container_name)$"
                    --format "{{.Names}}"
                    | complete
                    | get stdout
@@ -43,24 +43,24 @@ def build-nix-daemon [--force, --no-cache] {
     if (not $force) and (image-exists $NIX_DAEMON_IMAGE) {
         return
     }
-    
+
     print $"Building nix daemon image: ($NIX_DAEMON_IMAGE)"
-    
+
     let context = $env.FILE_PWD
     let dockerfile = ($context | path join "Dockerfile.nix-daemon")
-    
+
     mut cmd = [
         "docker" "build"
         "-f" $dockerfile
         "-t" $NIX_DAEMON_IMAGE
     ]
-    
+
     if $no_cache {
         $cmd = ($cmd | append "--no-cache")
     }
-    
+
     $cmd = ($cmd | append $context)
-    
+
     run-external ...$cmd
 }
 
@@ -69,9 +69,9 @@ export def ensure-default-flake [cfg: record] {
     if not $cfg.nix_enabled {
         return
     }
-    
+
     let container_name = (get-container-name $cfg)
-    
+
     # Check if daemon is running
     if not (is-running $container_name) {
         error make {
@@ -81,26 +81,26 @@ export def ensure-default-flake [cfg: record] {
             }
         }
     }
-    
+
     # Check if both flake.nix AND flake.lock exist
     let flake_exists = (docker exec $container_name test -f /nix/var/ocx/flake.nix | complete).exit_code == 0
     let lock_exists = (docker exec $container_name test -f /nix/var/ocx/flake.lock | complete).exit_code == 0
-    
+
     if $flake_exists and $lock_exists {
         # Both files exist, fully initialized
         return
     }
-    
+
     # Create directory in volume if needed
     docker exec $container_name mkdir -p /nix/var/ocx | ignore
-    
+
     # Handle missing or incomplete initialization
     if $flake_exists and (not $lock_exists) {
         # flake.nix exists but lock missing - regenerate lock only
         print "Regenerating missing flake.lock..."
-        
+
         let lock_result = (docker exec $container_name nix flake lock /nix/var/ocx | complete)
-        
+
         if $lock_result.exit_code != 0 {
             error make {
                 msg: "Failed to generate flake.lock"
@@ -109,18 +109,18 @@ export def ensure-default-flake [cfg: record] {
                 }
             }
         }
-        
+
         print "Default flake lock regenerated"
         print "  Lock file: /nix/var/ocx/flake.lock"
         return
     }
-    
+
     # Full initialization - flake.nix doesn't exist
     print "Initializing default OCX flake in /nix/var/ocx..."
-    
+
     # Load template from host
     let template_path = ($env.FILE_PWD | path join "nix/default-flake.nix")
-    
+
     if not ($template_path | path exists) {
         error make {
             msg: "Default flake template not found"
@@ -129,16 +129,16 @@ export def ensure-default-flake [cfg: record] {
             }
         }
     }
-    
+
     let template_content = (open $template_path)
-    
+
     # Copy the flake file into the container
     echo $template_content | docker exec -i $container_name sh -c "cat > /nix/var/ocx/flake.nix"
-    
+
     # Generate flake.lock in the daemon container (dev containers have read-only /nix)
     print "Generating flake.lock..."
     let lock_result = (docker exec $container_name nix flake lock /nix/var/ocx | complete)
-    
+
     if $lock_result.exit_code != 0 {
         error make {
             msg: "Failed to generate flake.lock"
@@ -147,7 +147,7 @@ export def ensure-default-flake [cfg: record] {
             }
         }
     }
-    
+
     print "Default flake initialized successfully"
     print "  Location: /nix/var/ocx/flake.nix"
     print "  Lock file: /nix/var/ocx/flake.lock"
@@ -159,24 +159,24 @@ export def ensure-running [cfg: record] {
     if not $cfg.nix_enabled {
         return
     }
-    
+
     let container_name = (get-container-name $cfg)
     let volume_name = (get-volume-name $cfg)
-    
+
     # Check if already running
     if (is-running $container_name) {
         return
     }
-    
+
     # Ensure image exists
     if not (image-exists $NIX_DAEMON_IMAGE) {
         print "Nix daemon image not found, building..."
         build-nix-daemon
     }
-    
+
     # Start daemon container
     print $"Starting nix daemon container: ($container_name)"
-    
+
     let cmd = [
         "docker" "run" "-d"
         "--name" $container_name
@@ -184,12 +184,12 @@ export def ensure-running [cfg: record] {
         "-v" $"($volume_name):/nix:rw"
         $NIX_DAEMON_IMAGE
     ]
-    
+
     run-external ...$cmd
-    
+
     # Give the daemon a moment to start
     sleep 1sec
-    
+
     if (is-running $container_name) {
         print "Nix daemon started successfully"
     } else {
@@ -205,7 +205,7 @@ export def ensure-running [cfg: record] {
 # Stop the nix daemon container
 export def stop [cfg: record] {
     let container_name = (get-container-name $cfg)
-    
+
     if (is-running $container_name) {
         print $"Stopping nix daemon container: ($container_name)"
         docker stop $container_name | ignore
@@ -218,14 +218,14 @@ export def stop [cfg: record] {
 export def status [cfg: record] {
     let container_name = (get-container-name $cfg)
     let volume_name = (get-volume-name $cfg)
-    
+
     print "Nix Workflow Status:"
     print $"  Enabled: ($cfg.nix_enabled)"
     print $"  Container: ($container_name)"
     print $"  Volume: ($volume_name)"
     print $"  Image: ($NIX_DAEMON_IMAGE)"
     print ""
-    
+
     if (is-running $container_name) {
         print "  Status: Running ✓"
         print ""
@@ -234,14 +234,14 @@ export def status [cfg: record] {
     } else {
         print "  Status: Stopped"
     }
-    
+
     print ""
     print "Volume info:"
-    let vol_exists = (docker volume ls --filter $"name=^($volume_name)$" --format "{{.Name}}" 
-                      | complete 
-                      | get stdout 
+    let vol_exists = (docker volume ls --filter $"name=^($volume_name)$" --format "{{.Name}}"
+                      | complete
+                      | get stdout
                       | str trim)
-    
+
     if ($vol_exists | is-empty) {
         print $"  Volume ($volume_name) does not exist yet"
     } else {
@@ -257,7 +257,7 @@ export def build [--force, --no-cache] {
 # Open a shell in the nix daemon container
 export def shell [cfg: record] {
     let container_name = (get-container-name $cfg)
-    
+
     if not (is-running $container_name) {
         error make {
             msg: "Nix daemon is not running"
@@ -266,7 +266,7 @@ export def shell [cfg: record] {
             }
         }
     }
-    
+
     print $"Opening shell in nix daemon container: ($container_name)"
     run-external "docker" "exec" "-it" $container_name "bash"
 }
@@ -278,9 +278,9 @@ export def update [cfg: record] {
         print "Enable it by setting nix_enabled: true in your config"
         return
     }
-    
+
     let container_name = (get-container-name $cfg)
-    
+
     if not (is-running $container_name) {
         error make {
             msg: "Nix daemon is not running"
@@ -289,10 +289,10 @@ export def update [cfg: record] {
             }
         }
     }
-    
+
     # Check if default flake exists
     let flake_exists = (docker exec $container_name test -f /nix/var/ocx/flake.nix | complete).exit_code == 0
-    
+
     if not $flake_exists {
         error make {
             msg: "Default flake not found"
@@ -301,10 +301,10 @@ export def update [cfg: record] {
             }
         }
     }
-    
+
     # Check for template updates
     let template_path = ($env.FILE_PWD | path join "nix/default-flake.nix")
-    
+
     if not ($template_path | path exists) {
         error make {
             msg: "Default flake template not found"
@@ -313,31 +313,31 @@ export def update [cfg: record] {
             }
         }
     }
-    
+
     let template_content = (open $template_path)
     let template_hash = ($template_content | hash md5)
     let existing_content = (docker exec $container_name cat /nix/var/ocx/flake.nix | complete | get stdout)
     let existing_hash = ($existing_content | hash md5)
-    
+
     if $template_hash != $existing_hash {
         # Template changed - backup and update
         print "Newer default flake template detected, updating..."
         docker exec $container_name cp /nix/var/ocx/flake.nix /nix/var/ocx/flake.nix.backup | ignore
         print "  Previous flake backed up to: /nix/var/ocx/flake.nix.backup"
-        
+
         # Apply new template atomically
         echo $template_content | docker exec -i $container_name sh -c "cat > /nix/var/ocx/flake.nix.tmp && mv /nix/var/ocx/flake.nix.tmp /nix/var/ocx/flake.nix"
         print "  Template updated"
         print ""
     }
-    
+
     # Update flake.lock
     print "Updating flake.lock..."
     print "  Running: nix flake update /nix/var/ocx"
-    
+
     # Run nix flake update in the daemon container
-    let result = (docker exec $container_name nix flake update /nix/var/ocx | complete)
-    
+    let result = (docker exec $container_name nix flake update --flake /nix/var/ocx | complete)
+
     if $result.exit_code != 0 {
         error make {
             msg: "Failed to update flake"
@@ -346,7 +346,7 @@ export def update [cfg: record] {
             }
         }
     }
-    
+
     print ""
     print "Flake updated successfully!"
     print "Restart your dev containers to use the updated packages:"
