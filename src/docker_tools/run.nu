@@ -10,10 +10,10 @@ use ../opencode_env.nu
 use ../nix_daemon.nu
 
 export def main [...args] {
-    let mut cfg = (config load)
+    let cfg = (config load)
     
     # Ensure nix daemon is running if nix workflow is enabled
-    if $cfg.nix_enabled {
+    let cfg = if $cfg.nix_enabled {
         nix_daemon ensure-running $cfg
         
         # Ensure default flake exists
@@ -21,8 +21,12 @@ export def main [...args] {
         
         # Resolve opencode_command for nix workflow if not explicitly set
         if ($cfg.opencode_command == null or ($cfg.opencode_command | is-empty)) {
-            $cfg = ($cfg | update opencode_command ["nix" "develop" "/nix/var/ocx" "-c" "opencode"])
+            $cfg | update opencode_command ["nix" "develop" "/nix/var/ocx" "-c" "opencode"]
+        } else {
+            $cfg
         }
+    } else {
+        $cfg
     }
     
     let ws = workspace get-workspace $cfg
