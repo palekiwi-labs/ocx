@@ -18,8 +18,15 @@
       {
         devShells.default = pkgs.mkShell {
           name = "ocx-default";
-          buildInputs = [
+          buildInputs = with pkgs; [
             pkgs.opencode
+
+            # dev utils
+            ast-grep
+            fd
+            gh
+            jq
+            ripgrep
           ];
         };
       }
