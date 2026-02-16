@@ -12,5 +12,8 @@ RUN git config --global safe.directory '*'
 # The nix store will be in the mounted volume at /nix
 VOLUME /nix
 
+# Limit GC marker threads to prevent memory explosion on high-core hosts
+ENV GC_NPROCS=1
+
 # Run the nix daemon
 CMD ["nix-daemon"]
