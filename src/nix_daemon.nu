@@ -64,7 +64,7 @@ def build-nix-daemon [--force, --no-cache] {
     run-external ...$cmd
 }
 
-# Ensure the default flake exists in the nix volume
+# Ensure the default flake exists in the nix volume (first-time initialization only)
 export def ensure-default-flake [cfg: record] {
     if not $cfg.nix_enabled {
         return
@@ -82,19 +82,43 @@ export def ensure-default-flake [cfg: record] {
         }
     }
     
-    # Check if flake already exists
+    # Check if both flake.nix AND flake.lock exist
     let flake_exists = (docker exec $container_name test -f /nix/var/ocx/flake.nix | complete).exit_code == 0
+    let lock_exists = (docker exec $container_name test -f /nix/var/ocx/flake.lock | complete).exit_code == 0
     
-    if $flake_exists {
+    if $flake_exists and $lock_exists {
+        # Both files exist, fully initialized
         return
     }
     
-    print "Initializing default OCX flake in /nix/var/ocx..."
-    
-    # Create directory in volume
+    # Create directory in volume if needed
     docker exec $container_name mkdir -p /nix/var/ocx | ignore
     
-    # Copy default flake template into container
+    # Handle missing or incomplete initialization
+    if $flake_exists and (not $lock_exists) {
+        # flake.nix exists but lock missing - regenerate lock only
+        print "Regenerating missing flake.lock..."
+        
+        let lock_result = (docker exec $container_name nix flake lock /nix/var/ocx | complete)
+        
+        if $lock_result.exit_code != 0 {
+            error make {
+                msg: "Failed to generate flake.lock"
+                label: {
+                    text: $"Error: ($lock_result.stderr)"
+                }
+            }
+        }
+        
+        print "Default flake lock regenerated"
+        print "  Lock file: /nix/var/ocx/flake.lock"
+        return
+    }
+    
+    # Full initialization - flake.nix doesn't exist
+    print "Initializing default OCX flake in /nix/var/ocx..."
+    
+    # Load template from host
     let template_path = ($env.FILE_PWD | path join "nix/default-flake.nix")
     
     if not ($template_path | path exists) {
@@ -106,12 +130,27 @@ export def ensure-default-flake [cfg: record] {
         }
     }
     
+    let template_content = (open $template_path)
+    
     # Copy the flake file into the container
-    let flake_content = (open $template_path)
-    echo $flake_content | docker exec -i $container_name sh -c "cat > /nix/var/ocx/flake.nix"
+    echo $template_content | docker exec -i $container_name sh -c "cat > /nix/var/ocx/flake.nix"
+    
+    # Generate flake.lock in the daemon container (dev containers have read-only /nix)
+    print "Generating flake.lock..."
+    let lock_result = (docker exec $container_name nix flake lock /nix/var/ocx | complete)
+    
+    if $lock_result.exit_code != 0 {
+        error make {
+            msg: "Failed to generate flake.lock"
+            label: {
+                text: $"Error: ($lock_result.stderr)"
+            }
+        }
+    }
     
     print "Default flake initialized successfully"
     print "  Location: /nix/var/ocx/flake.nix"
+    print "  Lock file: /nix/var/ocx/flake.lock"
     print "  Update with: ocx nix update"
 }
 
@@ -232,7 +271,7 @@ export def shell [cfg: record] {
     run-external "docker" "exec" "-it" $container_name "bash"
 }
 
-# Update the default flake (updates flake.lock)
+# Update the default flake (checks for template updates, then updates flake.lock)
 export def update [cfg: record] {
     if not $cfg.nix_enabled {
         print "Nix workflow is not enabled"
@@ -263,7 +302,37 @@ export def update [cfg: record] {
         }
     }
     
-    print "Updating OCX default flake..."
+    # Check for template updates
+    let template_path = ($env.FILE_PWD | path join "nix/default-flake.nix")
+    
+    if not ($template_path | path exists) {
+        error make {
+            msg: "Default flake template not found"
+            label: {
+                text: $"Expected template at ($template_path)"
+            }
+        }
+    }
+    
+    let template_content = (open $template_path)
+    let template_hash = ($template_content | hash md5)
+    let existing_content = (docker exec $container_name cat /nix/var/ocx/flake.nix | complete | get stdout)
+    let existing_hash = ($existing_content | hash md5)
+    
+    if $template_hash != $existing_hash {
+        # Template changed - backup and update
+        print "Newer default flake template detected, updating..."
+        docker exec $container_name cp /nix/var/ocx/flake.nix /nix/var/ocx/flake.nix.backup | ignore
+        print "  Previous flake backed up to: /nix/var/ocx/flake.nix.backup"
+        
+        # Apply new template atomically
+        echo $template_content | docker exec -i $container_name sh -c "cat > /nix/var/ocx/flake.nix.tmp && mv /nix/var/ocx/flake.nix.tmp /nix/var/ocx/flake.nix"
+        print "  Template updated"
+        print ""
+    }
+    
+    # Update flake.lock
+    print "Updating flake.lock..."
     print "  Running: nix flake update /nix/var/ocx"
     
     # Run nix flake update in the daemon container

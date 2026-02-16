@@ -28,6 +28,13 @@ export def main [...args] {
     } else {
         $cfg
     }
+
+    # Final fallback for opencode_command if it's still null/empty
+    let final_opencode_command = if ($cfg.opencode_command == null or ($cfg.opencode_command | is-empty)) {
+        ["opencode"]
+    } else {
+        $cfg.opencode_command
+    }
     
     let ws = workspace get-workspace $cfg
 
@@ -212,7 +219,7 @@ export def main [...args] {
     $cmd = ($cmd | append [
         "--workdir" $ws.container_path
         "--name" $container_name
-        $image_name ...$cfg.opencode_command ...$args
+        $image_name ...$final_opencode_command ...$args
     ])
 
     run-external ...$cmd
