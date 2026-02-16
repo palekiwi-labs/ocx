@@ -108,28 +108,26 @@ export def validate [config: record] {
         }
     }
 
-    # Validate opencode_command
-    if $config.opencode_command != null {
-        if ($config.opencode_command | describe) !~ "list" {
-            error make {
-                msg: "Invalid opencode_command value"
-                help: "opencode_command must be an array of strings"
-            }
+    # Validate opencode_command (must be array of strings)
+    if ($config.opencode_command | describe) !~ "list" {
+        error make {
+            msg: "Invalid opencode_command value"
+            help: "opencode_command must be an array of strings"
         }
-        
-        if ($config.opencode_command | length) == 0 {
-            error make {
-                msg: "opencode_command cannot be empty"
-                help: "opencode_command must contain at least one element"
-            }
+    }
+    
+    if ($config.opencode_command | length) == 0 {
+        error make {
+            msg: "opencode_command cannot be empty"
+            help: "opencode_command must contain at least one element"
         }
-        
-        for item in $config.opencode_command {
-            if ($item | describe) !~ "string" or ($item | str trim | str length) == 0 {
-                error make {
-                    msg: $"Invalid opencode_command element: ($item)"
-                    help: "All opencode_command elements must be non-empty strings"
-                }
+    }
+    
+    for item in $config.opencode_command {
+        if ($item | describe) !~ "string" or ($item | str trim | str length) == 0 {
+            error make {
+                msg: $"Invalid opencode_command element: ($item)"
+                help: "All opencode_command elements must be non-empty strings"
             }
         }
     }

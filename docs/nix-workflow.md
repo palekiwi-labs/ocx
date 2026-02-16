@@ -32,16 +32,33 @@ This means:
 - Updates are managed through `ocx nix update` rather than rebuilding images
 - Custom base images (`custom_base_dockerfile`) are not supported with the Nix workflow
 
-### Default Flake
+### Default Flake & Nested Shells
 
 OCX automatically provides a default flake at `/nix/var/ocx/flake.nix` that includes OpenCode from the official GitHub repository. This flake:
 
-- Tracks the latest development version of OpenCode (`github:anomalyco/opencode/dev`)
+- Tracks the production branch of OpenCode (`github:anomalyco/opencode/production`)
 - Is shared across all your OCX projects using the same nix volume
-- Can be updated with `ocx nix update` to get the latest OpenCode
-- Serves as a fallback for projects without their own `flake.nix`
+- Can be updated with `ocx nix update` to get the latest stable OpenCode
+- Provides the base development environment (OpenCode + common tools)
 
-You can override this by providing your own `flake.nix` in your project and configuring `opencode_command` accordingly.
+**Important**: When the Nix workflow is enabled, OCX **always** runs your commands inside the default flake's devshell first, then executes your project-specific environment (if configured). This nested shell architecture means:
+
+1. **You don't need to include OpenCode in your project's `flake.nix`** - it's automatically provided by the default flake
+2. **Your project flake is for project-specific dependencies** - Node.js, Python, Rust, etc.
+3. **Environments are additive** - You get both the platform tools (from default) and your project tools
+4. **You can override OpenCode version** - If you include `opencode` in your project flake, it takes precedence
+
+Example command execution:
+```bash
+# What you configure:
+"opencode_command": ["nix", "develop", "-c", "opencode"]
+
+# What actually runs:
+nix develop /nix/var/ocx -c nix develop -c opencode
+#           ↑                          ↑
+#     Default flake (platform)    Your project flake
+#     Provides: OpenCode          Provides: Your deps
+```
 
 ## Configuration
 
@@ -204,7 +221,7 @@ ocx opencode
 
 #### Using a Specific OpenCode Version
 
-Create a `flake.nix` in your project to pin a specific version:
+To override the default OpenCode version, create a `flake.nix` in your project that includes OpenCode:
 
 ```nix
 {
@@ -218,15 +235,12 @@ Create a `flake.nix` in your project to pin a specific version:
   outputs = { self, nixpkgs, opencode, ... }:
     let
       system = "x86_64-linux";
-      pkgs = import nixpkgs {
-        inherit system;
-        overlays = [ opencode.overlays.default ];
-      };
+      pkgs = import nixpkgs { inherit system; };
     in
     {
       devShells.${system}.default = pkgs.mkShell {
         buildInputs = [
-          pkgs.opencode
+          opencode.packages.${system}.default  # This shadows the default flake's OpenCode
         ];
       };
     };
@@ -240,6 +254,8 @@ Configure OCX to use your flake:
   "opencode_command": ["nix", "develop", "-c", "opencode"]
 }
 ```
+
+**How it works**: With nested shells, your project's OpenCode appears earlier in PATH and takes precedence over the default flake's version.
 
 #### Checking Current Version
 
@@ -285,21 +301,18 @@ For projects needing specific packages alongside OpenCode:
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    opencode.url = "github:anomalyco/opencode/dev";
   };
 
-  outputs = { self, nixpkgs, opencode, ... }:
+  outputs = { self, nixpkgs, ... }:
     let
       system = "x86_64-linux";
-      pkgs = import nixpkgs {
-        inherit system;
-        overlays = [ opencode.overlays.default ];
-      };
+      pkgs = import nixpkgs { inherit system; };
     in
     {
       devShells.${system}.default = pkgs.mkShell {
         buildInputs = with pkgs; [
-          opencode
+          # Note: OpenCode is provided by OCX's default flake
+          # Only include your project-specific dependencies here
           nodejs_20
           python311
           rustc
@@ -325,10 +338,44 @@ EOF
 
 ```bash
 ocx opencode
-# Nix daemon starts automatically
-# Your flake environment is loaded
-# OpenCode runs with all your Nix packages available
+# What happens:
+# 1. Nix daemon starts automatically
+# 2. Default flake provides OpenCode + base tools
+# 3. Your project flake provides Node.js, Python, Rust
+# 4. Nested shells merge both environments
+# 5. OpenCode runs with all packages available
 ```
+
+#### Overriding OpenCode Version
+
+If you need a specific OpenCode version instead of the default:
+
+```nix
+{
+  description = "Project with custom OpenCode version";
+
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    opencode.url = "github:anomalyco/opencode/v1.2.5";  # Pin to specific version
+  };
+
+  outputs = { self, nixpkgs, opencode, ... }:
+    let
+      system = "x86_64-linux";
+      pkgs = import nixpkgs { inherit system; };
+    in
+    {
+      devShells.${system}.default = pkgs.mkShell {
+        buildInputs = [
+          opencode.packages.${system}.default  # Your version takes precedence
+          pkgs.nodejs_20
+        ];
+      };
+    };
+}
+```
+
+Because of PATH precedence in nested shells, your project's OpenCode shadows the default flake's version.
 
 ## Volume Management
 

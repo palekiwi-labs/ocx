@@ -13,26 +13,17 @@ export def main [...args] {
     let cfg = (config load)
     
     # Ensure nix daemon is running if nix workflow is enabled
-    let cfg = if $cfg.nix_enabled {
+    if $cfg.nix_enabled {
         nix_daemon ensure-running $cfg
-        
-        # Ensure default flake exists
         nix_daemon ensure-default-flake $cfg
-        
-        # Resolve opencode_command for nix workflow if not explicitly set
-        if ($cfg.opencode_command == null or ($cfg.opencode_command | is-empty)) {
-            $cfg | update opencode_command ["nix" "develop" "/nix/var/ocx" "-c" "opencode"]
-        } else {
-            $cfg
-        }
-    } else {
-        $cfg
     }
 
-    # Final fallback for opencode_command if it's still null/empty
-    let final_opencode_command = if ($cfg.opencode_command == null or ($cfg.opencode_command | is-empty)) {
-        ["opencode"]
+    # Resolve final command - always nest with default flake when nix is enabled
+    let final_opencode_command = if $cfg.nix_enabled {
+        # Always wrap in default devshell for nix workflow
+        ["nix" "develop" "/nix/var/ocx" "-c" ...$cfg.opencode_command]
     } else {
+        # Non-nix workflow: use command as-is
         $cfg.opencode_command
     }
     
