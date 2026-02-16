@@ -1,0 +1,23 @@
+FROM nixos/nix:latest
+
+USER root
+
+# Enable flakes and nix command
+RUN mkdir -p /etc/nix && \
+    cat > /etc/nix/nix.conf <<EOF
+experimental-features = nix-command flakes
+trusted-users = root
+sandbox = true
+EOF
+
+# Install git and configure it to allow any directory
+# (daemon runs as root but builds repos owned by other users)
+RUN nix-channel --update && \
+    nix-env -iA nixpkgs.git && \
+    git config --global safe.directory '*'
+
+# The nix store will be in the mounted volume at /nix
+VOLUME /nix
+
+# Run the nix daemon
+CMD ["nix-daemon"]

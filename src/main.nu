@@ -10,6 +10,7 @@ use config [load, show, show-sources]
 use upgrade.nu
 use errors.nu
 use docs.nu
+use nix_daemon.nu
 
 def --wrapped "main opencode" [...args] {
     try {
@@ -206,6 +207,65 @@ def "main image remove-all" [
     }
 }
 
+def "main nix" [] {
+    try {
+        print "OCX Nix Management
+
+USAGE:
+    ocx nix <SUBCOMMAND>
+
+SUBCOMMANDS:
+    status    Show nix daemon status
+    start     Start nix daemon container
+    stop      Stop nix daemon container
+    restart   Restart nix daemon container
+
+EXAMPLES:
+    ocx nix status     # Check if nix daemon is running
+    ocx nix start      # Manually start nix daemon
+    ocx nix stop       # Stop nix daemon
+    ocx nix restart    # Restart nix daemon
+"
+    } catch { |err|
+        errors pretty-print $err
+    }
+}
+
+def "main nix status" [] {
+    try {
+        nix_daemon status
+    } catch { |err|
+        errors pretty-print $err
+    }
+}
+
+def "main nix start" [] {
+    try {
+        nix_daemon ensure-running
+        print "Nix daemon started successfully"
+    } catch { |err|
+        errors pretty-print $err
+    }
+}
+
+def "main nix stop" [] {
+    try {
+        nix_daemon stop
+    } catch { |err|
+        errors pretty-print $err
+    }
+}
+
+def "main nix restart" [] {
+    try {
+        nix_daemon stop
+        nix_daemon ensure-running
+        print "Nix daemon restarted successfully"
+    } catch { |err|
+        errors pretty-print $err
+    }
+}
+
 def print_help [] {
     print "OCX - Secure Docker wrapper for OpenCode
 
@@ -225,6 +285,7 @@ USAGE:
         stop     Stop project container
         volume   List project volumes
         image    Manage OCX Docker images
+        nix      Manage nix daemon container
         upgrade  Check for and install OpenCode updates
 
 OPTIONS:
@@ -256,6 +317,9 @@ OPTIONS:
     ocx image prune                 # Remove old images, keep latest version
     ocx image prune --base          # Prune only base images
     ocx image remove-all            # Remove all OCX images
+    ocx nix status                  # Show nix daemon status
+    ocx nix start                   # Start nix daemon
+    ocx nix stop                    # Stop nix daemon
     ocx upgrade                     # Check and update to latest version
     ocx version                     # Show version
     ocx help                        # Show help
@@ -272,6 +336,9 @@ ENVIRONMENT VARIABLES:
     OCX_FORBIDDEN                Colon-separated paths to block
     OCX_MEMORY                   Memory limit (default: 1024m)
     OCX_NETWORK                  Docker network mode (default: bridge)
+    OCX_NIX_DAEMON_CONTAINER_NAME Nix daemon container name (default: ocx-nix-daemon)
+    OCX_NIX_ENABLED              Enable nix workflow (true/false, default: false)
+    OCX_NIX_VOLUME_NAME          Nix volume name (default: ocx-nix)
     OCX_OPENCODE_CONFIG_DIR      OpenCode config directory path
     OCX_OPENCODE_VERSION         OpenCode version (default: latest)
     OCX_PIDS_LIMIT               Process limit (default: 100)
