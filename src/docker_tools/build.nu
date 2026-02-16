@@ -12,7 +12,7 @@ export def main [
 
     if $base {
         # For nix workflow, build nix-daemon and nix-dev images
-        if $cfg.nix_enabled {
+        if $cfg.nix {
             print "Building nix daemon..."
             nix_daemon build --force=$force --no-cache=$no_cache
             
@@ -32,7 +32,7 @@ export def main [
         }
     } else {
         # Building OCX layer only
-        if $cfg.nix_enabled {
+        if $cfg.nix {
             build_nix_dev $cfg --force=$force --no-cache=$no_cache
         } else {
             build_ocx $cfg --force=$force --no-cache=$no_cache
@@ -114,7 +114,7 @@ def build_ocx [cfg: record, --force, --no-cache] {
 def build_nix_dev [cfg: record, --force, --no-cache] {
     # Warn if custom base is configured (not supported for nix workflow)
     if ($cfg.custom_base_dockerfile != null) {
-        print "Warning: custom_base_dockerfile is not supported with nix workflow (nix_enabled=true)"
+        print "Warning: custom_base_dockerfile is not supported with nix workflow (nix=true)"
         print "         Ignoring custom base and using standard nix-dev image"
     }
 

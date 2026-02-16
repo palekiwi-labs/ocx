@@ -10,7 +10,7 @@ const NIX_DAEMON_IMAGE = "localhost/ocx-nix-daemon:latest"
 
 # Check if nix workflow is enabled in config
 export def is-enabled [cfg: record] {
-    $cfg.nix_enabled
+    $cfg.nix
 }
 
 # Get the nix daemon container name from config
@@ -66,7 +66,7 @@ def build-nix-daemon [--force, --no-cache] {
 
 # Ensure the default flake exists in the nix volume (first-time initialization only)
 export def ensure-default-flake [cfg: record] {
-    if not $cfg.nix_enabled {
+    if not $cfg.nix {
         return
     }
 
@@ -156,7 +156,7 @@ export def ensure-default-flake [cfg: record] {
 
 # Ensure the nix daemon container is running
 export def ensure-running [cfg: record] {
-    if not $cfg.nix_enabled {
+    if not $cfg.nix {
         return
     }
 
@@ -220,7 +220,7 @@ export def status [cfg: record] {
     let volume_name = (get-volume-name $cfg)
 
     print "Nix Workflow Status:"
-    print $"  Enabled: ($cfg.nix_enabled)"
+    print $"  Enabled: ($cfg.nix)"
     print $"  Container: ($container_name)"
     print $"  Volume: ($volume_name)"
     print $"  Image: ($NIX_DAEMON_IMAGE)"
@@ -273,9 +273,9 @@ export def shell [cfg: record] {
 
 # Update the default flake (checks for template updates, then updates flake.lock)
 export def update [cfg: record] {
-    if not $cfg.nix_enabled {
+    if not $cfg.nix {
         print "Nix workflow is not enabled"
-        print "Enable it by setting nix_enabled: true in your config"
+        print "Enable it by setting nix: true in your config"
         return
     }
 

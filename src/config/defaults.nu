@@ -41,7 +41,7 @@ export const DEFAULTS = {
     extra_data_volumes: {}
     
     # Nix Workflow
-    nix_enabled: false  # enable nix workflow with master nix-daemon container
+    nix: false  # enable nix workflow with master nix-daemon container
     nix_volume_name: "ocx-nix"  # named volume for shared /nix store
     nix_daemon_container_name: "ocx-nix-daemon"  # master nix daemon container name
     

@@ -363,7 +363,7 @@ ENVIRONMENT VARIABLES:
     OCX_MEMORY                   Memory limit (default: 1024m)
     OCX_NETWORK                  Docker network mode (default: bridge)
     OCX_NIX_DAEMON_CONTAINER_NAME Nix daemon container name (default: ocx-nix-daemon)
-    OCX_NIX_ENABLED              Enable nix workflow (true/false, default: false)
+    OCX_NIX                      Enable nix workflow (true/false, default: false)
     OCX_NIX_VOLUME_NAME          Nix volume name (default: ocx-nix)
     OCX_OPENCODE_CONFIG_DIR      OpenCode config directory path
     OCX_OPENCODE_VERSION         OpenCode version (default: latest)

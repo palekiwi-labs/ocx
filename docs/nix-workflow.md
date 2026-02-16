@@ -72,7 +72,7 @@ Create or edit `ocx.json` in your project directory:
 
 ```json
 {
-  "nix_enabled": true
+  "nix": true
 }
 ```
 
@@ -82,14 +82,14 @@ Create or edit `~/.config/ocx/ocx.json`:
 
 ```json
 {
-  "nix_enabled": true
+  "nix": true
 }
 ```
 
 #### 3. Environment Variables
 
 ```bash
-export OCX_NIX_ENABLED=true
+export OCX_NIX=true
 ```
 
 ### Configuration Options
@@ -98,13 +98,13 @@ All Nix-related configuration options with their defaults:
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `nix_enabled` | `false` | Enable Nix workflow |
+| `nix` | `false` | Enable Nix workflow |
 | `nix_volume_name` | `"ocx-nix"` | Named volume for shared /nix store |
 | `nix_daemon_container_name` | `"ocx-nix-daemon"` | Master nix daemon container name |
 
 ### Environment Variables
 
-- `OCX_NIX_ENABLED` - Enable/disable Nix workflow (true/false)
+- `OCX_NIX` - Enable/disable Nix workflow (true/false)
 - `OCX_NIX_VOLUME_NAME` - Override the Nix volume name
 - `OCX_NIX_DAEMON_CONTAINER_NAME` - Override the daemon container name
 
@@ -120,7 +120,7 @@ Once you've enabled the Nix workflow, OCX will automatically:
 
 ```bash
 # Enable nix in your project
-echo '{"nix_enabled": true}' > ocx.json
+echo '{"nix": true}' > ocx.json
 
 # Run OCX (nix daemon starts automatically)
 ocx opencode
@@ -250,7 +250,7 @@ To override the default OpenCode version, create a `flake.nix` in your project t
 Configure OCX to use your flake:
 ```json
 {
-  "nix_enabled": true,
+  "nix": true,
   "opencode_command": ["nix", "develop", "-c", "opencode"]
 }
 ```
@@ -277,7 +277,7 @@ For projects without specific dependency requirements:
 
 ```bash
 # Enable nix workflow
-echo '{"nix_enabled": true}' > ocx.json
+echo '{"nix": true}' > ocx.json
 
 # Run OCX
 ocx opencode
@@ -328,7 +328,7 @@ For projects needing specific packages alongside OpenCode:
 ```bash
 cat > ocx.json <<EOF
 {
-  "nix_enabled": true,
+  "nix": true,
   "opencode_command": ["nix", "develop", "-c", "opencode"]
 }
 EOF
@@ -430,7 +430,7 @@ docker exec ocx-nix-daemon nix-store --gc
 
 ### Automatic Build
 
-When `nix_enabled: true`, OCX automatically builds:
+When `nix: true`, OCX automatically builds:
 1. The nix-daemon image (`localhost/ocx-nix-daemon:latest`)
 2. The single universal dev image (`localhost/ocx-nix:latest`)
 
@@ -453,7 +453,7 @@ ocx build --base --force
 
 ### Custom Base Images Not Supported
 
-When `nix_enabled: true`, the `custom_base_dockerfile` configuration option is **not supported**. The Nix workflow uses a specialized single-image architecture optimized for Nix package management.
+When `nix: true`, the `custom_base_dockerfile` configuration option is **not supported**. The Nix workflow uses a specialized single-image architecture optimized for Nix package management.
 
 If you have `custom_base_dockerfile` configured and enable the Nix workflow, OCX will:
 - Display a warning
@@ -475,7 +475,7 @@ Unlike the traditional OCX workflow where OpenCode versions are managed via imag
 - The Nix workflow manages versions through `flake.lock`
 - Run `ocx nix update` to get the latest versions
 - Image rebuilds are not required for version updates
-- The `opencode_version` config option is ignored when `nix_enabled: true`
+- The `opencode_version` config option is ignored when `nix: true`
 
 ### Shared Flake Across Projects
 
@@ -515,8 +515,8 @@ ocx build --base --force
 # Check configuration
 ocx config | grep nix
 
-# Ensure nix_enabled is true
-echo '{"nix_enabled": true}' > ocx.json
+# Ensure nix is true
+echo '{"nix": true}' > ocx.json
 
 # Rebuild if needed
 ocx build --force
@@ -617,7 +617,7 @@ If you want to isolate Nix stores between different project groups:
 
 ```json
 {
-  "nix_enabled": true,
+  "nix": true,
   "nix_volume_name": "my-project-nix"
 }
 ```
@@ -628,7 +628,7 @@ Each unique volume name creates a separate Nix store.
 
 ```json
 {
-  "nix_enabled": true,
+  "nix": true,
   "nix_daemon_container_name": "my-nix-daemon"
 }
 ```
@@ -639,7 +639,7 @@ Combine Nix workflow with custom commands:
 
 ```json
 {
-  "nix_enabled": true,
+  "nix": true,
   "opencode_command": ["nix", "develop", ".#myshell", "-c", "opencode", "--model", "claude-sonnet-4"]
 }
 ```
@@ -686,11 +686,11 @@ If you're currently using a bind mount from host `/nix`:
 **After** (nix workflow):
 ```json
 {
-  "nix_enabled": true
+  "nix": true
 }
 ```
 
-Remove the `extra_data_volumes` entry and enable `nix_enabled`. The nix-daemon container will provide `/nix` instead of your host.
+Remove the `extra_data_volumes` entry and enable `nix`. The nix-daemon container will provide `/nix` instead of your host.
 
 ## Performance Considerations
 
@@ -752,7 +752,7 @@ Yes, use different `nix_volume_name` values. However, sharing a single volume is
 
 ### What happens if I disable Nix workflow?
 
-Simply set `nix_enabled: false` and rebuild. The volume and daemon remain but won't be used.
+Simply set `nix: false` and rebuild. The volume and daemon remain but won't be used.
 
 ### How do I backup my Nix store?
 
@@ -782,7 +782,7 @@ Yes! Flakes are enabled by default in the nix-daemon configuration.
 
 ### Can I use custom base images with the Nix workflow?
 
-No, `custom_base_dockerfile` is not supported when `nix_enabled: true`. The Nix workflow uses a specialized single-image architecture.
+No, `custom_base_dockerfile` is not supported when `nix: true`. The Nix workflow uses a specialized single-image architecture.
 
 For custom dependencies, define them in your project's `flake.nix` instead:
 
@@ -829,7 +829,7 @@ Create a project-specific `flake.nix` that pins to the desired version:
 Then configure OCX to use your flake:
 ```json
 {
-  "nix_enabled": true,
+  "nix": true,
   "opencode_command": ["nix", "develop", "-c", "opencode"]
 }
 ```

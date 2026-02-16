@@ -13,13 +13,13 @@ export def main [...args] {
     let cfg = (config load)
     
     # Ensure nix daemon is running if nix workflow is enabled
-    if $cfg.nix_enabled {
+    if $cfg.nix {
         nix_daemon ensure-running $cfg
         nix_daemon ensure-default-flake $cfg
     }
 
     # Resolve final command - always nest with default flake when nix is enabled
-    let final_opencode_command = if $cfg.nix_enabled {
+    let final_opencode_command = if $cfg.nix {
         # Always wrap in default devshell for nix workflow
         ["nix" "develop" "/nix/var/ocx" "-c" ...$cfg.opencode_command]
     } else {
@@ -30,7 +30,7 @@ export def main [...args] {
     let ws = workspace get-workspace $cfg
 
     # Determine image name based on config
-    let image_name = if $cfg.nix_enabled {
+    let image_name = if $cfg.nix {
         # Warn if custom base is configured (not supported for nix workflow)
         if ($cfg.custom_base_dockerfile != null) {
             print "Warning: custom_base_dockerfile is not supported with nix workflow"
@@ -79,7 +79,7 @@ export def main [...args] {
     }
 
     if not (image_exists $image_name) {
-        if $cfg.nix_enabled {
+        if $cfg.nix {
             print $"Image ($image_name) not found, building nix dev environment..."
             build
         } else {
@@ -174,7 +174,7 @@ export def main [...args] {
     }
     
     # Add nix volume if nix workflow is enabled
-    if $cfg.nix_enabled {
+    if $cfg.nix {
         let nix_volume = (nix_daemon get-volume-name $cfg)
         $cmd = ($cmd | append ["-v" $"($nix_volume):/nix:ro"])
     }
