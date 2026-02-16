@@ -101,12 +101,16 @@ All Nix-related configuration options with their defaults:
 | `nix` | `false` | Enable Nix workflow |
 | `nix_volume_name` | `"ocx-nix"` | Named volume for shared /nix store |
 | `nix_daemon_container_name` | `"ocx-nix-daemon"` | Master nix daemon container name |
+| `nix_extra_substituters` | `[]` | Additional binary cache servers beyond cache.nixos.org |
+| `nix_extra_trusted_public_keys` | `[]` | Public keys for additional substituters |
 
 ### Environment Variables
 
 - `OCX_NIX` - Enable/disable Nix workflow (true/false)
 - `OCX_NIX_VOLUME_NAME` - Override the Nix volume name
 - `OCX_NIX_DAEMON_CONTAINER_NAME` - Override the daemon container name
+- `OCX_NIX_EXTRA_SUBSTITUTERS` - Colon-separated list of additional binary caches
+- `OCX_NIX_EXTRA_TRUSTED_PUBLIC_KEYS` - Colon-separated list of public keys for caches
 
 ## Usage
 
@@ -197,6 +201,94 @@ Updates the default flake's `flake.lock` to get the latest OpenCode and other de
 ocx nix update
 ocx stop
 ocx opencode
+```
+
+### Configuring Binary Caches (Substituters)
+
+Binary caches (also called substituters) allow Nix to download pre-built packages instead of building them from source. OCX automatically configures the official `cache.nixos.org` cache, but you can add additional caches such as corporate caches, community caches, or private caches.
+
+#### Adding Custom Caches
+
+To add additional binary caches, configure `nix_extra_substituters` and their corresponding `nix_extra_trusted_public_keys` in your `ocx.json`:
+
+```json
+{
+  "nix": true,
+  "nix_extra_substituters": [
+    "https://cache.garnix.io",
+    "https://mycorp-cache.example.com"
+  ],
+  "nix_extra_trusted_public_keys": [
+    "cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g=",
+    "mycorp-cache:abc123..."
+  ]
+}
+```
+
+**Important Notes:**
+
+- **Rebuild Required**: After changing substituter configuration, you must rebuild the nix-daemon image:
+  ```bash
+  ocx build --base --force
+  ocx nix restart
+  ```
+
+- **Security**: Only add trusted public keys for caches you trust. The public key ensures that packages from the cache haven't been tampered with.
+
+- **Default Cache**: The official `cache.nixos.org` is always included automatically with its public key. You only need to specify additional caches.
+
+#### Using Environment Variables
+
+You can also configure substituters via environment variables using colon-separated lists:
+
+```bash
+export OCX_NIX_EXTRA_SUBSTITUTERS="https://cache.garnix.io:https://mycorp.example.com"
+export OCX_NIX_EXTRA_TRUSTED_PUBLIC_KEYS="cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g=:mycorp:abc123..."
+```
+
+#### Finding Public Keys
+
+Most public Nix caches publish their public keys in their documentation:
+
+- **Cachix caches**: Visit `https://app.cachix.org/<cache-name>` for instructions
+- **Garnix**: Documentation at https://garnix.io/docs/caching
+- **Custom caches**: Usually provided by your infrastructure team or in the cache's setup documentation
+
+#### Common Use Cases
+
+**Corporate/Private Cache:**
+```json
+{
+  "nix": true,
+  "nix_extra_substituters": ["https://nix-cache.corp.internal"],
+  "nix_extra_trusted_public_keys": ["corp-cache:YourPublicKeyHere="]
+}
+```
+
+**Community Cache (Cachix):**
+```json
+{
+  "nix": true,
+  "nix_extra_substituters": ["https://cache.cachix.org/your-cache"],
+  "nix_extra_trusted_public_keys": ["your-cache.cachix.org:YourPublicKeyHere="]
+}
+```
+
+**Multiple Caches:**
+```json
+{
+  "nix": true,
+  "nix_extra_substituters": [
+    "https://cache.garnix.io",
+    "https://cache.cachix.org/devenv",
+    "https://nix-cache.corp.internal"
+  ],
+  "nix_extra_trusted_public_keys": [
+    "cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g=",
+    "devenv.cachix.org:SomePublicKeyHere=",
+    "corp-cache:YourPublicKeyHere="
+  ]
+}
 ```
 
 ### Version Management

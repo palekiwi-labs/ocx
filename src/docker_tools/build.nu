@@ -14,7 +14,7 @@ export def main [
         # For nix workflow, build nix-daemon and nix-dev images
         if $cfg.nix {
             print "Building nix daemon..."
-            nix_daemon build --force=$force --no-cache=$no_cache
+            nix_daemon build $cfg --force=$force --no-cache=$no_cache
             
             print "Building nix dev environment..."
             build_nix_dev $cfg --force=$force --no-cache=$no_cache

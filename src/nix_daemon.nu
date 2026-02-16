@@ -39,7 +39,7 @@ export def is-running [container_name: string] {
 }
 
 # Build the nix daemon image if it doesn't exist
-def build-nix-daemon [--force, --no-cache] {
+def build-nix-daemon [cfg: record, --force, --no-cache] {
     if (not $force) and (image-exists $NIX_DAEMON_IMAGE) {
         return
     }
@@ -49,10 +49,16 @@ def build-nix-daemon [--force, --no-cache] {
     let context = $env.FILE_PWD
     let dockerfile = ($context | path join "Dockerfile.nix-daemon")
 
+    # Convert substituters and keys arrays to space-separated strings for build args
+    let extra_substituters = ($cfg.nix_extra_substituters | str join " ")
+    let extra_keys = ($cfg.nix_extra_trusted_public_keys | str join " ")
+
     mut cmd = [
         "docker" "build"
         "-f" $dockerfile
         "-t" $NIX_DAEMON_IMAGE
+        "--build-arg" $"NIX_EXTRA_SUBSTITUTERS=($extra_substituters)"
+        "--build-arg" $"NIX_EXTRA_TRUSTED_PUBLIC_KEYS=($extra_keys)"
     ]
 
     if $no_cache {
@@ -171,7 +177,7 @@ export def ensure-running [cfg: record] {
     # Ensure image exists
     if not (image-exists $NIX_DAEMON_IMAGE) {
         print "Nix daemon image not found, building..."
-        build-nix-daemon
+        build-nix-daemon $cfg
     }
 
     # Start daemon container
@@ -250,8 +256,8 @@ export def status [cfg: record] {
 }
 
 # Build the nix daemon image (exposed for ocx build command)
-export def build [--force, --no-cache] {
-    build-nix-daemon --force=$force --no-cache=$no_cache
+export def build [cfg: record, --force, --no-cache] {
+    build-nix-daemon $cfg --force=$force --no-cache=$no_cache
 }
 
 # Open a shell in the nix daemon container

@@ -44,6 +44,8 @@ export const DEFAULTS = {
     nix: false  # enable nix workflow with master nix-daemon container
     nix_volume_name: "ocx-nix"  # named volume for shared /nix store
     nix_daemon_container_name: "ocx-nix-daemon"  # master nix daemon container name
+    nix_extra_substituters: []  # additional binary cache servers beyond cache.nixos.org
+    nix_extra_trusted_public_keys: []  # public keys for additional substituters
     
     # Security
     read_only: false  # mount container root filesystem as read-only (set true for strict security)
