@@ -1,12 +1,4 @@
 {
-  "custom_base_dockerfile": "Dockerfile.ocx",
+  "nix_enabled": true,
   "opencode_command": ["nix", "develop", ".#ocx", "-c", "opencode"],
-  "extra_data_volumes": {
-    "nix": {
-      "source": "/nix",
-      "target": "/nix",
-      "mode": "ro",
-      "type": "bind"
-    }
-  }
 }
