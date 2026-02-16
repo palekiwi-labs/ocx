@@ -83,7 +83,9 @@ def list_remote_docs [owner: string, repo: string, docs_path: string, version: s
                     path: $relative_path,
                     download_url: $"https://raw.githubusercontent.com/($owner)/($repo)/($ref)/($file.path)"
                 }
-            })
+            }
+            | where path !~ '^[a-z]{2}(-[a-z]{2})?/'  # Exclude language directories (ar/, de/, zh-cn/, pt-br/, etc.)
+        )
 
         $files
     } catch { |err|
