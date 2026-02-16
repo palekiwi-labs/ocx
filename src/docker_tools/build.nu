@@ -11,25 +11,32 @@ export def main [
     let cfg = (config load)
 
     if $base {
-        # Building base layer
-        if ($cfg.custom_base_dockerfile != null) {
-            build_custom_base $cfg --force=$force --no-cache=$no_cache
-        } else {
-            build_ocx_base --force=$force --no-cache=$no_cache
-        }
-        
-        # Build nix-daemon if nix is enabled
+        # For nix workflow, build nix-daemon and nix-dev images
         if $cfg.nix_enabled {
             print "Building nix daemon..."
             nix_daemon build --force=$force --no-cache=$no_cache
+            
+            print "Building nix dev environment..."
+            build_nix_dev $cfg --force=$force --no-cache=$no_cache
+        } else {
+            # Building base layer for non-nix workflow
+            if ($cfg.custom_base_dockerfile != null) {
+                build_custom_base $cfg --force=$force --no-cache=$no_cache
+            } else {
+                build_ocx_base --force=$force --no-cache=$no_cache
+            }
+            
+            # Then build OCX layer
+            print "Base build complete, now building OCX..."
+            build_ocx $cfg --force=$force --no-cache=$no_cache
         }
-        
-        # Then build OCX layer
-        print "Base build complete, now building OCX..."
-        build_ocx $cfg --force=$force --no-cache=$no_cache
     } else {
         # Building OCX layer only
-        build_ocx $cfg --force=$force --no-cache=$no_cache
+        if $cfg.nix_enabled {
+            build_nix_dev $cfg --force=$force --no-cache=$no_cache
+        } else {
+            build_ocx $cfg --force=$force --no-cache=$no_cache
+        }
     }
 }
 
@@ -96,6 +103,56 @@ def build_ocx [cfg: record, --force, --no-cache] {
             "--build-arg" $"EXTRA_DIRS=($extra_dirs_arg)"
             "-t" $final_image
             "-t" $final_latest
+        ]
+        | append (if $no_cache { ["--no-cache"] } else { [] })
+        | append [$context]
+    )
+
+    run-external ...$cmd
+}
+
+def build_nix_dev [cfg: record, --force, --no-cache] {
+    # Warn if custom base is configured (not supported for nix workflow)
+    if ($cfg.custom_base_dockerfile != null) {
+        print "Warning: custom_base_dockerfile is not supported with nix workflow (nix_enabled=true)"
+        print "         Ignoring custom base and using standard nix-dev image"
+    }
+
+    const NIX_DEV_IMAGE = "localhost/ocx-nix:latest"
+    let context = $env.FILE_PWD
+    let dockerfile = ($context | path join "Dockerfile.nix-dev")
+
+    if (not $force) and (image_exists $NIX_DEV_IMAGE) {
+        print $"Nix dev image ($NIX_DEV_IMAGE) already exists, skipping build \(use --force to rebuild\)"
+        return
+    }
+
+    let user_settings = (config resolve-user $cfg)
+
+    # Resolve extra data directories from config to bake them into the image
+    let extra_volumes = (resolve-extra-volumes $cfg $user_settings.username)
+
+    # Only include target paths for volume-type mounts (not bind mounts)
+    let volume_dirs = ($extra_volumes
+        | where type == "volume"
+        | get target)
+    let extra_dirs_arg = ($volume_dirs | str join " ")
+
+    print $"Building nix dev image: ($NIX_DEV_IMAGE)"
+    print $"  Container user: ($user_settings.username) \(UID: ($user_settings.uid), GID: ($user_settings.gid)\)"
+    if ($extra_dirs_arg != "") {
+        print $"  Injecting extra volume directories: ($extra_dirs_arg)"
+    }
+
+    let cmd = (
+        [
+            "docker" "build"
+            "-f" $dockerfile
+            "--build-arg" $"USERNAME=($user_settings.username)"
+            "--build-arg" $"UID=($user_settings.uid)"
+            "--build-arg" $"GID=($user_settings.gid)"
+            "--build-arg" $"EXTRA_DIRS=($extra_dirs_arg)"
+            "-t" $NIX_DEV_IMAGE
         ]
         | append (if $no_cache { ["--no-cache"] } else { [] })
         | append [$context]

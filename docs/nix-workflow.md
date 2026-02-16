@@ -4,15 +4,44 @@ OCX supports optional Nix package management through a dual-container architectu
 
 ## Architecture
 
-The Nix workflow uses two types of containers:
+The Nix workflow uses a specialized architecture optimized for Nix package management:
 
 1. **Master Nix Container (nix-daemon)**: A long-running container that runs the Nix daemon and manages the shared `/nix` store
-2. **Dev Containers**: Your regular OCX containers that access the `/nix` store read-only to use Nix packages
+2. **Dev Containers**: Lightweight containers that use the single `ocx-nix:latest` image and access the `/nix` store read-only
+3. **Default Flake**: A shared flake configuration at `/nix/var/ocx/` that provides OpenCode and can be used by all dev containers
 
 This architecture provides:
 - **Centralized package cache**: All projects share the same Nix store, reducing disk usage and build times
 - **Portability**: Works on any system with Docker, no host Nix installation required
 - **Isolation**: Nix daemon runs in its own container with appropriate security controls
+- **Simplified images**: Dev containers use a single universal image without embedded OpenCode binaries
+- **Flexible package management**: OpenCode and other tools are managed entirely through Nix
+
+### Single Universal Image
+
+When the Nix workflow is enabled, OCX uses a single universal dev image (`localhost/ocx-nix:latest`) instead of the traditional two-layer architecture (base + opencode). This image:
+
+- Contains essential development tools (git, ripgrep, curl, etc.)
+- Configures Nix with flakes enabled
+- Sets up the container user and workspace
+- **Does not include the OpenCode binary** - OpenCode is provided by Nix
+
+This means:
+- No version in the image tag (OpenCode version is managed by the flake)
+- Faster image builds (no binary downloads)
+- Updates are managed through `ocx nix update` rather than rebuilding images
+- Custom base images (`custom_base_dockerfile`) are not supported with the Nix workflow
+
+### Default Flake
+
+OCX automatically provides a default flake at `/nix/var/ocx/flake.nix` that includes OpenCode from the official GitHub repository. This flake:
+
+- Tracks the latest development version of OpenCode (`github:anomalyco/opencode/dev`)
+- Is shared across all your OCX projects using the same nix volume
+- Can be updated with `ocx nix update` to get the latest OpenCode
+- Serves as a fallback for projects without their own `flake.nix`
+
+You can override this by providing your own `flake.nix` in your project and configuring `opencode_command` accordingly.
 
 ## Configuration
 
@@ -139,9 +168,114 @@ The daemon is lightweight when idle, so stopping it is usually not necessary. Ho
 ocx nix restart
 ```
 
+#### Update Default Flake
+
+```bash
+ocx nix update
+```
+
+Updates the default flake's `flake.lock` to get the latest OpenCode and other dependencies. After updating, restart your dev containers to use the new versions:
+
+```bash
+ocx nix update
+ocx stop
+ocx opencode
+```
+
+### Version Management
+
+When using the Nix workflow, OpenCode versions are managed through Nix flakes rather than downloading binaries from GitHub releases. This provides several advantages:
+
+- **Reproducible builds**: The `flake.lock` file pins exact versions of all dependencies
+- **Easy updates**: Run `ocx nix update` to get the latest versions
+- **Custom versions**: Override with your own `flake.nix` to pin specific OpenCode versions
+- **No image rebuilds**: Version changes don't require rebuilding the dev container image
+
+#### Using the Default Flake
+
+By default, OCX provides a flake at `/nix/var/ocx/` that tracks the latest OpenCode development version. This is used automatically when you run `ocx opencode` without a project-specific flake.
+
+**To update to the latest OpenCode:**
+```bash
+ocx nix update
+ocx stop
+ocx opencode
+```
+
+#### Using a Specific OpenCode Version
+
+Create a `flake.nix` in your project to pin a specific version:
+
+```nix
+{
+  description = "My project with OpenCode v1.1.23";
+
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    opencode.url = "github:anomalyco/opencode/v1.1.23";  # Pin to specific version
+  };
+
+  outputs = { self, nixpkgs, opencode, ... }:
+    let
+      system = "x86_64-linux";
+      pkgs = import nixpkgs {
+        inherit system;
+        overlays = [ opencode.overlays.default ];
+      };
+    in
+    {
+      devShells.${system}.default = pkgs.mkShell {
+        buildInputs = [
+          pkgs.opencode
+        ];
+      };
+    };
+}
+```
+
+Configure OCX to use your flake:
+```json
+{
+  "nix_enabled": true,
+  "opencode_command": ["nix", "develop", "-c", "opencode"]
+}
+```
+
+#### Checking Current Version
+
+Inside the container:
+```bash
+opencode --version
+```
+
+Or to see what the flake would provide:
+```bash
+nix flake show /nix/var/ocx
+```
+
 ### Example Project Setup
 
-Here's a complete example of setting up a project with Nix and OCX:
+#### Quick Start (No Custom Flake)
+
+For projects without specific dependency requirements:
+
+```bash
+# Enable nix workflow
+echo '{"nix_enabled": true}' > ocx.json
+
+# Run OCX
+ocx opencode
+# System automatically:
+# 1. Starts nix-daemon
+# 2. Initializes default flake with OpenCode
+# 3. Launches OpenCode via nix develop
+```
+
+The default flake provides OpenCode and common tools. Perfect for exploring projects or quick prototyping.
+
+#### With Custom Dependencies
+
+For projects needing specific packages alongside OpenCode:
 
 1. **Create a flake.nix** in your project:
 
@@ -151,16 +285,21 @@ Here's a complete example of setting up a project with Nix and OCX:
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    opencode.url = "github:anomalyco/opencode/dev";
   };
 
-  outputs = { self, nixpkgs }:
+  outputs = { self, nixpkgs, opencode, ... }:
     let
       system = "x86_64-linux";
-      pkgs = nixpkgs.legacyPackages.${system};
+      pkgs = import nixpkgs {
+        inherit system;
+        overlays = [ opencode.overlays.default ];
+      };
     in
     {
       devShells.${system}.default = pkgs.mkShell {
         buildInputs = with pkgs; [
+          opencode
           nodejs_20
           python311
           rustc
@@ -244,16 +383,59 @@ docker exec ocx-nix-daemon nix-store --gc
 
 ### Automatic Build
 
-When `nix_enabled: true`, the nix-daemon image is automatically built when needed.
+When `nix_enabled: true`, OCX automatically builds:
+1. The nix-daemon image (`localhost/ocx-nix-daemon:latest`)
+2. The single universal dev image (`localhost/ocx-nix:latest`)
+
+These images are built when needed (first run or when missing).
 
 ### Manual Build
 
 ```bash
-# Build all images including nix-daemon
+# Build all nix-related images
 ocx build --base --force
 
-# The nix-daemon image will be built if nix is enabled
+# This builds:
+# - localhost/ocx-nix-daemon:latest (nix daemon)
+# - localhost/ocx-nix:latest (universal dev image)
 ```
+
+**Note**: The dev image (`ocx-nix:latest`) has no version tag because it doesn't contain the OpenCode binary. OpenCode is provided by Nix at runtime through the flake configuration.
+
+## Important Notes
+
+### Custom Base Images Not Supported
+
+When `nix_enabled: true`, the `custom_base_dockerfile` configuration option is **not supported**. The Nix workflow uses a specialized single-image architecture optimized for Nix package management.
+
+If you have `custom_base_dockerfile` configured and enable the Nix workflow, OCX will:
+- Display a warning
+- Ignore the custom base configuration
+- Use the standard `ocx-nix:latest` image
+
+If you need custom dependencies, define them in your project's `flake.nix` instead.
+
+### First Run Takes Longer
+
+The first time you run `ocx opencode` with the Nix workflow or after running `ocx nix update`:
+- Nix downloads and builds OpenCode and all dependencies
+- This can take several minutes depending on your internet connection
+- Subsequent runs are much faster as packages are cached in the shared `/nix` store
+
+### Version Management Differences
+
+Unlike the traditional OCX workflow where OpenCode versions are managed via image tags:
+- The Nix workflow manages versions through `flake.lock`
+- Run `ocx nix update` to get the latest versions
+- Image rebuilds are not required for version updates
+- The `opencode_version` config option is ignored when `nix_enabled: true`
+
+### Shared Flake Across Projects
+
+The default flake at `/nix/var/ocx/` is shared across all projects using the same nix volume:
+- All projects without a custom flake use this shared configuration
+- Running `ocx nix update` affects all projects using the default flake
+- For project-specific versions, create a `flake.nix` in your project
 
 ## Troubleshooting
 
@@ -293,6 +475,47 @@ echo '{"nix_enabled": true}' > ocx.json
 ocx build --force
 ```
 
+### Error: "opencode: command not found"
+
+**Symptom**: OpenCode is not available in the container.
+
+**Possible causes**:
+1. Default flake not initialized
+2. Nix develop command not configured correctly
+3. OpenCode download failed
+
+**Solution**:
+```bash
+# Check if default flake exists
+docker exec ocx-nix-daemon test -f /nix/var/ocx/flake.nix && echo "Flake exists" || echo "Flake missing"
+
+# If missing, the next run should initialize it
+ocx stop
+ocx opencode
+
+# If flake exists but OpenCode still not available, try updating
+ocx nix update
+ocx stop
+ocx opencode
+```
+
+### Error: "Default flake not found"
+
+**Symptom**: Error message about missing default flake when running commands.
+
+**Cause**: The default flake at `/nix/var/ocx/flake.nix` was not initialized or was deleted.
+
+**Solution**:
+```bash
+# Ensure daemon is running
+ocx nix start
+
+# The next run of ocx opencode will reinitialize the flake
+ocx opencode
+```
+
+If the problem persists, the template file may be missing from your OCX installation. Try reinstalling OCX.
+
 ### Slow First Run
 
 **Symptom**: First `nix develop` or `nix-shell` command takes a long time.
@@ -300,8 +523,9 @@ ocx build --force
 **Explanation**: This is normal. The first run:
 1. Initializes the Nix store in the volume
 2. Downloads all packages from scratch
+3. Builds OpenCode and dependencies from source
 
-Subsequent runs will be much faster as packages are cached.
+This can take 5-10 minutes on first run. Subsequent runs will be much faster as packages are cached.
 
 ### Volume Size Growing Large
 
@@ -494,6 +718,86 @@ docker run --rm -v ocx-nix:/nix -v $(pwd):/backup alpine \
 ### Can I use Nix flakes with this?
 
 Yes! Flakes are enabled by default in the nix-daemon configuration.
+
+### How is the Nix workflow different from the standard OCX workflow?
+
+**Standard OCX workflow:**
+- Uses base image + final image architecture
+- Downloads OpenCode binary from GitHub releases
+- Version managed via image tags (e.g., `localhost/ocx:1.1.23`)
+- Update via `ocx upgrade` which rebuilds images
+
+**Nix workflow:**
+- Uses single universal image (`localhost/ocx-nix:latest`)
+- OpenCode provided by Nix at runtime via flake
+- Version managed via `flake.lock`
+- Update via `ocx nix update` (no rebuild needed)
+
+### Can I use custom base images with the Nix workflow?
+
+No, `custom_base_dockerfile` is not supported when `nix_enabled: true`. The Nix workflow uses a specialized single-image architecture.
+
+For custom dependencies, define them in your project's `flake.nix` instead:
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    opencode.url = "github:anomalyco/opencode/dev";
+  };
+  outputs = { nixpkgs, opencode, ... }: {
+    # Add your custom packages here
+    devShells.x86_64-linux.default = pkgs.mkShell {
+      buildInputs = [
+        pkgs.opencode
+        pkgs.myCustomPackage
+      ];
+    };
+  };
+}
+```
+
+### How do I update OpenCode with the Nix workflow?
+
+```bash
+ocx nix update  # Updates flake.lock
+ocx stop
+ocx opencode    # Restart with new version
+```
+
+This updates the default flake to get the latest OpenCode from the dev branch.
+
+### What if I need a specific OpenCode version?
+
+Create a project-specific `flake.nix` that pins to the desired version:
+
+```nix
+{
+  inputs = {
+    opencode.url = "github:anomalyco/opencode/v1.1.23";  # Pin version
+  };
+}
+```
+
+Then configure OCX to use your flake:
+```json
+{
+  "nix_enabled": true,
+  "opencode_command": ["nix", "develop", "-c", "opencode"]
+}
+```
+
+### Where is the default flake stored?
+
+The default flake is at `/nix/var/ocx/flake.nix` inside the shared nix volume. This location:
+- Is accessible to both the daemon and all dev containers
+- Persists across container restarts
+- Is shared by all projects using the same nix volume
+
+You can inspect it:
+```bash
+docker exec ocx-nix-daemon cat /nix/var/ocx/flake.nix
+```
 
 ## See Also
 

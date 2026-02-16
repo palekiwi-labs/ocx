@@ -64,6 +64,57 @@ def build-nix-daemon [--force, --no-cache] {
     run-external ...$cmd
 }
 
+# Ensure the default flake exists in the nix volume
+export def ensure-default-flake [cfg: record] {
+    if not $cfg.nix_enabled {
+        return
+    }
+    
+    let container_name = (get-container-name $cfg)
+    
+    # Check if daemon is running
+    if not (is-running $container_name) {
+        error make {
+            msg: "Nix daemon is not running"
+            label: {
+                text: "Cannot initialize default flake without running daemon"
+            }
+        }
+    }
+    
+    # Check if flake already exists
+    let flake_exists = (docker exec $container_name test -f /nix/var/ocx/flake.nix | complete).exit_code == 0
+    
+    if $flake_exists {
+        return
+    }
+    
+    print "Initializing default OCX flake in /nix/var/ocx..."
+    
+    # Create directory in volume
+    docker exec $container_name mkdir -p /nix/var/ocx | ignore
+    
+    # Copy default flake template into container
+    let template_path = ($env.FILE_PWD | path join "nix/default-flake.nix")
+    
+    if not ($template_path | path exists) {
+        error make {
+            msg: "Default flake template not found"
+            label: {
+                text: $"Expected template at ($template_path)"
+            }
+        }
+    }
+    
+    # Copy the flake file into the container
+    let flake_content = (open $template_path)
+    echo $flake_content | docker exec -i $container_name sh -c "cat > /nix/var/ocx/flake.nix"
+    
+    print "Default flake initialized successfully"
+    print "  Location: /nix/var/ocx/flake.nix"
+    print "  Update with: ocx nix update"
+}
+
 # Ensure the nix daemon container is running
 export def ensure-running [cfg: record] {
     if not $cfg.nix_enabled {
@@ -179,4 +230,57 @@ export def shell [cfg: record] {
     
     print $"Opening shell in nix daemon container: ($container_name)"
     run-external "docker" "exec" "-it" $container_name "bash"
+}
+
+# Update the default flake (updates flake.lock)
+export def update [cfg: record] {
+    if not $cfg.nix_enabled {
+        print "Nix workflow is not enabled"
+        print "Enable it by setting nix_enabled: true in your config"
+        return
+    }
+    
+    let container_name = (get-container-name $cfg)
+    
+    if not (is-running $container_name) {
+        error make {
+            msg: "Nix daemon is not running"
+            label: {
+                text: $"Container ($container_name) is not running. Start it with: ocx nix start"
+            }
+        }
+    }
+    
+    # Check if default flake exists
+    let flake_exists = (docker exec $container_name test -f /nix/var/ocx/flake.nix | complete).exit_code == 0
+    
+    if not $flake_exists {
+        error make {
+            msg: "Default flake not found"
+            label: {
+                text: "Run 'ocx opencode' first to initialize the default flake"
+            }
+        }
+    }
+    
+    print "Updating OCX default flake..."
+    print "  Running: nix flake update /nix/var/ocx"
+    
+    # Run nix flake update in the daemon container
+    let result = (docker exec $container_name nix flake update /nix/var/ocx | complete)
+    
+    if $result.exit_code != 0 {
+        error make {
+            msg: "Failed to update flake"
+            label: {
+                text: $"Error: ($result.stderr)"
+            }
+        }
+    }
+    
+    print ""
+    print "Flake updated successfully!"
+    print "Restart your dev containers to use the updated packages:"
+    print "  ocx stop"
+    print "  ocx opencode"
 }
