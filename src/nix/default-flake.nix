@@ -3,30 +3,25 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    flake-utils.url = "github:numtide/flake-utils";
     opencode.url = "github:anomalyco/opencode/dev";
   };
 
-  outputs = { self, nixpkgs, opencode, ... }:
-    let
-      supportedSystems = [ "x86_64-linux" "aarch64-linux" ];
-      forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
-    in
-    {
-      devShells = forAllSystems (system:
-        let
-          pkgs = import nixpkgs {
-            inherit system;
-            overlays = [ opencode.overlays.default ];
-          };
-        in
-        {
-          default = pkgs.mkShell {
-            name = "ocx-default";
-            buildInputs = [
-              pkgs.opencode
-            ];
-          };
-        }
-      );
-    };
+  outputs = { nixpkgs, flake-utils, opencode, ... }:
+    flake-utils.lib.eachDefaultSystem (system:
+      let
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [ opencode.overlays.default ];
+        };
+      in
+      {
+        devShells.default = pkgs.mkShell {
+          name = "ocx-default";
+          buildInputs = [
+            pkgs.opencode
+          ];
+        };
+      }
+    );
 }
