@@ -237,6 +237,11 @@ To add additional binary caches, configure `nix_extra_substituters` and their co
 
 - **Default Cache**: The official `cache.nixos.org` is always included automatically with its public key. You only need to specify additional caches.
 
+- **Flake Compatibility**: Configured substituters are automatically whitelisted as `trusted-substituters`, which means:
+  - The nix-daemon uses these caches by default
+  - Non-root users in dev containers can reference these caches in their `flake.nix` files via `nixConfig.extra-substituters`
+  - Users cannot specify arbitrary caches (security restriction) - only caches configured by the admin are allowed
+
 #### Using Environment Variables
 
 You can also configure substituters via environment variables using colon-separated lists:
@@ -290,6 +295,36 @@ Most public Nix caches publish their public keys in their documentation:
   ]
 }
 ```
+
+#### Using Configured Caches in Your Flake
+
+Once you've configured additional caches in `ocx.json`, users can reference them in their project's `flake.nix`:
+
+```nix
+{
+  description = "My project";
+  
+  # Reference the admin-configured caches
+  nixConfig = {
+    extra-substituters = [
+      "https://cache.garnix.io"
+    ];
+    extra-trusted-public-keys = [
+      "cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g="
+    ];
+  };
+  
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+  };
+  
+  outputs = { self, nixpkgs }: {
+    # your outputs here
+  };
+}
+```
+
+**Note**: Users can only reference caches that have been configured by the admin in `ocx.json`. Attempting to use other caches will result in a "substituter is not trusted" error. This is a security feature to prevent users from using potentially malicious binary caches.
 
 ### Version Management
 
