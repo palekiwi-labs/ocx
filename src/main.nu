@@ -244,7 +244,6 @@ def "main nix start" [] {
     try {
         let cfg = load
         nix_daemon ensure-running $cfg
-        print "Nix daemon started successfully"
     } catch { |err|
         errors pretty-print $err
     }
@@ -264,7 +263,6 @@ def "main nix restart" [] {
         let cfg = load
         nix_daemon stop $cfg
         nix_daemon ensure-running $cfg
-        print "Nix daemon restarted successfully"
     } catch { |err|
         errors pretty-print $err
     }
