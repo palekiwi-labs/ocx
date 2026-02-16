@@ -2,8 +2,17 @@ FROM nixos/nix:latest
 
 USER root
 
-# Enable flakes and nix command (not enabled by default in base image)
-RUN echo "experimental-features = nix-command flakes" >> /etc/nix/nix.conf
+# Build args for configuring substituters (binary caches)
+ARG NIX_EXTRA_SUBSTITUTERS=""
+ARG NIX_EXTRA_TRUSTED_PUBLIC_KEYS=""
+
+# Configure nix.conf with experimental features and substituters
+# Default substituter (cache.nixos.org) is always included with its public key
+# trusted-substituters allows non-root users in dev containers to use these caches in their flakes
+RUN printf 'experimental-features = nix-command flakes\n' > /etc/nix/nix.conf && \
+    printf 'substituters = https://cache.nixos.org %s\n' "$NIX_EXTRA_SUBSTITUTERS" >> /etc/nix/nix.conf && \
+    printf 'trusted-substituters = https://cache.nixos.org %s\n' "$NIX_EXTRA_SUBSTITUTERS" >> /etc/nix/nix.conf && \
+    printf 'trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= %s\n' "$NIX_EXTRA_TRUSTED_PUBLIC_KEYS" >> /etc/nix/nix.conf
 
 # Configure git to allow any directory
 # (daemon runs as root but builds repos owned by other users)
@@ -11,6 +20,9 @@ RUN git config --global safe.directory '*'
 
 # The nix store will be in the mounted volume at /nix
 VOLUME /nix
+
+# Limit GC marker threads to prevent memory explosion on high-core hosts
+ENV GC_NPROCS=1
 
 # Run the nix daemon
 CMD ["nix-daemon"]

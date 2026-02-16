@@ -13,18 +13,38 @@ export def main [...args] {
     let cfg = (config load)
     
     # Ensure nix daemon is running if nix workflow is enabled
-    nix_daemon ensure-running $cfg
+    if $cfg.nix {
+        nix_daemon ensure-running $cfg
+        nix_daemon ensure-default-flake $cfg
+    }
+
+    # Resolve final command - always nest with default flake when nix is enabled
+    let final_opencode_command = if $cfg.nix {
+        # Always wrap in default devshell for nix workflow
+        ["nix" "develop" "/nix/var/ocx" "-c" ...$cfg.opencode_command]
+    } else {
+        # Non-nix workflow: use command as-is
+        $cfg.opencode_command
+    }
     
     let ws = workspace get-workspace $cfg
 
-    let version = (version resolve-version $cfg.opencode_version $cfg)
-
     # Determine image name based on config
-    let image_name = if ($cfg.custom_base_dockerfile != null) {
-        let resolved = (resolve-dockerfile-path $cfg.custom_base_dockerfile)
-        $"localhost/ocx-($resolved.name):($version)"
+    let image_name = if $cfg.nix {
+        # Warn if custom base is configured (not supported for nix workflow)
+        if ($cfg.custom_base_dockerfile != null) {
+            print "Warning: custom_base_dockerfile is not supported with nix workflow"
+            print "         Using standard nix-dev image"
+        }
+        "localhost/ocx-nix:latest"
     } else {
-        $"localhost/ocx:($version)"
+        let version = (version resolve-version $cfg.opencode_version $cfg)
+        if ($cfg.custom_base_dockerfile != null) {
+            let resolved = (resolve-dockerfile-path $cfg.custom_base_dockerfile)
+            $"localhost/ocx-($resolved.name):($version)"
+        } else {
+            $"localhost/ocx:($version)"
+        }
     }
 
     let port = if $cfg.port == null { ports generate } else { $cfg.port }
@@ -59,8 +79,14 @@ export def main [...args] {
     }
 
     if not (image_exists $image_name) {
-        print $"Image ($image_name) not found, building OpenCode v($version)..."
-        build
+        if $cfg.nix {
+            print $"Image ($image_name) not found, building nix dev environment..."
+            build
+        } else {
+            let version = (version resolve-version $cfg.opencode_version $cfg)
+            print $"Image ($image_name) not found, building OpenCode v($version)..."
+            build
+        }
     }
 
     mkdir $opencode_config_dir
@@ -148,7 +174,7 @@ export def main [...args] {
     }
     
     # Add nix volume if nix workflow is enabled
-    if $cfg.nix_enabled {
+    if $cfg.nix {
         let nix_volume = (nix_daemon get-volume-name $cfg)
         $cmd = ($cmd | append ["-v" $"($nix_volume):/nix:ro"])
     }
@@ -184,7 +210,7 @@ export def main [...args] {
     $cmd = ($cmd | append [
         "--workdir" $ws.container_path
         "--name" $container_name
-        $image_name ...$cfg.opencode_command ...$args
+        $image_name ...$final_opencode_command ...$args
     ])
 
     run-external ...$cmd

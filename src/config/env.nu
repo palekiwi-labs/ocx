@@ -79,17 +79,23 @@ export def get-env-overrides [] {
      if ($env.OCX_OPENCODE_COMMAND? | default null) != null {
          $overrides = ($overrides | append {key: "opencode_command", env_var: "OCX_OPENCODE_COMMAND"})
      }
-     if ($env.OCX_NIX_ENABLED? | default null) != null {
-         $overrides = ($overrides | append {key: "nix_enabled", env_var: "OCX_NIX_ENABLED"})
+      if ($env.OCX_NIX? | default null) != null {
+          $overrides = ($overrides | append {key: "nix", env_var: "OCX_NIX"})
      }
      if ($env.OCX_NIX_VOLUME_NAME? | default null) != null {
          $overrides = ($overrides | append {key: "nix_volume_name", env_var: "OCX_NIX_VOLUME_NAME"})
      }
-     if ($env.OCX_NIX_DAEMON_CONTAINER_NAME? | default null) != null {
-         $overrides = ($overrides | append {key: "nix_daemon_container_name", env_var: "OCX_NIX_DAEMON_CONTAINER_NAME"})
-     }
-      
-      $overrides
+      if ($env.OCX_NIX_DAEMON_CONTAINER_NAME? | default null) != null {
+          $overrides = ($overrides | append {key: "nix_daemon_container_name", env_var: "OCX_NIX_DAEMON_CONTAINER_NAME"})
+      }
+      if ($env.OCX_NIX_EXTRA_SUBSTITUTERS? | default null) != null {
+          $overrides = ($overrides | append {key: "nix_extra_substituters", env_var: "OCX_NIX_EXTRA_SUBSTITUTERS"})
+      }
+      if ($env.OCX_NIX_EXTRA_TRUSTED_PUBLIC_KEYS? | default null) != null {
+          $overrides = ($overrides | append {key: "nix_extra_trusted_public_keys", env_var: "OCX_NIX_EXTRA_TRUSTED_PUBLIC_KEYS"})
+      }
+       
+       $overrides
   }
 
 export def apply-env-overrides [config: record] {
@@ -255,10 +261,10 @@ export def apply-env-overrides [config: record] {
          $result = ($result | upsert opencode_command ($opencode_command_env | from json))
      }
      
-     # OCX_NIX_ENABLED
-     let nix_enabled_env = $env.OCX_NIX_ENABLED? | default null
-     if $nix_enabled_env != null {
-         $result = ($result | upsert nix_enabled ($nix_enabled_env | into bool))
+      # OCX_NIX
+      let nix_env = $env.OCX_NIX? | default null
+      if $nix_env != null {
+          $result = ($result | upsert nix ($nix_env | into bool))
      }
      
      # OCX_NIX_VOLUME_NAME
@@ -267,11 +273,31 @@ export def apply-env-overrides [config: record] {
          $result = ($result | upsert nix_volume_name $nix_volume_name_env)
      }
      
-     # OCX_NIX_DAEMON_CONTAINER_NAME
-     let nix_daemon_container_name_env = $env.OCX_NIX_DAEMON_CONTAINER_NAME? | default null
-     if $nix_daemon_container_name_env != null {
-         $result = ($result | upsert nix_daemon_container_name $nix_daemon_container_name_env)
-     }
+      # OCX_NIX_DAEMON_CONTAINER_NAME
+      let nix_daemon_container_name_env = $env.OCX_NIX_DAEMON_CONTAINER_NAME? | default null
+      if $nix_daemon_container_name_env != null {
+          $result = ($result | upsert nix_daemon_container_name $nix_daemon_container_name_env)
+      }
       
-      $result
+      # OCX_NIX_EXTRA_SUBSTITUTERS (colon-separated)
+      let nix_extra_substituters_env = $env.OCX_NIX_EXTRA_SUBSTITUTERS? | default null
+      if $nix_extra_substituters_env != null {
+          let substituters = ($nix_extra_substituters_env | split row ":")
+          # Merge with existing from config files
+          let existing = $result.nix_extra_substituters
+          let merged = ($existing | append $substituters | uniq)
+          $result = ($result | upsert nix_extra_substituters $merged)
+      }
+      
+      # OCX_NIX_EXTRA_TRUSTED_PUBLIC_KEYS (colon-separated)
+      let nix_extra_trusted_public_keys_env = $env.OCX_NIX_EXTRA_TRUSTED_PUBLIC_KEYS? | default null
+      if $nix_extra_trusted_public_keys_env != null {
+          let keys = ($nix_extra_trusted_public_keys_env | split row ":")
+          # Merge with existing from config files
+          let existing = $result.nix_extra_trusted_public_keys
+          let merged = ($existing | append $keys | uniq)
+          $result = ($result | upsert nix_extra_trusted_public_keys $merged)
+      }
+       
+       $result
   }

@@ -1,0 +1,9 @@
+{
+  "nix": true,
+  "nix_extra_substituters": [
+    "https://cache.garnix.io"
+  ],
+  "nix_extra_trusted_public_keys": [
+    "cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g="
+  ]
+}

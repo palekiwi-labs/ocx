@@ -108,7 +108,7 @@ export def validate [config: record] {
         }
     }
 
-    # Validate opencode_command
+    # Validate opencode_command (must be array of strings)
     if ($config.opencode_command | describe) !~ "list" {
         error make {
             msg: "Invalid opencode_command value"

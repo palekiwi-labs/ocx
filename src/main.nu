@@ -208,7 +208,6 @@ def "main image remove-all" [
 }
 
 def "main nix" [] {
-    try {
         print "OCX Nix Management
 
 USAGE:
@@ -220,6 +219,7 @@ SUBCOMMANDS:
     stop      Stop nix daemon container
     restart   Restart nix daemon container
     shell     Open shell in nix daemon container
+    update    Update default flake (updates flake.lock)
 
 EXAMPLES:
     ocx nix status     # Check if nix daemon is running
@@ -227,10 +227,8 @@ EXAMPLES:
     ocx nix stop       # Stop nix daemon
     ocx nix restart    # Restart nix daemon
     ocx nix shell      # Open shell for inspection
+    ocx nix update     # Update default flake to latest OpenCode
 "
-    } catch { |err|
-        errors pretty-print $err
-    }
 }
 
 def "main nix status" [] {
@@ -274,6 +272,15 @@ def "main nix shell" [] {
     try {
         let cfg = load
         nix_daemon shell $cfg
+    } catch { |err|
+        errors pretty-print $err
+    }
+}
+
+def "main nix update" [] {
+    try {
+        let cfg = load
+        nix_daemon update $cfg
     } catch { |err|
         errors pretty-print $err
     }
@@ -334,6 +341,7 @@ OPTIONS:
     ocx nix start                   # Start nix daemon
     ocx nix stop                    # Stop nix daemon
     ocx nix shell                   # Open shell in nix daemon
+    ocx nix update                  # Update default flake
     ocx upgrade                     # Check and update to latest version
     ocx version                     # Show version
     ocx help                        # Show help
@@ -351,7 +359,7 @@ ENVIRONMENT VARIABLES:
     OCX_MEMORY                   Memory limit (default: 1024m)
     OCX_NETWORK                  Docker network mode (default: bridge)
     OCX_NIX_DAEMON_CONTAINER_NAME Nix daemon container name (default: ocx-nix-daemon)
-    OCX_NIX_ENABLED              Enable nix workflow (true/false, default: false)
+    OCX_NIX                      Enable nix workflow (true/false, default: false)
     OCX_NIX_VOLUME_NAME          Nix volume name (default: ocx-nix)
     OCX_OPENCODE_CONFIG_DIR      OpenCode config directory path
     OCX_OPENCODE_VERSION         OpenCode version (default: latest)
