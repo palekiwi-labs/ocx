@@ -27,24 +27,7 @@ export def get-passthrough-vars [] {
         "FIREWORKS_API_KEY",
         "AICORE_SERVICE_KEY",
         "AICORE_DEPLOYMENT_ID",
-        "GITLAB_TOKEN",
-        "GITLAB_INSTANCE_URL",
-        
-        # External Integration & Third Party
-        "GITHUB_TOKEN",
-        "USE_GITHUB_TOKEN",
-        
-        # System & Proxy Settings
-        "HTTP_PROXY",
-        "HTTPS_PROXY",
-        "SHELL",
-        "EDITOR",
-        "VISUAL",
-        "TMUX",
-        "STY",
-        "LANG",
-        "LC_ALL",
-        
+
         # Core Configuration Flags
         "OPENCODE_AUTO_SHARE",
         "OPENCODE_DISABLE_AUTOUPDATE",
@@ -59,7 +42,7 @@ export def get-passthrough-vars [] {
         "OPENCODE_GIT_BASH_PATH",
         "OPENCODE_SERVER_USERNAME",
         "OPENCODE_SERVER_PASSWORD",
-        
+
         # Configuration with Paths (users must provide container paths)
         "OPENCODE_CONFIG",
         "OPENCODE_CONFIG_DIR",
@@ -74,15 +57,15 @@ export def get-passthrough-vars [] {
 # Returns: A list of strings in the format ["-e", "VAR_NAME", "-e", "VAR_NAME", ...]
 export def generate-docker-args [] {
     mut args = []
-    
+
     for var_name in (get-passthrough-vars) {
         # Check if the variable exists in the host environment
         let var_value = (do -i { $env | get -o $var_name })
-        
+
         if $var_value != null {
             $args = ($args | append ["-e" $var_name])
         }
     }
-    
+
     $args
 }
