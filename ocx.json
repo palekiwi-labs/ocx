@@ -1,3 +1,4 @@
 {
   "nix": true,
+  "nix_opencode_command": ["nix", "develop", "-c", "opencode"]
 }

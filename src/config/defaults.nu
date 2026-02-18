@@ -46,6 +46,7 @@ export const DEFAULTS = {
     nix_daemon_container_name: "ocx-nix-daemon"  # master nix daemon container name
     nix_extra_substituters: []  # additional binary cache servers beyond cache.nixos.org
     nix_extra_trusted_public_keys: []  # public keys for additional substituters
+    nix_opencode_command: null  # command override when nix: true; takes precedence over opencode_command
     
     # Security
     read_only: false  # mount container root filesystem as read-only (set true for strict security)

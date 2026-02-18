@@ -94,6 +94,9 @@ export def get-env-overrides [] {
       if ($env.OCX_NIX_EXTRA_TRUSTED_PUBLIC_KEYS? | default null) != null {
           $overrides = ($overrides | append {key: "nix_extra_trusted_public_keys", env_var: "OCX_NIX_EXTRA_TRUSTED_PUBLIC_KEYS"})
       }
+      if ($env.OCX_NIX_OPENCODE_COMMAND? | default null) != null {
+          $overrides = ($overrides | append {key: "nix_opencode_command", env_var: "OCX_NIX_OPENCODE_COMMAND"})
+      }
        
        $overrides
   }
@@ -297,6 +300,12 @@ export def apply-env-overrides [config: record] {
           let existing = $result.nix_extra_trusted_public_keys
           let merged = ($existing | append $keys | uniq)
           $result = ($result | upsert nix_extra_trusted_public_keys $merged)
+      }
+
+      # OCX_NIX_OPENCODE_COMMAND
+      let nix_opencode_command_env = $env.OCX_NIX_OPENCODE_COMMAND? | default null
+      if $nix_opencode_command_env != null {
+          $result = ($result | upsert nix_opencode_command ($nix_opencode_command_env | from json))
       }
        
        $result

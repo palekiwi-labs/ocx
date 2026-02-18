@@ -131,6 +131,32 @@ export def validate [config: record] {
             }
         }
     }
+
+    # Validate nix_opencode_command (must be null or a non-empty array of non-empty strings)
+    if $config.nix_opencode_command != null {
+        if ($config.nix_opencode_command | describe) !~ "list" {
+            error make {
+                msg: "Invalid nix_opencode_command value"
+                help: "nix_opencode_command must be null or an array of strings"
+            }
+        }
+
+        if ($config.nix_opencode_command | length) == 0 {
+            error make {
+                msg: "nix_opencode_command cannot be empty"
+                help: "nix_opencode_command must contain at least one element, or be null"
+            }
+        }
+
+        for item in $config.nix_opencode_command {
+            if ($item | describe) !~ "string" or ($item | str trim | str length) == 0 {
+                error make {
+                    msg: $"Invalid nix_opencode_command element: ($item)"
+                    help: "All nix_opencode_command elements must be non-empty strings"
+                }
+            }
+        }
+    }
 }
 
 export def validate-volume-config [key: string, config: any] {
