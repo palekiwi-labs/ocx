@@ -234,6 +234,8 @@ export def status [cfg: record] {
 
     if (is-running $container_name) {
         print "  Status: Running ✓"
+        let nix_version = (docker exec $container_name nix --version | complete | get stdout | str trim)
+        print $"  Nix:    ($nix_version)"
         print ""
         print "Container stats:"
         docker stats --no-stream $container_name
@@ -275,6 +277,71 @@ export def shell [cfg: record] {
 
     print $"Opening shell in nix daemon container: ($container_name)"
     run-external "docker" "exec" "-it" $container_name "bash"
+}
+
+# Upgrade the nix binary/daemon itself to the latest stable version
+export def upgrade [cfg: record] {
+    if not $cfg.nix {
+        print "Nix workflow is not enabled"
+        print "Enable it by setting nix: true in your config"
+        return
+    }
+
+    let container_name = (get-container-name $cfg)
+
+    if not (is-running $container_name) {
+        error make {
+            msg: "Nix daemon is not running"
+            label: {
+                text: $"Container ($container_name) is not running. Start it with: ocx nix start"
+            }
+        }
+    }
+
+    # Show current version
+    let current_version = (docker exec $container_name nix --version | complete | get stdout | str trim)
+    print $"Current nix version: ($current_version)"
+    print ""
+
+    # Update nixpkgs channel
+    print "Updating nixpkgs channel..."
+    let channel_result = (docker exec $container_name nix-channel --update | complete)
+    if $channel_result.exit_code != 0 {
+        error make {
+            msg: "Failed to update nix channel"
+            label: {
+                text: $"Error: ($channel_result.stderr)"
+            }
+        }
+    }
+
+    # Upgrade nix binary and cacert
+    print "Upgrading nix..."
+    let upgrade_result = (docker exec $container_name nix-env --install --attr nixpkgs.nix nixpkgs.cacert | complete)
+    if $upgrade_result.exit_code != 0 {
+        error make {
+            msg: "Failed to upgrade nix"
+            label: {
+                text: $"Error: ($upgrade_result.stderr)"
+            }
+        }
+    }
+
+    # Restart daemon container to apply the new nix binary
+    print "Restarting nix daemon to apply upgrade..."
+    stop $cfg
+    ensure-running $cfg
+
+    # Show new version
+    let new_version = (docker exec $container_name nix --version | complete | get stdout | str trim)
+    print ""
+    print $"Nix upgraded successfully!"
+    print $"  Before: ($current_version)"
+    print $"  After:  ($new_version)"
+    print ""
+    print "Restart your dev containers to use the updated nix version:"
+    print "  ocx stop"
+    print "  ocx opencode"
 }
 
 # Update the default flake (checks for template updates, then updates flake.lock)
