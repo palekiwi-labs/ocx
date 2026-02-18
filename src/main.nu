@@ -219,7 +219,7 @@ SUBCOMMANDS:
     stop      Stop nix daemon container
     restart   Restart nix daemon container
     shell     Open shell in nix daemon container
-    update    Update default flake (updates flake.lock)
+    flake update    Update default flake (updates flake.lock)
 
 EXAMPLES:
     ocx nix status     # Check if nix daemon is running
@@ -227,7 +227,7 @@ EXAMPLES:
     ocx nix stop       # Stop nix daemon
     ocx nix restart    # Restart nix daemon
     ocx nix shell      # Open shell for inspection
-    ocx nix update     # Update default flake to latest OpenCode
+    ocx nix flake update     # Update default flake to latest OpenCode
 "
 }
 
@@ -277,7 +277,7 @@ def "main nix shell" [] {
     }
 }
 
-def "main nix update" [] {
+def "main nix flake update" [] {
     try {
         let cfg = load
         nix_daemon update $cfg
@@ -341,7 +341,7 @@ OPTIONS:
     ocx nix start                   # Start nix daemon
     ocx nix stop                    # Stop nix daemon
     ocx nix shell                   # Open shell in nix daemon
-    ocx nix update                  # Update default flake
+    ocx nix flake update            # Update default flake
     ocx upgrade                     # Check and update to latest version
     ocx version                     # Show version
     ocx help                        # Show help
