@@ -20,8 +20,14 @@ export def main [...args] {
 
     # Resolve final command - always nest with default flake when nix is enabled
     let final_opencode_command = if $cfg.nix {
+        # nix_opencode_command takes precedence over opencode_command when set
+        let base_cmd = if $cfg.nix_opencode_command != null {
+            $cfg.nix_opencode_command
+        } else {
+            $cfg.opencode_command
+        }
         # Always wrap in default devshell for nix workflow
-        ["nix" "develop" "/nix/var/ocx" "-c" ...$cfg.opencode_command]
+        ["nix" "develop" "/nix/var/ocx" "-c" ...$base_cmd]
     } else {
         # Non-nix workflow: use command as-is
         $cfg.opencode_command
