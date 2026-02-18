@@ -43,14 +43,9 @@
         };
 
         devShells = {
-          ocx = pkgs.mkShell {
+          default = pkgs.mkShell {
             buildInputs = with pkgs; [
-              ast-grep
-              fd
-              gh
-              jq
               nushell
-              ripgrep
             ];
           };
         };
