@@ -7,6 +7,7 @@
 use config
 
 const NIX_DAEMON_IMAGE = "localhost/ocx-nix-daemon:latest"
+const OCX_FLAKE = "/nix/var/ocx"
 
 # Check if nix workflow is enabled in config
 export def is-enabled [cfg: record] {
@@ -396,85 +397,50 @@ export def upgrade [cfg: record] {
     print "  ocx opencode"
 }
 
-# Update the default flake (checks for template updates, then updates flake.lock)
-export def update [cfg: record] {
+# Guard: check nix is enabled and daemon is running, return container name
+def flake-guard [cfg: record] {
     if not $cfg.nix {
-        print "Nix workflow is not enabled"
-        print "Enable it by setting nix: true in your config"
-        return
+        error make {
+            msg: "Nix workflow is not enabled"
+            label: { text: "Enable it by setting nix: true in your config" }
+        }
     }
-
     let container_name = (get-container-name $cfg)
-
     if not (is-running $container_name) {
         error make {
             msg: "Nix daemon is not running"
-            label: {
-                text: $"Container ($container_name) is not running. Start it with: ocx nix start"
-            }
+            label: { text: $"Container ($container_name) is not running. Start it with: ocx nix start" }
         }
     }
+    $container_name
+}
 
-    # Check if default flake exists
-    let flake_exists = (docker exec $container_name test -f /nix/var/ocx/flake.nix | complete).exit_code == 0
+# Show the outputs provided by the OCX flake
+export def "flake show" [cfg: record, ...args] {
+    let c = (flake-guard $cfg)
+    run-external "docker" "exec" $c "nix" "flake" "show" $OCX_FLAKE ...$args
+}
 
-    if not $flake_exists {
-        error make {
-            msg: "Default flake not found"
-            label: {
-                text: "Run 'ocx opencode' first to initialize the default flake"
-            }
-        }
-    }
+# Show metadata for the OCX flake
+export def "flake metadata" [cfg: record, ...args] {
+    let c = (flake-guard $cfg)
+    run-external "docker" "exec" $c "nix" "flake" "metadata" $OCX_FLAKE ...$args
+}
 
-    # Check for template updates
-    let template_path = ($env.FILE_PWD | path join "nix/default-flake.nix")
+# Check whether the OCX flake evaluates and run its tests
+export def "flake check" [cfg: record, ...args] {
+    let c = (flake-guard $cfg)
+    run-external "docker" "exec" $c "nix" "flake" "check" $OCX_FLAKE ...$args
+}
 
-    if not ($template_path | path exists) {
-        error make {
-            msg: "Default flake template not found"
-            label: {
-                text: $"Expected template at ($template_path)"
-            }
-        }
-    }
+# Create missing lock file entries for the OCX flake
+export def "flake lock" [cfg: record, ...args] {
+    let c = (flake-guard $cfg)
+    run-external "docker" "exec" $c "nix" "flake" "lock" $OCX_FLAKE ...$args
+}
 
-    let template_content = (open $template_path)
-    let template_hash = ($template_content | hash md5)
-    let existing_content = (docker exec $container_name cat /nix/var/ocx/flake.nix | complete | get stdout)
-    let existing_hash = ($existing_content | hash md5)
-
-    if $template_hash != $existing_hash {
-        # Template changed - backup and update
-        print "Newer default flake template detected, updating..."
-        docker exec $container_name cp /nix/var/ocx/flake.nix /nix/var/ocx/flake.nix.backup | ignore
-        print "  Previous flake backed up to: /nix/var/ocx/flake.nix.backup"
-
-        # Apply new template atomically
-        echo $template_content | docker exec -i $container_name sh -c "cat > /nix/var/ocx/flake.nix.tmp && mv /nix/var/ocx/flake.nix.tmp /nix/var/ocx/flake.nix"
-        print "  Template updated"
-        print ""
-    }
-
-    # Update flake.lock
-    print "Updating flake.lock..."
-    print "  Running: nix flake update /nix/var/ocx"
-
-    # Run nix flake update in the daemon container
-    let result = (docker exec $container_name nix flake update --flake /nix/var/ocx | complete)
-
-    if $result.exit_code != 0 {
-        error make {
-            msg: "Failed to update flake"
-            label: {
-                text: $"Error: ($result.stderr)"
-            }
-        }
-    }
-
-    print ""
-    print "Flake updated successfully!"
-    print "Restart your dev containers to use the updated packages:"
-    print "  ocx stop"
-    print "  ocx opencode"
+# Update the OCX flake lock file (optionally specify input names to update selectively)
+export def "flake update" [cfg: record, ...args] {
+    let c = (flake-guard $cfg)
+    run-external "docker" "exec" $c "nix" "flake" "update" "--flake" $OCX_FLAKE ...$args
 }
