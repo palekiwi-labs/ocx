@@ -160,6 +160,56 @@ export def ensure-default-flake [cfg: record] {
     print "  Update with: ocx nix update"
 }
 
+# Ensure the nix channel is set to nixpkgs-unstable and nix is installed from it (first-time only)
+export def ensure-nix-version [cfg: record] {
+    if not $cfg.nix {
+        return
+    }
+
+    let container_name = (get-container-name $cfg)
+
+    # Use a sentinel file in the volume to avoid re-running on every start
+    let sentinel = "/nix/var/ocx/.nix-channel-initialized"
+    let already_done = (docker exec $container_name test -f $sentinel | complete).exit_code == 0
+
+    if $already_done {
+        return
+    }
+
+    print "Initializing nix channel (nixpkgs-unstable)..."
+
+    # Set channel explicitly to nixpkgs-unstable
+    let channel_add = (docker exec $container_name nix-channel --add https://nixos.org/channels/nixpkgs-unstable nixpkgs | complete)
+    if $channel_add.exit_code != 0 {
+        error make {
+            msg: "Failed to set nixpkgs-unstable channel"
+            label: { text: $"Error: ($channel_add.stderr)" }
+        }
+    }
+
+    let channel_update = (docker exec $container_name nix-channel --update | complete)
+    if $channel_update.exit_code != 0 {
+        error make {
+            msg: "Failed to update nix channel"
+            label: { text: $"Error: ($channel_update.stderr)" }
+        }
+    }
+
+    # Install nix and cacert from nixpkgs-unstable
+    let install = (docker exec $container_name nix-env --install --attr nixpkgs.nix nixpkgs.cacert | complete)
+    if $install.exit_code != 0 {
+        error make {
+            msg: "Failed to install nix from nixpkgs-unstable"
+            label: { text: $"Error: ($install.stderr)" }
+        }
+    }
+
+    # Write sentinel so we don't repeat this on next start
+    docker exec $container_name sh -c $"mkdir -p /nix/var/ocx && touch ($sentinel)" | ignore
+
+    print "Nix channel initialized"
+}
+
 # Ensure the nix daemon container is running
 export def ensure-running [cfg: record] {
     if not $cfg.nix {
@@ -206,6 +256,8 @@ export def ensure-running [cfg: record] {
             }
         }
     }
+
+    ensure-nix-version $cfg
 }
 
 # Stop the nix daemon container
