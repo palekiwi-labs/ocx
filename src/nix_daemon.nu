@@ -161,6 +161,80 @@ export def ensure-default-flake [cfg: record] {
     print "  Update with: ocx nix update"
 }
 
+# Read the current opencode version pin from the flake inside the nix daemon container
+# Returns null if nix is disabled, daemon is not running, flake is not initialized, or version cannot be parsed
+export def get-opencode-version [cfg: record] {
+    if not $cfg.nix {
+        return null
+    }
+
+    let container_name = (get-container-name $cfg)
+
+    if not (is-running $container_name) {
+        return null
+    }
+
+    let flake_path = $"($OCX_FLAKE)/flake.nix"
+
+    let flake_exists = (docker exec $container_name test -f $flake_path | complete).exit_code == 0
+    if not $flake_exists {
+        return null
+    }
+
+    let content = (docker exec $container_name cat $flake_path | complete | get stdout)
+
+    let matches = ($content | parse --regex 'github:anomalyco/opencode/v(?P<version>[0-9]+\.[0-9]+\.[0-9]+)')
+
+    if ($matches | is-empty) {
+        return null
+    }
+
+    $matches | first | get version
+}
+
+# Update the opencode version pin in the flake inside the nix daemon container
+export def update-opencode-version [cfg: record, version: string] {
+    if not $cfg.nix {
+        return
+    }
+
+    let container_name = (get-container-name $cfg)
+
+    if not (is-running $container_name) {
+        print "Warning: Nix daemon is not running, skipping flake pin update"
+        return
+    }
+
+    let flake_path = $"($OCX_FLAKE)/flake.nix"
+
+    let flake_exists = (docker exec $container_name test -f $flake_path | complete).exit_code == 0
+    if not $flake_exists {
+        print "Warning: Flake not initialized in container, skipping pin update"
+        return
+    }
+
+    # Read flake out of container, replace on host, write back in
+    let content = (docker exec $container_name cat $flake_path | complete | get stdout)
+    let updated = ($content | str replace --regex 'github:anomalyco/opencode/[^"]+' $"github:anomalyco/opencode/v($version)")
+
+    $updated | docker exec -i $container_name sh -c $"cat > ($flake_path)"
+
+    print $"Updated flake opencode pin to v($version)"
+
+    # Re-lock only the opencode input so flake.lock reflects the new tag
+    print "Updating flake.lock for opencode input..."
+    let lock_result = (docker exec $container_name nix flake lock --update-input opencode $OCX_FLAKE | complete)
+
+    if $lock_result.exit_code != 0 {
+        error make {
+            msg: "Failed to update flake.lock"
+            label: { text: $"Error: ($lock_result.stderr)" }
+        }
+    }
+
+    print "Flake lock updated"
+}
+
 # Ensure the nix channel is set to nixpkgs-unstable and nix is installed from it (first-time only)
 export def ensure-nix-version [cfg: record] {
     if not $cfg.nix {
