@@ -14,7 +14,7 @@ use nix_daemon.nu
 
 def --wrapped "main opencode" [...args] {
     try {
-        docker_tools run ...$args
+        docker_tools opencode ...$args
     } catch { |err|
         errors pretty-print $err
     }
@@ -22,7 +22,7 @@ def --wrapped "main opencode" [...args] {
 
 def --wrapped "main o" [...args] {
     try {
-        docker_tools run ...$args
+        docker_tools opencode ...$args
     } catch { |err|
         errors pretty-print $err
     }
@@ -30,7 +30,7 @@ def --wrapped "main o" [...args] {
 
 def --wrapped "main run" [...args] {
     try {
-        docker_tools ocx_run ...$args
+        docker_tools run ...$args
     } catch { |err|
         errors pretty-print $err
     }
@@ -395,8 +395,8 @@ OPTIONS:
 
     EXAMPLES:
     ocx opencode                    # Run OpenCode interactively
-    ocx run "summarize this file" -f src/main.nu  # Run a task headlessly
-    ocx run --agent explore "how does config work?"  # Run with a specific agent
+    ocx run summarize -f src/main.nu    # Run a task headlessly
+    ocx run --agent explore             # Run with a specific agent
     ocx build                       # Build Docker images
     ocx build --force               # Force rebuild images (includes base image)
     ocx build --no-cache            # Build images without cache

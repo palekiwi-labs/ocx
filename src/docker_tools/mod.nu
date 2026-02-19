@@ -1,6 +1,6 @@
 export use build.nu
+export use opencode.nu
 export use run.nu
-export use ocx_run.nu
 export use shell.nu
 export use utils.nu
 export use stats.nu

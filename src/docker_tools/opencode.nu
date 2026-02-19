@@ -1,4 +1,4 @@
-use ./utils.nu [image_exists, resolve-run-container-name, resolve-dockerfile-path, build-run-cmd]
+use ./utils.nu [image_exists, resolve-container-name, resolve-dockerfile-path, build-run-cmd]
 use ./build.nu
 use ../ports.nu
 use ../workspace.nu
@@ -7,7 +7,7 @@ use ../version
 use ../volume_name.nu
 use ../nix_daemon.nu
 
-export def --wrapped main [...args] {
+export def main [...args] {
     let cfg = (config load)
 
     # Ensure nix daemon is running if nix workflow is enabled
@@ -16,24 +16,26 @@ export def --wrapped main [...args] {
         nix_daemon ensure-default-flake $cfg
     }
 
-    # Resolve final command - append "run" to the base opencode command
+    # Resolve final command - always nest with default flake when nix is enabled
     let final_opencode_command = if $cfg.nix {
+        # nix_opencode_command takes precedence over opencode_command when set
         let base_cmd = if $cfg.nix_opencode_command != null {
             $cfg.nix_opencode_command
         } else {
             $cfg.opencode_command
         }
-        # Always wrap in default devshell for nix workflow, append "run"
-        ["nix" "develop" "/nix/var/ocx" "-c" ...$base_cmd "run"]
+        # Always wrap in default devshell for nix workflow
+        ["nix" "develop" "/nix/var/ocx" "-c" ...$base_cmd]
     } else {
-        # Non-nix workflow: append "run" to the opencode command
-        [...$cfg.opencode_command "run"]
+        # Non-nix workflow: use command as-is
+        $cfg.opencode_command
     }
 
     let ws = workspace get-workspace $cfg
 
     # Determine image name based on config
     let image_name = if $cfg.nix {
+        # Warn if custom base is configured (not supported for nix workflow)
         if ($cfg.custom_base_dockerfile != null) {
             print "Warning: custom_base_dockerfile is not supported with nix workflow"
             print "         Using standard nix-dev image"
@@ -50,7 +52,7 @@ export def --wrapped main [...args] {
     }
 
     let port = if $cfg.port == null { ports generate } else { $cfg.port }
-    let container_name = resolve-run-container-name $cfg $port
+    let container_name = resolve-container-name $cfg $port
     let timezone = if $cfg.timezone == null { "UTC" } else { $cfg.timezone }
     let user_settings = (config resolve-user $cfg)
     let opencode_config_dir = $cfg.opencode_config_dir | path expand
@@ -72,10 +74,10 @@ export def --wrapped main [...args] {
 
     mkdir $opencode_config_dir
 
-    # Headless: no --interactive, no --publish-port
     let cmd = (build-run-cmd $cfg $container_name $image_name $final_opencode_command $args
         $ws $user_settings $opencode_config_dir $port $timezone
-        $global_env_path $project_env_path $volume_base)
+        $global_env_path $project_env_path $volume_base
+        --interactive --publish-port)
 
     run-external ...$cmd
 }
