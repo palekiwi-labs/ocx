@@ -14,6 +14,12 @@ export def resolve-container-name [cfg: record, port: int] {
     }
 }
 
+export def resolve-run-container-name [cfg: record, port: int] {
+    let base = resolve-container-name $cfg $port
+    let suffix = (random uuid | str substring 0..7)
+    $"($base)-run-($suffix)"
+}
+
 export def get-current-container-name [cfg: record] {
     let port = if $cfg.port == null { ports generate } else { $cfg.port }
     resolve-container-name $cfg $port

@@ -28,6 +28,14 @@ def --wrapped "main o" [...args] {
     }
 }
 
+def --wrapped "main run" [...args] {
+    try {
+        docker_tools ocx_run ...$args
+    } catch { |err|
+        errors pretty-print $err
+    }
+}
+
 def "main build" [
     --base,
     --force(-f),
@@ -366,6 +374,7 @@ USAGE:
 
     SUBCOMMANDS:
         opencode Run OpenCode container (alias: o)
+        run      Run a task headlessly via opencode run
         build    Build Docker images
         config   Show configuration (use --sources to see origins)
         docs     Fetch and save OpenCode documentation
@@ -386,6 +395,8 @@ OPTIONS:
 
     EXAMPLES:
     ocx opencode                    # Run OpenCode interactively
+    ocx run "summarize this file" -f src/main.nu  # Run a task headlessly
+    ocx run --agent explore "how does config work?"  # Run with a specific agent
     ocx build                       # Build Docker images
     ocx build --force               # Force rebuild images (includes base image)
     ocx build --no-cache            # Build images without cache
