@@ -29,16 +29,17 @@ When the Nix workflow is enabled, OCX uses a single universal dev image (`localh
 This means:
 - No version in the image tag (OpenCode version is managed by the flake)
 - Faster image builds (no binary downloads)
-- Updates are managed through `ocx nix update` rather than rebuilding images
+- Updates are managed through `ocx nix flake update` rather than rebuilding images
 - Custom base images (`custom_base_dockerfile`) are not supported with the Nix workflow
 
 ### Default Flake & Nested Shells
 
 OCX automatically provides a default flake at `/nix/var/ocx/flake.nix` that includes OpenCode from the official GitHub repository. This flake:
 
-- Tracks the production branch of OpenCode (`github:anomalyco/opencode/production`)
+- Pins to a specific version of OpenCode (e.g., `github:anomalyco/opencode/v1.2.6`)
 - Is shared across all your OCX projects using the same nix volume
-- Can be updated with `ocx nix update` to get the latest stable OpenCode
+- Can be updated with `ocx nix flake update` to get the latest dependency versions
+- Can have its OpenCode version updated with `ocx upgrade`
 - Provides the base development environment (OpenCode + common tools)
 
 **Important**: When the Nix workflow is enabled, OCX **always** runs your commands inside the default flake's devshell first, then executes your project-specific environment (if configured). This nested shell architecture means:
@@ -154,6 +155,7 @@ Nix Workflow Status:
   Image: localhost/ocx-nix-daemon:latest
 
   Status: Running ✓
+  Nix:    nix (Nix) 2.19.3
 
 Container stats:
 CONTAINER        CPU %    MEM USAGE / LIMIT    MEM %    NET I/O          BLOCK I/O
@@ -189,19 +191,51 @@ The daemon is lightweight when idle, so stopping it is usually not necessary. Ho
 ocx nix restart
 ```
 
-#### Update Default Flake
+#### Update Default Flake Lock File
 
 ```bash
-ocx nix update
+ocx nix flake update
 ```
 
-Updates the default flake's `flake.lock` to get the latest OpenCode and other dependencies. After updating, restart your dev containers to use the new versions:
+Updates the flake.lock file to get the latest dependency versions from all inputs (nixpkgs, flake-utils, etc.). After updating, restart your dev containers to use the new versions:
 
 ```bash
-ocx nix update
+ocx nix flake update
 ocx stop
 ocx opencode
 ```
+
+#### Upgrade Nix Binary
+
+```bash
+ocx nix upgrade
+```
+
+Upgrades the Nix binary and daemon to the latest stable version from nixpkgs-unstable. This is rarely needed but can be useful for getting Nix bug fixes and new features. The daemon will be restarted automatically after the upgrade.
+
+### Flake Management Commands
+
+The `ocx nix flake` command provides direct access to Nix flake operations:
+
+```bash
+# Show flake outputs
+ocx nix flake show
+
+# Show flake metadata
+ocx nix flake metadata
+
+# Check flake evaluates correctly
+ocx nix flake check
+
+# Create missing lock entries
+ocx nix flake lock
+
+# Update lock file
+ocx nix flake update
+ocx nix flake update nixpkgs  # Update specific input
+```
+
+These commands are wrappers around the standard `nix flake` commands, operating on the default flake at `/nix/var/ocx/`.
 
 ### Configuring Binary Caches (Substituters)
 
@@ -331,7 +365,9 @@ Once you've configured additional caches in `ocx.json`, users can reference them
 When using the Nix workflow, OpenCode versions are managed through Nix flakes rather than downloading binaries from GitHub releases. This provides several advantages:
 
 - **Reproducible builds**: The `flake.lock` file pins exact versions of all dependencies
-- **Easy updates**: Run `ocx nix update` to get the latest versions
+- **Easy updates**:
+  - Run `ocx upgrade` to update the OpenCode version pinned in the flake
+  - Run `ocx nix flake update` to update other dependencies
 - **Custom versions**: Override with your own `flake.nix` to pin specific OpenCode versions
 - **No image rebuilds**: Version changes don't require rebuilding the dev container image
 
@@ -341,7 +377,7 @@ By default, OCX provides a flake at `/nix/var/ocx/` that tracks the latest OpenC
 
 **To update to the latest OpenCode:**
 ```bash
-ocx nix update
+ocx upgrade
 ocx stop
 ocx opencode
 ```
@@ -591,7 +627,7 @@ If you need custom dependencies, define them in your project's `flake.nix` inste
 
 ### First Run Takes Longer
 
-The first time you run `ocx opencode` with the Nix workflow or after running `ocx nix update`:
+The first time you run `ocx opencode` with the Nix workflow or after running `ocx nix flake update`:
 - Nix downloads and builds OpenCode and all dependencies
 - This can take several minutes depending on your internet connection
 - Subsequent runs are much faster as packages are cached in the shared `/nix` store
@@ -600,7 +636,7 @@ The first time you run `ocx opencode` with the Nix workflow or after running `oc
 
 Unlike the traditional OCX workflow where OpenCode versions are managed via image tags:
 - The Nix workflow manages versions through `flake.lock`
-- Run `ocx nix update` to get the latest versions
+- Run `ocx nix flake update` to get the latest versions
 - Image rebuilds are not required for version updates
 - The `opencode_version` config option is ignored when `nix: true`
 
@@ -608,7 +644,7 @@ Unlike the traditional OCX workflow where OpenCode versions are managed via imag
 
 The default flake at `/nix/var/ocx/` is shared across all projects using the same nix volume:
 - All projects without a custom flake use this shared configuration
-- Running `ocx nix update` affects all projects using the default flake
+- Running `ocx upgrade` or `ocx nix flake update` affects all projects using the default flake
 - For project-specific versions, create a `flake.nix` in your project
 
 ## Troubleshooting
@@ -668,7 +704,7 @@ ocx stop
 ocx opencode
 
 # If flake exists but OpenCode still not available, try updating
-ocx nix update
+ocx nix flake update
 ocx stop
 ocx opencode
 ```
@@ -905,7 +941,7 @@ Yes! Flakes are enabled by default in the nix-daemon configuration.
 - Uses single universal image (`localhost/ocx-nix:latest`)
 - OpenCode provided by Nix at runtime via flake
 - Version managed via `flake.lock`
-- Update via `ocx nix update` (no rebuild needed)
+- Update via `ocx upgrade` or `ocx nix flake update` (no rebuild needed)
 
 ### Can I use custom base images with the Nix workflow?
 
@@ -934,12 +970,19 @@ For custom dependencies, define them in your project's `flake.nix` instead:
 ### How do I update OpenCode with the Nix workflow?
 
 ```bash
-ocx nix update  # Updates flake.lock
+ocx upgrade        # Updates flake OpenCode pin
 ocx stop
-ocx opencode    # Restart with new version
+ocx opencode       # Restart with new version
 ```
 
-This updates the default flake to get the latest OpenCode from the dev branch.
+This updates the OpenCode version pinned in the default flake.
+
+To update the flake lock file for all dependencies (nixpkgs, flake-utils, etc.):
+```bash
+ocx nix flake update
+ocx stop
+ocx opencode
+```
 
 ### What if I need a specific OpenCode version?
 
