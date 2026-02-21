@@ -1,5 +1,6 @@
 use ../config
 use ../ports.nu
+use ../git_utils.nu
 
 export def image_exists [name: string] {
     (docker image inspect $name | complete).exit_code == 0
@@ -48,18 +49,61 @@ export def resolve-dockerfile-path [dockerfile_path: string] {
     let project_path = ($dockerfile_path | path expand)
     if ($project_path | path exists) {
         let dir = ($project_path | path dirname)
-        let project_name = ($env.PWD | path basename)
+
+        # Use git remote URL if inside a git repository
+        # This ensures worktrees share the same image name (same remote = same image)
+        let base_info = if (git_utils is-git-repo) {
+            let remote_url = (git_utils get-git-remote-url)
+            if $remote_url != null {
+                # Extract repo name from sanitized remote URL
+                # e.g., "github-com-palekiwi-labs-ocx" -> "ocx"
+                let parts = ($remote_url | split row '-')
+                let repo_name = ($parts | last)
+                {
+                    name: $repo_name
+                    path: $env.PWD  # Use PWD for path checks (same as non-git)
+                }
+            } else {
+                # No remote configured - fallback to directory name
+                {
+                    name: ($env.PWD | path basename)
+                    path: $env.PWD
+                }
+            }
+        } else {
+            {
+                name: ($env.PWD | path basename)
+                path: $env.PWD
+            }
+        }
 
         # Determine subdirectory component for naming
-        let cwd = $env.PWD
-        let relative = ($dir | str replace $cwd "" | str trim -c '/')
+        # Only calculate relative path if Dockerfile is actually inside base path
+        # Git worktrees are separate directories, so treat them as root level
+        let is_inside = if ($dir == $base_info.path) {
+            # Same directory - at root
+            true
+        } else if ($dir | str starts-with $"($base_info.path)/") {
+            # Starts with base_path/ - is a subdirectory
+            true
+        } else {
+            # Not inside base path (e.g., git worktree in sibling directory)
+            false
+        }
+
+        let relative = if $is_inside {
+            ($dir | str replace $base_info.path "" | str trim -c '/')
+        } else {
+            # Outside base path - treat as root level
+            ""
+        }
 
         # Build name: project-subdirectory or just project if at root
         let name = if ($relative | is-empty) {
-            $project_name
+            $base_info.name
         } else {
             let subdir = ($relative | str replace -a '/' '-')
-            $"($project_name)-($subdir)"
+            $"($base_info.name)-($subdir)"
         }
 
         return {
@@ -113,19 +157,19 @@ export def resolve-extra-volumes [cfg: record, user: string] {
 
     $cfg.extra_data_volumes | columns | each {|key|
         let vol_config = ($cfg.extra_data_volumes | get $key)
-        
+
         # Extract fields with defaults
         let target = $vol_config.target
         let mode = ($vol_config.mode? | default "rw")
         let vol_type = ($vol_config.type? | default "volume")
-        
+
         # Expand tilde in target path
         let container_target = if ($target | str starts-with "~/") {
             $"/home/($user)($target | str substring 1..)"
         } else {
             $target
         }
-        
+
         # Determine source
         let source = if ($vol_config.source? != null) {
             $vol_config.source
@@ -134,7 +178,7 @@ export def resolve-extra-volumes [cfg: record, user: string] {
             # For bind mounts, source is required (caught by validation)
             null
         }
-        
+
         {
             key: $key,
             source: $source,
