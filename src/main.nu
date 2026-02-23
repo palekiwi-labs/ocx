@@ -381,7 +381,7 @@ USAGE:
         volume   List project volumes
         image    Manage OCX Docker images
         nix      Manage nix daemon container
-        upgrade  Check for and install OpenCode updates
+        upgrade  Check for and install OpenCode update
 
 OPTIONS:
     -h, --help     Show this help
@@ -412,12 +412,12 @@ OPTIONS:
     ocx image prune                 # Remove old images, keep latest version
     ocx image prune --base          # Prune only base images
     ocx image remove-all            # Remove all OCX images
-     ocx nix status                  # Show nix daemon status
-     ocx nix start                   # Start nix daemon
-     ocx nix stop                    # Stop nix daemon
-     ocx nix shell                   # Open shell in nix daemon
-     ocx nix flake update            # Update your custom flake
-     ocx nix upgrade                 # Upgrade nix binary/daemon
+    ocx nix status                  # Show nix daemon status
+    ocx nix start                   # Start nix daemon
+    ocx nix stop                    # Stop nix daemon
+    ocx nix shell                   # Open shell in nix daemon
+    ocx nix flake update            # Update your custom flake
+    ocx nix upgrade                 # Upgrade nix binary/daemon
     ocx upgrade                     # Check and update to latest version
     ocx version                     # Show version
     ocx help                        # Show help
