@@ -12,6 +12,10 @@ use ../nix_daemon.nu
 export def main [...args] {
     let cfg = (config load)
     
+    # Resolve user early (needed for flake detection paths)
+    let user_settings = (config resolve-user $cfg)
+    let user = $user_settings.username
+    
     # Ensure nix daemon is running if nix workflow is enabled
     if $cfg.nix {
         nix_daemon ensure-running $cfg
@@ -31,7 +35,7 @@ export def main [...args] {
         }
         # Wrap with user flake devShell if present
         if $user_flake_present {
-            ["nix" "develop" "/home/user/.config/ocx/nix" "-c" ...$base_cmd]
+            ["nix" "develop" $"/home/($user)/.config/ocx/nix" "-c" ...$base_cmd]
         } else {
             $base_cmd
         }
@@ -64,9 +68,6 @@ export def main [...args] {
     let port = if $cfg.port == null { ports generate } else { $cfg.port }
     let container_name = resolve-container-name $cfg $port
     let timezone = if $cfg.timezone == null { "UTC" } else { $cfg.timezone }
-
-    let user_settings = (config resolve-user $cfg)
-    let user = $user_settings.username
 
     let opencode_config_dir = $cfg.opencode_config_dir | path expand
 
