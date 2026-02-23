@@ -7,11 +7,7 @@ ARG TARGETARCH
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
-    fd-find \
     git \
-    gnupg \
-    jq \
-    ripgrep \
     && rm -rf /var/lib/apt/lists/*
 
 # Download and install OpenCode (auto-detect arch)
