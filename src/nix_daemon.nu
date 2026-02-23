@@ -346,11 +346,14 @@ export def "flake show" [cfg: record, ...args] {
 
     let nix_volume = (get-volume-name $cfg)
 
-    run-external "docker" "run" "--rm" \
-        "-v" $"($nix_volume):/nix:rw" \
-        "-v" $"($flake.host_dir):($flake.container_dir):rw" \
-        $NIX_DEV_IMAGE_LATEST \
-        "nix" "flake" "show" $flake.container_dir ...$args
+    let cmd = [
+        "docker" "run" "--rm"
+        "-v" $"($nix_volume):/nix:rw"
+        "-v" $"($flake.host_dir):($flake.container_dir):rw"
+        $NIX_DEV_IMAGE_LATEST
+        "nix" "flake" "show" $flake.container_dir
+    ] | append $args
+    run-external ...$cmd
 }
 
 # Show metadata for the user flake
@@ -381,11 +384,14 @@ export def "flake metadata" [cfg: record, ...args] {
 
     let nix_volume = (get-volume-name $cfg)
 
-    run-external "docker" "run" "--rm" \
-        "-v" $"($nix_volume):/nix:rw" \
-        "-v" $"($flake.host_dir):($flake.container_dir):rw" \
-        $NIX_DEV_IMAGE_LATEST \
-        "nix" "flake" "metadata" $flake.container_dir ...$args
+    let cmd = [
+        "docker" "run" "--rm"
+        "-v" $"($nix_volume):/nix:rw"
+        "-v" $"($flake.host_dir):($flake.container_dir):rw"
+        $NIX_DEV_IMAGE_LATEST
+        "nix" "flake" "metadata" $flake.container_dir
+    ] | append $args
+    run-external ...$cmd
 }
 
 # Check whether the user flake evaluates and run its tests
@@ -416,11 +422,14 @@ export def "flake check" [cfg: record, ...args] {
 
     let nix_volume = (get-volume-name $cfg)
 
-    run-external "docker" "run" "--rm" \
-        "-v" $"($nix_volume):/nix:rw" \
-        "-v" $"($flake.host_dir):($flake.container_dir):rw" \
-        $NIX_DEV_IMAGE_LATEST \
-        "nix" "flake" "check" $flake.container_dir ...$args
+    let cmd = [
+        "docker" "run" "--rm"
+        "-v" $"($nix_volume):/nix:rw"
+        "-v" $"($flake.host_dir):($flake.container_dir):rw"
+        $NIX_DEV_IMAGE_LATEST
+        "nix" "flake" "check" $flake.container_dir
+    ] | append $args
+    run-external ...$cmd
 }
 
 # Create missing lock file entries for the user flake
@@ -451,11 +460,14 @@ export def "flake lock" [cfg: record, ...args] {
 
     let nix_volume = (get-volume-name $cfg)
 
-    run-external "docker" "run" "--rm" \
-        "-v" $"($nix_volume):/nix:rw" \
-        "-v" $"($flake.host_dir):($flake.container_dir):rw" \
-        $NIX_DEV_IMAGE_LATEST \
-        "nix" "flake" "lock" $flake.container_dir ...$args
+    let cmd = [
+        "docker" "run" "--rm"
+        "-v" $"($nix_volume):/nix:rw"
+        "-v" $"($flake.host_dir):($flake.container_dir):rw"
+        $NIX_DEV_IMAGE_LATEST
+        "nix" "flake" "lock" $flake.container_dir
+    ] | append $args
+    run-external ...$cmd
 }
 
 # Update the user flake lock file (optionally specify input names to update selectively)
@@ -486,9 +498,12 @@ export def "flake update" [cfg: record, ...args] {
 
     let nix_volume = (get-volume-name $cfg)
 
-    run-external "docker" "run" "--rm" \
-        "-v" $"($nix_volume):/nix:rw" \
-        "-v" $"($flake.host_dir):($flake.container_dir):rw" \
-        $NIX_DEV_IMAGE_LATEST \
-        "nix" "flake" "update" "--flake" $flake.container_dir ...$args
+    let cmd = [
+        "docker" "run" "--rm"
+        "-v" $"($nix_volume):/nix:rw"
+        "-v" $"($flake.host_dir):($flake.container_dir):rw"
+        $NIX_DEV_IMAGE_LATEST
+        "nix" "flake" "update" "--flake" $flake.container_dir
+    ] | append $args
+    run-external ...$cmd
 }
