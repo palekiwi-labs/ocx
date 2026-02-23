@@ -50,7 +50,7 @@ export def main [...args] {
             print "         Using standard nix-dev image"
         }
         let version = (version resolve-version $cfg.opencode_version $cfg)
-        $"localhost/ocx-nix:v($version)"
+        $"localhost/ocx-nix:($version)"
     } else {
         let version = (version resolve-version $cfg.opencode_version $cfg)
         if ($cfg.custom_base_dockerfile != null) {

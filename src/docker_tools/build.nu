@@ -120,7 +120,7 @@ def build_nix_dev [cfg: record, --force, --no-cache] {
 
     # Resolve opencode version (same mechanism as standard image)
     let version = (version resolve-version $cfg.opencode_version $cfg)
-    let nix_dev_image_versioned = $"localhost/ocx-nix:v($version)"
+    let nix_dev_image_versioned = $"localhost/ocx-nix:($version)"
     let nix_dev_image_latest = "localhost/ocx-nix:latest"
     
     let context = $env.FILE_PWD
