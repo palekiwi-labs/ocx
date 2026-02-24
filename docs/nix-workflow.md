@@ -181,9 +181,13 @@ In `ocx.json`:
 ocx build --base --force
 ```
 
-## Custom Project Dependencies with Flakes
+## User-Wide Development Environment with Flakes
 
-If your project needs specific packages alongside OpenCode, create a flake at `~/.config/ocx/nix/flake.nix`:
+OCX looks for a single, user-wide flake at `~/.config/ocx/nix/flake.nix`. If this file exists, it will be used to create a development environment for your projects.
+
+**Note**: This is different from the typical project-based flake setup. This single flake is intended to provide a consistent development environment across all your OCX projects.
+
+To set this up, create a flake at `~/.config/ocx/nix/flake.nix`:
 
 ```nix
 {
@@ -219,7 +223,7 @@ Then configure OCX to use your flake:
 }
 ```
 
-When you run `ocx opencode`, the dev environment will have both your project packages and OpenCode available.
+When you run `ocx opencode`, the dev environment will have both your packages and OpenCode available across all your projects.
 
 ## Volume Management
 
