@@ -318,8 +318,8 @@ def detect-user-flake [cfg: record] {
     { present: $present, host_dir: $host_dir, container_dir: $container_dir }
 }
 
-# Show the outputs provided by the user flake
-export def "flake show" [cfg: record, ...args] {
+# Helper function to run nix flake commands within the user's flake context
+def run-flake-cmd [cfg: record, subcommand: string, args: list<string>] {
     if not $cfg.nix {
         error make {
             msg: "Nix workflow is not enabled"
@@ -336,7 +336,6 @@ export def "flake show" [cfg: record, ...args] {
         }
     }
 
-    # Check that dev image exists
     if not (image-exists $NIX_DEV_IMAGE_LATEST) {
         error make {
             msg: "Nix dev image not found"
@@ -350,160 +349,35 @@ export def "flake show" [cfg: record, ...args] {
         "docker" "run" "--rm"
         "-v" $"($nix_volume):/nix:rw"
         "-v" $"($flake.host_dir):($flake.container_dir):rw"
+        "-w" $flake.container_dir
         $NIX_DEV_IMAGE_LATEST
-        "nix" "flake" "show" $flake.container_dir
+        "nix" "flake" $subcommand
     ] | append $args
+
     run-external ...$cmd
+}
+
+# Show the outputs provided by the user flake
+export def "flake show" [cfg: record, ...args] {
+    run-flake-cmd $cfg "show" $args
 }
 
 # Show metadata for the user flake
 export def "flake metadata" [cfg: record, ...args] {
-    if not $cfg.nix {
-        error make {
-            msg: "Nix workflow is not enabled"
-            label: { text: "Enable it by setting nix: true in your config" }
-        }
-    }
-
-    let flake = (detect-user-flake $cfg)
-
-    if not $flake.present {
-        error make {
-            msg: $"User flake not found at ($flake.host_dir)/flake.nix"
-            help: "Create a flake.nix at ~/.config/ocx/nix/flake.nix to use this command"
-        }
-    }
-
-    # Check that dev image exists
-    if not (image-exists $NIX_DEV_IMAGE_LATEST) {
-        error make {
-            msg: "Nix dev image not found"
-            label: { text: "Run 'ocx build' first to create the nix dev image" }
-        }
-    }
-
-    let nix_volume = (get-volume-name $cfg)
-
-    let cmd = [
-        "docker" "run" "--rm"
-        "-v" $"($nix_volume):/nix:rw"
-        "-v" $"($flake.host_dir):($flake.container_dir):rw"
-        $NIX_DEV_IMAGE_LATEST
-        "nix" "flake" "metadata" $flake.container_dir
-    ] | append $args
-    run-external ...$cmd
+    run-flake-cmd $cfg "metadata" $args
 }
 
 # Check whether the user flake evaluates and run its tests
 export def "flake check" [cfg: record, ...args] {
-    if not $cfg.nix {
-        error make {
-            msg: "Nix workflow is not enabled"
-            label: { text: "Enable it by setting nix: true in your config" }
-        }
-    }
-
-    let flake = (detect-user-flake $cfg)
-
-    if not $flake.present {
-        error make {
-            msg: $"User flake not found at ($flake.host_dir)/flake.nix"
-            help: "Create a flake.nix at ~/.config/ocx/nix/flake.nix to use this command"
-        }
-    }
-
-    # Check that dev image exists
-    if not (image-exists $NIX_DEV_IMAGE_LATEST) {
-        error make {
-            msg: "Nix dev image not found"
-            label: { text: "Run 'ocx build' first to create the nix dev image" }
-        }
-    }
-
-    let nix_volume = (get-volume-name $cfg)
-
-    let cmd = [
-        "docker" "run" "--rm"
-        "-v" $"($nix_volume):/nix:rw"
-        "-v" $"($flake.host_dir):($flake.container_dir):rw"
-        $NIX_DEV_IMAGE_LATEST
-        "nix" "flake" "check" $flake.container_dir
-    ] | append $args
-    run-external ...$cmd
+    run-flake-cmd $cfg "check" $args
 }
 
 # Create missing lock file entries for the user flake
 export def "flake lock" [cfg: record, ...args] {
-    if not $cfg.nix {
-        error make {
-            msg: "Nix workflow is not enabled"
-            label: { text: "Enable it by setting nix: true in your config" }
-        }
-    }
-
-    let flake = (detect-user-flake $cfg)
-
-    if not $flake.present {
-        error make {
-            msg: $"User flake not found at ($flake.host_dir)/flake.nix"
-            help: "Create a flake.nix at ~/.config/ocx/nix/flake.nix to use this command"
-        }
-    }
-
-    # Check that dev image exists
-    if not (image-exists $NIX_DEV_IMAGE_LATEST) {
-        error make {
-            msg: "Nix dev image not found"
-            label: { text: "Run 'ocx build' first to create the nix dev image" }
-        }
-    }
-
-    let nix_volume = (get-volume-name $cfg)
-
-    let cmd = [
-        "docker" "run" "--rm"
-        "-v" $"($nix_volume):/nix:rw"
-        "-v" $"($flake.host_dir):($flake.container_dir):rw"
-        $NIX_DEV_IMAGE_LATEST
-        "nix" "flake" "lock" $flake.container_dir
-    ] | append $args
-    run-external ...$cmd
+    run-flake-cmd $cfg "lock" $args
 }
 
 # Update the user flake lock file (optionally specify input names to update selectively)
 export def "flake update" [cfg: record, ...args] {
-    if not $cfg.nix {
-        error make {
-            msg: "Nix workflow is not enabled"
-            label: { text: "Enable it by setting nix: true in your config" }
-        }
-    }
-
-    let flake = (detect-user-flake $cfg)
-
-    if not $flake.present {
-        error make {
-            msg: $"User flake not found at ($flake.host_dir)/flake.nix"
-            help: "Create a flake.nix at ~/.config/ocx/nix/flake.nix to use this command"
-        }
-    }
-
-    # Check that dev image exists
-    if not (image-exists $NIX_DEV_IMAGE_LATEST) {
-        error make {
-            msg: "Nix dev image not found"
-            label: { text: "Run 'ocx build' first to create the nix dev image" }
-        }
-    }
-
-    let nix_volume = (get-volume-name $cfg)
-
-    let cmd = [
-        "docker" "run" "--rm"
-        "-v" $"($nix_volume):/nix:rw"
-        "-v" $"($flake.host_dir):($flake.container_dir):rw"
-        $NIX_DEV_IMAGE_LATEST
-        "nix" "flake" "update" "--flake" $flake.container_dir
-    ] | append $args
-    run-external ...$cmd
+    run-flake-cmd $cfg "update" $args
 }
