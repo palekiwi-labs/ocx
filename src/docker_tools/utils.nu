@@ -29,6 +29,10 @@ export def container-is-running [container_name: string] {
 }
 
 export def get-image-name-base [cfg: record] {
+    if $cfg.nix {
+        return "localhost/ocx-nix"
+    }
+
     let final_name = if ($cfg.custom_base_dockerfile != null) {
         let resolved = (resolve-dockerfile-path $cfg.custom_base_dockerfile)
         $resolved.name
