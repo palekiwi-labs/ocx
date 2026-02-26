@@ -35,7 +35,21 @@ OCX uses [Semantic Versioning](https://semver.org/):
 - **Beta**: `vX.Y.Z-beta.N` - Feature complete, testing phase
 - **RC**: `vX.Y.Z-rc.N` - Release candidate, final testing
 
-## Creating a Release
+## Automated Release (Recommended)
+
+You can use the provided release script to automate the version bump, tagging, and GitHub release creation.
+
+```bash
+# Preview what will happen
+nu scripts/release.nu --type alpha --dry-run
+
+# Run the release
+nu scripts/release.nu --type alpha
+```
+
+Available types: `patch`, `minor`, `major`, `alpha`, `beta`, `rc`.
+
+## Manual Release Process
 
 ### 1. Prepare the Release
 
