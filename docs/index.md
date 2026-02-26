@@ -20,6 +20,7 @@ Welcome to the OCX documentation.
 
 ## Operations
 
+- [Headless Tasks](headless-tasks.md) - Run one-off OpenCode tasks headlessly via `ocx run`
 - [Image Management](image-management.md) - Managing Docker images, building, pruning, and troubleshooting
 - [Upgrading](upgrading.md) - How to upgrade OpenCode, version management, and release notes
 

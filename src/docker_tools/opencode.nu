@@ -1,4 +1,4 @@
-use ./utils.nu [image_exists, resolve-run-container-name, resolve-dockerfile-path, build-run-cmd]
+use ./utils.nu [image_exists, resolve-container-name, resolve-dockerfile-path, build-run-cmd]
 use ./build.nu
 use ../ports.nu
 use ../workspace.nu
@@ -7,13 +7,13 @@ use ../version
 use ../volume_name.nu
 use ../nix_daemon.nu
 
-export def --wrapped main [...args] {
+export def main [...args] {
     let cfg = (config load)
-    
+
     # Resolve user early (needed for flake detection paths)
     let user_settings = (config resolve-user $cfg)
     let user = $user_settings.username
-    
+
     # Ensure nix daemon is running if nix workflow is enabled
     if $cfg.nix {
         nix_daemon ensure-running $cfg
@@ -22,35 +22,37 @@ export def --wrapped main [...args] {
     # Detect user flake on the host
     let user_flake_host_dir = ("~/.config/ocx/nix" | path expand)
     let user_flake_present = ($user_flake_host_dir | path join "flake.nix" | path exists)
-    
-    # Resolve final command with optional user flake wrapping
+
+    # Resolve final command - always nest with flake when nix is enabled
     let final_opencode_command = if $cfg.nix {
+        # nix_opencode_command takes precedence over opencode_command when set
         let base_cmd = if $cfg.nix_opencode_command != null {
             $cfg.nix_opencode_command
         } else {
             $cfg.opencode_command
         }
-        # Wrap with user flake devShell if present, append "run"
+        # Wrap with user flake devShell if present
         if $user_flake_present {
-            ["nix" "develop" $"/home/($user)/.config/ocx/nix" "-c" ...$base_cmd "run"]
+            ["nix" "develop" $"/home/($user)/.config/ocx/nix" "-c" ...$base_cmd]
         } else {
-            ["nix" "develop" "/nix/var/ocx" "-c" ...$base_cmd "run"]
+            # Fallback to default devshell
+            ["nix" "develop" "/nix/var/ocx" "-c" ...$base_cmd]
         }
     } else {
-        # Non-nix workflow: append "run" to the opencode command
-        [...$cfg.opencode_command "run"]
+        # Non-nix workflow: use command as-is
+        $cfg.opencode_command
     }
 
     let ws = workspace get-workspace $cfg
 
     # Determine image name based on config
     let image_name = if $cfg.nix {
+        # Warn if custom base is configured (not supported for nix workflow)
         if ($cfg.custom_base_dockerfile != null) {
             print "Warning: custom_base_dockerfile is not supported with nix workflow"
             print "         Using standard nix-dev image"
         }
-        let version = (version resolve-version $cfg.opencode_version $cfg)
-        $"localhost/ocx-nix:($version)"
+        "localhost/ocx-nix:latest"
     } else {
         let version = (version resolve-version $cfg.opencode_version $cfg)
         if ($cfg.custom_base_dockerfile != null) {
@@ -62,9 +64,9 @@ export def --wrapped main [...args] {
     }
 
     let port = if $cfg.port == null { ports generate } else { $cfg.port }
-    let container_name = resolve-run-container-name $cfg $port
+    let container_name = resolve-container-name $cfg $port
     let timezone = if $cfg.timezone == null { "UTC" } else { $cfg.timezone }
-    
+    let user_settings = (config resolve-user $cfg)
     let opencode_config_dir = $cfg.opencode_config_dir | path expand
     let env_file_name = if $cfg.env_file != null { $cfg.env_file } else { "ocx.env" }
     let global_env_path = ("~/.config/ocx/ocx.env" | path expand)
@@ -84,10 +86,10 @@ export def --wrapped main [...args] {
 
     mkdir $opencode_config_dir
 
-    # Headless: no --interactive, no --publish-port
     let cmd = (build-run-cmd $cfg $container_name $image_name $final_opencode_command $args
         $ws $user_settings $opencode_config_dir $port $timezone
-        $global_env_path $project_env_path $volume_base)
+        $global_env_path $project_env_path $volume_base
+        --interactive --publish-port)
 
     run-external ...$cmd
 }

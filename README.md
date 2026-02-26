@@ -94,16 +94,22 @@ ocx opencode
 ocx o
 ```
 
+Or run a specific task headlessly:
+```bash
+ocx run summarize -f main.nu
+```
+
 This will:
 1. Build the necessary Docker images (if missing).
 2. Mount the current directory (or `OCX_WORKSPACE`) into the container.
-3. Start the OpenCode environment.
+3. Start the OpenCode environment or execute the requested task.
 
 ### Commands
 
 | Command | Description |
 |---------|-------------|
 | `ocx opencode`, `ocx o` | Run the OpenCode container interactively. |
+| `ocx run <args>` | Run a task headlessly (non-interactively) via opencode run. |
 | `ocx build` | Build the Docker images. Use `--force` to rebuild. |
 | `ocx config` | Display the current configuration. |
 | `ocx port` | Show the port number that will be used for the container. |
