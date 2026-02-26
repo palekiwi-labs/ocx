@@ -227,7 +227,7 @@ SUBCOMMANDS:
     stop            Stop nix daemon container
     restart         Restart nix daemon container
     shell           Open shell in nix daemon container
-    flake           Interact with the OCX nix flake
+    flake           Manage your custom flake (~/.config/ocx/nix/flake.nix)
     upgrade         Upgrade nix binary/daemon to latest stable version
 
 EXAMPLES:
@@ -244,15 +244,18 @@ EXAMPLES:
 def "main nix flake" [] {
     print "OCX Nix Flake
 
+Manage your custom flake at ~/.config/ocx/nix/flake.nix.
+All commands require a flake.nix at that location.
+
 USAGE:
     ocx nix flake <SUBCOMMAND>
 
 SUBCOMMANDS:
-    show        Show the outputs provided by the OCX flake
+    show        Show the outputs provided by your custom flake
     metadata    Show flake metadata
     check       Check whether the flake evaluates and run its tests
     lock        Create missing lock file entries
-    update      Update flake lock file
+    update      Update flake lock file (writes flake.lock back to host)
 
 EXAMPLES:
     ocx nix flake show                 # Show flake outputs
@@ -387,7 +390,7 @@ USAGE:
         volume   List project volumes
         image    Manage OCX Docker images
         nix      Manage nix daemon container
-        upgrade  Check for and install OpenCode updates
+        upgrade  Check for and install OpenCode update
 
 OPTIONS:
     -h, --help     Show this help
@@ -424,7 +427,7 @@ OPTIONS:
     ocx nix start                   # Start nix daemon
     ocx nix stop                    # Stop nix daemon
     ocx nix shell                   # Open shell in nix daemon
-    ocx nix flake update            # Update default flake
+    ocx nix flake update            # Update your custom flake
     ocx nix upgrade                 # Upgrade nix binary/daemon
     ocx upgrade                     # Check and update to latest version
     ocx version                     # Show version

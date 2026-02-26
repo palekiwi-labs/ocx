@@ -118,12 +118,17 @@ def build_nix_dev [cfg: record, --force, --no-cache] {
         print "         Ignoring custom base and using standard nix-dev image"
     }
 
-    const NIX_DEV_IMAGE = "localhost/ocx-nix:latest"
+    # Resolve opencode version (same mechanism as standard image)
+    let version = (version resolve-version $cfg.opencode_version $cfg)
+    let nix_dev_image_versioned = $"localhost/ocx-nix:($version)"
+    let nix_dev_image_latest = "localhost/ocx-nix:latest"
+    
     let context = $env.FILE_PWD
     let dockerfile = ($context | path join "Dockerfile.nix-dev")
 
-    if (not $force) and (image_exists $NIX_DEV_IMAGE) {
-        print $"Nix dev image ($NIX_DEV_IMAGE) already exists, skipping build \(use --force to rebuild\)"
+    # Check versioned image to trigger rebuild on version change
+    if (not $force) and (image_exists $nix_dev_image_versioned) {
+        print $"Nix dev image ($nix_dev_image_versioned) already exists, skipping build \(use --force to rebuild\)"
         return
     }
 
@@ -138,7 +143,8 @@ def build_nix_dev [cfg: record, --force, --no-cache] {
         | get target)
     let extra_dirs_arg = ($volume_dirs | str join " ")
 
-    print $"Building nix dev image: ($NIX_DEV_IMAGE)"
+    print $"Building nix dev image: ($nix_dev_image_versioned)"
+    print $"  OpenCode version: v($version)"
     print $"  Container user: ($user_settings.username) \(UID: ($user_settings.uid), GID: ($user_settings.gid)\)"
     if ($extra_dirs_arg != "") {
         print $"  Injecting extra volume directories: ($extra_dirs_arg)"
@@ -148,11 +154,13 @@ def build_nix_dev [cfg: record, --force, --no-cache] {
         [
             "docker" "build"
             "-f" $dockerfile
+            "--build-arg" $"OPENCODE_VERSION=($version)"
             "--build-arg" $"USERNAME=($user_settings.username)"
             "--build-arg" $"UID=($user_settings.uid)"
             "--build-arg" $"GID=($user_settings.gid)"
             "--build-arg" $"EXTRA_DIRS=($extra_dirs_arg)"
-            "-t" $NIX_DEV_IMAGE
+            "-t" $nix_dev_image_versioned
+            "-t" $nix_dev_image_latest
         ]
         | append (if $no_cache { ["--no-cache"] } else { [] })
         | append [$context]

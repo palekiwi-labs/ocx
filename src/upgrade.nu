@@ -1,7 +1,6 @@
 use version
 use config
 use docker_tools build
-use nix_daemon.nu
 
 export def main [--check] {
     print "Checking for OpenCode updates..."
@@ -57,14 +56,10 @@ def handle-explicit-config [
         return
     }
 
-    if $cfg.nix {
-        nix_daemon update-opencode-version $cfg $latest
-    } else {
-        update-global-config $latest
-        print $"Updated configuration to v($latest)"
-        print "Rebuilding image..."
-        build --force=true
-    }
+    update-global-config $latest
+    print $"Updated configuration to v($latest)"
+    print "Rebuilding image..."
+    build --force=true
 
     print $"OpenCode v($latest) is ready!"
 }
@@ -75,39 +70,6 @@ def handle-latest-config [
     check: bool,
     cfg: record
 ] {
-    if $cfg.nix {
-        let current = (nix_daemon get-opencode-version $cfg)
-
-        if $current == $latest {
-            print $"Already up to date: OpenCode v($latest)"
-            return
-        }
-
-        print $"New version available: v($latest)"
-
-        if ($latest_info.notes != null) {
-            print ""
-            print "Release notes:"
-            print $latest_info.notes
-            print ""
-        }
-
-        if $check {
-            return
-        }
-
-        let response = (input $"Update flake pin to v($latest)? [y/N] ")
-
-        if ($response | str downcase) != "y" {
-            print "Update cancelled"
-            return
-        }
-
-        nix_daemon update-opencode-version $cfg $latest
-        print $"OpenCode v($latest) is ready!"
-        return
-    }
-
     let local_versions = (version get-local-semantic-versions $cfg)
 
     if ($local_versions | is-empty) {

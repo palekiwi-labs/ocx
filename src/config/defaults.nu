@@ -41,9 +41,9 @@ export const DEFAULTS = {
     extra_data_volumes: {}
     
     # Nix Workflow
-    nix: false  # enable nix workflow with master nix-daemon container
+    nix: false  # enable nix workflow
     nix_volume_name: "ocx-nix"  # named volume for shared /nix store
-    nix_daemon_container_name: "ocx-nix-daemon"  # master nix daemon container name
+    nix_daemon_container_name: "ocx-nix-daemon"  # nix daemon container name
     nix_extra_substituters: []  # additional binary cache servers beyond cache.nixos.org
     nix_extra_trusted_public_keys: []  # public keys for additional substituters
     nix_opencode_command: null  # command override when nix: true; takes precedence over opencode_command

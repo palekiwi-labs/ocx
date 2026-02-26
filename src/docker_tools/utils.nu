@@ -39,6 +39,10 @@ export def container-is-running [container_name: string] {
 }
 
 export def get-image-name-base [cfg: record] {
+    if $cfg.nix {
+        return "localhost/ocx-nix"
+    }
+
     let final_name = if ($cfg.custom_base_dockerfile != null) {
         let resolved = (resolve-dockerfile-path $cfg.custom_base_dockerfile)
         $resolved.name
@@ -274,6 +278,12 @@ export def build-run-cmd [
     if $cfg.nix {
         let nix_volume = (nix_daemon get-volume-name $cfg)
         $cmd = ($cmd | append ["-v" $"($nix_volume):/nix:ro"])
+
+        # Mount user flake directory if present
+        let user_flake_host_dir = ("~/.config/ocx/nix" | path expand)
+        if ($user_flake_host_dir | path join "flake.nix" | path exists) {
+            $cmd = ($cmd | append ["-v" $"($user_flake_host_dir):/home/($user_settings.username)/.config/ocx/nix:rw"])
+        }
     }
 
     $cmd = ($cmd | append [

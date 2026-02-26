@@ -10,13 +10,20 @@ use ../nix_daemon.nu
 export def main [...args] {
     let cfg = (config load)
 
+    # Resolve user early (needed for flake detection paths)
+    let user_settings = (config resolve-user $cfg)
+    let user = $user_settings.username
+
     # Ensure nix daemon is running if nix workflow is enabled
     if $cfg.nix {
         nix_daemon ensure-running $cfg
-        nix_daemon ensure-default-flake $cfg
     }
 
-    # Resolve final command - always nest with default flake when nix is enabled
+    # Detect user flake on the host
+    let user_flake_host_dir = ("~/.config/ocx/nix" | path expand)
+    let user_flake_present = ($user_flake_host_dir | path join "flake.nix" | path exists)
+
+    # Resolve final command - always nest with flake when nix is enabled
     let final_opencode_command = if $cfg.nix {
         # nix_opencode_command takes precedence over opencode_command when set
         let base_cmd = if $cfg.nix_opencode_command != null {
@@ -24,8 +31,13 @@ export def main [...args] {
         } else {
             $cfg.opencode_command
         }
-        # Always wrap in default devshell for nix workflow
-        ["nix" "develop" "/nix/var/ocx" "-c" ...$base_cmd]
+        # Wrap with user flake devShell if present
+        if $user_flake_present {
+            ["nix" "develop" $"/home/($user)/.config/ocx/nix" "-c" ...$base_cmd]
+        } else {
+            # Fallback to default devshell
+            ["nix" "develop" "/nix/var/ocx" "-c" ...$base_cmd]
+        }
     } else {
         # Non-nix workflow: use command as-is
         $cfg.opencode_command

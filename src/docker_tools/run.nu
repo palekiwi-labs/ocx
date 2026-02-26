@@ -9,22 +9,33 @@ use ../nix_daemon.nu
 
 export def --wrapped main [...args] {
     let cfg = (config load)
-
+    
+    # Resolve user early (needed for flake detection paths)
+    let user_settings = (config resolve-user $cfg)
+    let user = $user_settings.username
+    
     # Ensure nix daemon is running if nix workflow is enabled
     if $cfg.nix {
         nix_daemon ensure-running $cfg
-        nix_daemon ensure-default-flake $cfg
     }
 
-    # Resolve final command - append "run" to the base opencode command
+    # Detect user flake on the host
+    let user_flake_host_dir = ("~/.config/ocx/nix" | path expand)
+    let user_flake_present = ($user_flake_host_dir | path join "flake.nix" | path exists)
+    
+    # Resolve final command with optional user flake wrapping
     let final_opencode_command = if $cfg.nix {
         let base_cmd = if $cfg.nix_opencode_command != null {
             $cfg.nix_opencode_command
         } else {
             $cfg.opencode_command
         }
-        # Always wrap in default devshell for nix workflow, append "run"
-        ["nix" "develop" "/nix/var/ocx" "-c" ...$base_cmd "run"]
+        # Wrap with user flake devShell if present, append "run"
+        if $user_flake_present {
+            ["nix" "develop" $"/home/($user)/.config/ocx/nix" "-c" ...$base_cmd "run"]
+        } else {
+            ["nix" "develop" "/nix/var/ocx" "-c" ...$base_cmd "run"]
+        }
     } else {
         # Non-nix workflow: append "run" to the opencode command
         [...$cfg.opencode_command "run"]
@@ -38,7 +49,8 @@ export def --wrapped main [...args] {
             print "Warning: custom_base_dockerfile is not supported with nix workflow"
             print "         Using standard nix-dev image"
         }
-        "localhost/ocx-nix:latest"
+        let version = (version resolve-version $cfg.opencode_version $cfg)
+        $"localhost/ocx-nix:($version)"
     } else {
         let version = (version resolve-version $cfg.opencode_version $cfg)
         if ($cfg.custom_base_dockerfile != null) {
@@ -52,7 +64,7 @@ export def --wrapped main [...args] {
     let port = if $cfg.port == null { ports generate } else { $cfg.port }
     let container_name = resolve-run-container-name $cfg $port
     let timezone = if $cfg.timezone == null { "UTC" } else { $cfg.timezone }
-    let user_settings = (config resolve-user $cfg)
+    
     let opencode_config_dir = $cfg.opencode_config_dir | path expand
     let env_file_name = if $cfg.env_file != null { $cfg.env_file } else { "ocx.env" }
     let global_env_path = ("~/.config/ocx/ocx.env" | path expand)
