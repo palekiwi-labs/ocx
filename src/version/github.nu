@@ -48,35 +48,35 @@ def handle-github-error [err]: nothing -> nothing {
     let msg = $err.msg | str downcase
 
     if ($msg | str contains "403") {
-        eprintln "GitHub API rate limit exceeded. Using cached version if available."
+        print -e "GitHub API rate limit exceeded. Using cached version if available."
         return null
     }
 
     if ($msg | str contains "404") {
-        eprintln "GitHub API: Repository not found (404). The repository may have moved."
+        print -e "GitHub API: Repository not found (404). The repository may have moved."
         return null
     }
 
     if ($msg | str contains "5") or ($msg | str contains "502") or ($msg | str contains "503") {
-        eprintln "GitHub API: Server error (5xx). Please try again later."
+        print -e "GitHub API: Server error (5xx). Please try again later."
         return null
     }
 
     if ($msg | str contains "timeout") or ($msg | str contains "timed out") {
-        eprintln "Request to GitHub timed out. Check your network connection."
+        print -e "Request to GitHub timed out. Check your network connection."
         return null
     }
 
     if ($msg | str contains "connection") or ($msg | str contains "dns") or ($msg | str contains "resolve") {
-        eprintln "Network error: Cannot connect to GitHub. Check your internet connection."
+        print -e "Network error: Cannot connect to GitHub. Check your internet connection."
         return null
     }
 
     if ($msg | str contains "tls") or ($msg | str contains "ssl") or ($msg | str contains "certificate") {
-        eprintln "TLS/SSL error: Certificate validation failed. Check your system time and certificates."
+        print -e "TLS/SSL error: Certificate validation failed. Check your system time and certificates."
         return null
     }
 
-    eprintln $"GitHub API error: ($err.msg)"
+    print -e $"GitHub API error: ($err.msg)"
     null
 }

@@ -3,13 +3,13 @@ use config
 use docker_tools build
 
 export def main [--check] {
-    print "Checking for OpenCode updates..."
+    print -e "Checking for OpenCode updates..."
 
     let cfg = (config load)
     let latest_info = (version fetch-latest-release)
 
     if $latest_info == null {
-        print "Unable to check for updates (network error or rate limit)"
+        print -e "Unable to check for updates (network error or rate limit)"
         return
     }
 
@@ -32,17 +32,17 @@ def handle-explicit-config [
     let normalized_config = (version normalize-version $config_version)
 
     if $normalized_config == $latest {
-        print $"Already up to date: OpenCode v($normalized_config)"
+        print -e $"Already up to date: OpenCode v($normalized_config)"
         return
     }
 
-    print $"New version available: v($latest) \(current config: v($normalized_config)\)"
+    print -e $"New version available: v($latest) \(current config: v($normalized_config)\)"
 
     if ($latest_info.notes != null) {
-        print ""
-        print "Release notes:"
-        print $latest_info.notes
-        print ""
+        print -e ""
+        print -e "Release notes:"
+        print -e $latest_info.notes
+        print -e ""
     }
 
     if $check {
@@ -52,16 +52,16 @@ def handle-explicit-config [
     let response = (input $"Update to v($latest)? [y/N] ")
 
     if ($response | str downcase) != "y" {
-        print "Update cancelled"
+        print -e "Update cancelled"
         return
     }
 
     update-global-config $latest
-    print $"Updated configuration to v($latest)"
-    print "Rebuilding image..."
+    print -e $"Updated configuration to v($latest)"
+    print -e "Rebuilding image..."
     build --force=true
 
-    print $"OpenCode v($latest) is ready!"
+    print -e $"OpenCode v($latest) is ready!"
 }
 
 def handle-latest-config [
@@ -73,25 +73,25 @@ def handle-latest-config [
     let local_versions = (version get-local-semantic-versions $cfg)
 
     if ($local_versions | is-empty) {
-        print "No OpenCode images found (or version tags missing)."
-        print $"Latest available: v($latest)"
-        print ""
-        print "Run 'ocx build' to create your first image."
+        print -e "No OpenCode images found (or version tags missing)."
+        print -e $"Latest available: v($latest)"
+        print -e ""
+        print -e "Run 'ocx build' to create your first image."
         return
     }
 
     if $latest in $local_versions {
-        print $"Already up to date: OpenCode v($latest)"
+        print -e $"Already up to date: OpenCode v($latest)"
         return
     }
 
-    print $"New version available: v($latest)"
+    print -e $"New version available: v($latest)"
 
     if ($latest_info.notes != null) {
-        print ""
-        print "Release notes:"
-        print $latest_info.notes
-        print ""
+        print -e ""
+        print -e "Release notes:"
+        print -e $latest_info.notes
+        print -e ""
     }
 
     if $check {
@@ -101,14 +101,14 @@ def handle-latest-config [
     let response = (input $"Build v($latest)? [y/N] ")
 
     if ($response | str downcase) != "y" {
-        print "Update cancelled"
+        print -e "Update cancelled"
         return
     }
 
-    print "Rebuilding image..."
+    print -e "Rebuilding image..."
     build --force=true
 
-    print $"OpenCode v($latest) is ready!"
+    print -e $"OpenCode v($latest) is ready!"
 }
 
 def update-global-config [version: string] {
