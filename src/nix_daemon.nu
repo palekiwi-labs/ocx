@@ -45,7 +45,7 @@ def build-nix-daemon [cfg: record, --force, --no-cache] {
         return
     }
 
-    print $"Building nix daemon image: ($NIX_DAEMON_IMAGE)"
+    print -e $"Building nix daemon image: ($NIX_DAEMON_IMAGE)"
 
     let context = $env.FILE_PWD
     let dockerfile = ($context | path join "Dockerfile.nix-daemon")
@@ -89,7 +89,7 @@ export def ensure-nix-version [cfg: record] {
         return
     }
 
-    print "Initializing nix channel (nixpkgs-unstable)..."
+    print -e "Initializing nix channel (nixpkgs-unstable)..."
 
     # Set channel explicitly to nixpkgs-unstable
     let channel_add = (docker exec $container_name nix-channel --add https://nixos.org/channels/nixpkgs-unstable nixpkgs | complete)
@@ -120,7 +120,7 @@ export def ensure-nix-version [cfg: record] {
     # Write sentinel so we don't repeat this on next start
     docker exec $container_name sh -c $"mkdir -p /nix/var/ocx && touch ($sentinel)" | ignore
 
-    print "Nix channel initialized"
+    print -e "Nix channel initialized"
 }
 
 # Ensure the nix daemon container is running
@@ -139,12 +139,12 @@ export def ensure-running [cfg: record] {
 
     # Ensure image exists
     if not (image-exists $NIX_DAEMON_IMAGE) {
-        print "Nix daemon image not found, building..."
+        print -e "Nix daemon image not found, building..."
         build-nix-daemon $cfg
     }
 
     # Start daemon container
-    print $"Starting nix daemon container: ($container_name)"
+    print -e $"Starting nix daemon container: ($container_name)"
 
     let cmd = [
         "docker" "run" "-d"
@@ -160,7 +160,7 @@ export def ensure-running [cfg: record] {
     sleep 1sec
 
     if (is-running $container_name) {
-        print "Nix daemon started successfully"
+        print -e "Nix daemon started successfully"
     } else {
         error make {
             msg: "Failed to start nix daemon container"
@@ -178,10 +178,10 @@ export def stop [cfg: record] {
     let container_name = (get-container-name $cfg)
 
     if (is-running $container_name) {
-        print $"Stopping nix daemon container: ($container_name)"
+        print -e $"Stopping nix daemon container: ($container_name)"
         docker stop $container_name | ignore
     } else {
-        print "Nix daemon is not running"
+        print -e "Nix daemon is not running"
     }
 }
 
@@ -240,15 +240,15 @@ export def shell [cfg: record] {
         }
     }
 
-    print $"Opening shell in nix daemon container: ($container_name)"
+    print -e $"Opening shell in nix daemon container: ($container_name)"
     run-external "docker" "exec" "-it" $container_name "bash"
 }
 
 # Upgrade the nix binary/daemon itself to the latest stable version
 export def upgrade [cfg: record] {
     if not $cfg.nix {
-        print "Nix workflow is not enabled"
-        print "Enable it by setting nix: true in your config"
+        print -e "Nix workflow is not enabled"
+        print -e "Enable it by setting nix: true in your config"
         return
     }
 
@@ -265,11 +265,11 @@ export def upgrade [cfg: record] {
 
     # Show current version
     let current_version = (docker exec $container_name nix --version | complete | get stdout | str trim)
-    print $"Current nix version: ($current_version)"
-    print ""
+    print -e $"Current nix version: ($current_version)"
+    print -e ""
 
     # Update nixpkgs channel
-    print "Updating nixpkgs channel..."
+    print -e "Updating nixpkgs channel..."
     let channel_result = (docker exec $container_name nix-channel --update | complete)
     if $channel_result.exit_code != 0 {
         error make {
@@ -281,7 +281,7 @@ export def upgrade [cfg: record] {
     }
 
     # Upgrade nix binary and cacert
-    print "Upgrading nix..."
+    print -e "Upgrading nix..."
     let upgrade_result = (docker exec $container_name nix-env --install --attr nixpkgs.nix nixpkgs.cacert | complete)
     if $upgrade_result.exit_code != 0 {
         error make {
@@ -293,20 +293,20 @@ export def upgrade [cfg: record] {
     }
 
     # Restart daemon container to apply the new nix binary
-    print "Restarting nix daemon to apply upgrade..."
+    print -e "Restarting nix daemon to apply upgrade..."
     stop $cfg
     ensure-running $cfg
 
     # Show new version
     let new_version = (docker exec $container_name nix --version | complete | get stdout | str trim)
-    print ""
-    print $"Nix upgraded successfully!"
-    print $"  Before: ($current_version)"
-    print $"  After:  ($new_version)"
-    print ""
-    print "Restart your dev containers to use the updated nix version:"
-    print "  ocx stop"
-    print "  ocx opencode"
+    print -e ""
+    print -e $"Nix upgraded successfully!"
+    print -e $"  Before: ($current_version)"
+    print -e $"  After:  ($new_version)"
+    print -e ""
+    print -e "Restart your dev containers to use the updated nix version:"
+    print -e "  ocx stop"
+    print -e "  ocx opencode"
 }
 
 # Detect presence and paths for the user-provided custom flake

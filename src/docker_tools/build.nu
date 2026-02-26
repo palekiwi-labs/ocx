@@ -13,10 +13,10 @@ export def main [
     if $base {
         # For nix workflow, build nix-daemon and nix-dev images
         if $cfg.nix {
-            print "Building nix daemon..."
+            print -e "Building nix daemon..."
             nix_daemon build $cfg --force=$force --no-cache=$no_cache
             
-            print "Building nix dev environment..."
+            print -e "Building nix dev environment..."
             build_nix_dev $cfg --force=$force --no-cache=$no_cache
         } else {
             # Building base layer for non-nix workflow
@@ -27,7 +27,7 @@ export def main [
             }
             
             # Then build OCX layer
-            print "Base build complete, now building OCX..."
+            print -e "Base build complete, now building OCX..."
             build_ocx $cfg --force=$force --no-cache=$no_cache
         }
     } else {
@@ -59,15 +59,15 @@ def build_ocx [cfg: record, --force, --no-cache] {
     }
 
     # Check if base exists, build if needed
-    if (not (image_exists $base_image)) {
-        print $"Base image (($base_image)) not found, building it first..."
+    if (not (image-exists $base_image)) {
+        print -e $"Base image (($base_image)) not found, building it first..."
 
         if ($cfg.custom_base_dockerfile != null) {
             build_custom_base $cfg --force=$force --no-cache=$no_cache
         } else {
             build_ocx_base --force=$force --no-cache=$no_cache
         }
-        print "Base image ready, now building ocx..."
+        print -e "Base image ready, now building ocx..."
     }
 
     # Determine final image name
@@ -79,16 +79,16 @@ def build_ocx [cfg: record, --force, --no-cache] {
     # Resolve extra data directories from config to bake them into the image
     let extra_volumes = (resolve-extra-volumes $cfg $user_settings.username)
 
-    # Only include target paths for volume-type mounts (not bind mounts)
+    # Only include target paths for volume-type mounts (not json mounts)
     let volume_dirs = ($extra_volumes
         | where type == "volume"
         | get target)
     let extra_dirs_arg = ($volume_dirs | str join " ")
 
-    print $"Building OCX image: ($final_image)"
-    print $"  Container user: ($user_settings.username) \(UID: ($user_settings.uid), GID: ($user_settings.gid)\)"
+    print -e $"Building OCX image: ($final_image)"
+    print -e $"  Container user: ($user_settings.username) \(UID: ($user_settings.uid), GID: ($user_settings.gid)\)"
     if ($extra_dirs_arg != "") {
-        print $"  Injecting extra volume directories: ($extra_dirs_arg)"
+        print -e $"  Injecting extra volume directories: ($extra_dirs_arg)"
     }
 
     let cmd = (
@@ -114,8 +114,8 @@ def build_ocx [cfg: record, --force, --no-cache] {
 def build_nix_dev [cfg: record, --force, --no-cache] {
     # Warn if custom base is configured (not supported for nix workflow)
     if ($cfg.custom_base_dockerfile != null) {
-        print "Warning: custom_base_dockerfile is not supported with nix workflow (nix=true)"
-        print "         Ignoring custom base and using standard nix-dev image"
+        print -e "Warning: custom_base_dockerfile is not supported with nix workflow (nix=true)"
+        print -e "         Ignoring custom base and using standard nix-dev image"
     }
 
     # Resolve opencode version (same mechanism as standard image)
@@ -128,7 +128,7 @@ def build_nix_dev [cfg: record, --force, --no-cache] {
 
     # Check versioned image to trigger rebuild on version change
     if (not $force) and (image_exists $nix_dev_image_versioned) {
-        print $"Nix dev image ($nix_dev_image_versioned) already exists, skipping build \(use --force to rebuild\)"
+        print -e $"Nix dev image ($nix_dev_image_versioned) already exists, skipping build \(use --force to rebuild\)"
         return
     }
 
@@ -143,11 +143,11 @@ def build_nix_dev [cfg: record, --force, --no-cache] {
         | get target)
     let extra_dirs_arg = ($volume_dirs | str join " ")
 
-    print $"Building nix dev image: ($nix_dev_image_versioned)"
-    print $"  OpenCode version: v($version)"
-    print $"  Container user: ($user_settings.username) \(UID: ($user_settings.uid), GID: ($user_settings.gid)\)"
+    print -e $"Building nix dev image: ($nix_dev_image_versioned)"
+    print -e $"  OpenCode version: v($version)"
+    print -e $"  Container user: ($user_settings.username) \(UID: ($user_settings.uid), GID: ($user_settings.gid)\)"
     if ($extra_dirs_arg != "") {
-        print $"  Injecting extra volume directories: ($extra_dirs_arg)"
+        print -e $"  Injecting extra volume directories: ($extra_dirs_arg)"
     }
 
     let cmd = (
@@ -178,13 +178,13 @@ def build_custom_base [cfg: record, --force, --no-cache] {
     let base_image_name = $"localhost/ocx-base-($resolved.name):latest"
 
     if (not $force) and (image_exists $base_image_name) {
-        print $"Custom base image ($base_image_name) already exists, skipping build \(use --force to rebuild\)"
+        print -e $"Custom base image ($base_image_name) already exists, skipping build \(use --force to rebuild\)"
         return
     }
 
-    print $"Building custom base '($resolved.name)' from ($resolved.location) config"
-    print $"  Dockerfile: ($resolved.path)"
-    print $"  Context: ($resolved.context)"
+    print -e $"Building custom base '($resolved.name)' from ($resolved.location) config"
+    print -e $"  Dockerfile: ($resolved.path)"
+    print -e $"  Context: ($resolved.context)"
 
     let cmd = (
         [
@@ -210,11 +210,11 @@ def build_ocx_base [--force, --no-cache] {
     let dockerfile = ($context | path join "Dockerfile.base")
 
     if (not $force) and (image_exists $BASE_IMAGE) {
-        print $"Base image ($BASE_IMAGE) already exists, skipping build \(use --force to rebuild\)"
+        print -e $"Base image ($BASE_IMAGE) already exists, skipping build \(use --force to rebuild\)"
         return
     }
 
-    print "Building base ocx image..."
+    print -e "Building base ocx image..."
 
     let cmd = (
         [

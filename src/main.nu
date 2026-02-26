@@ -158,7 +158,7 @@ def "main version" [] {
         if ($version_path | path exists) {
             open $version_path | str trim
         } else {
-                        print "unknown (VERSION.txt file not found)"
+                        print -e "unknown (VERSION.txt file not found)"
         }
     } catch { |err|
         errors pretty-print $err
@@ -492,7 +492,7 @@ def main [--version(-v)] {
             } else {
                 # Fallback if running directly without proper install structure
                 # and not in source root
-                            print "unknown (VERSION.txt file not found)"
+                            print -e "unknown (VERSION.txt file not found)"
             }
         } else {
             print_help

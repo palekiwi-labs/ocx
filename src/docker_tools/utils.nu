@@ -195,7 +195,7 @@ export def build-run-cmd [
     let skip_workspace_mount = $workspace_would_conflict
 
     if $workspace_would_conflict {
-        print "Info: Config directory is the workspace - mounting as read-write"
+        print -e "Info: Config directory is the workspace - mounting as read-write"
     }
 
     mut cmd = ["docker" "run" "--rm"]

@@ -49,8 +49,8 @@ export def main [...args] {
     let image_name = if $cfg.nix {
         # Warn if custom base is configured (not supported for nix workflow)
         if ($cfg.custom_base_dockerfile != null) {
-            print "Warning: custom_base_dockerfile is not supported with nix workflow"
-            print "         Using standard nix-dev image"
+            print -e "Warning: custom_base_dockerfile is not supported with nix workflow"
+            print -e "         Using standard nix-dev image"
         }
         "localhost/ocx-nix:latest"
     } else {
@@ -75,11 +75,11 @@ export def main [...args] {
 
     if not (image_exists $image_name) {
         if $cfg.nix {
-            print $"Image ($image_name) not found, building nix dev environment..."
+            print -e $"Image ($image_name) not found, building nix dev environment..."
             build
         } else {
             let version = (version resolve-version $cfg.opencode_version $cfg)
-            print $"Image ($image_name) not found, building OpenCode v($version)..."
+            print -e $"Image ($image_name) not found, building OpenCode v($version)..."
             build
         }
     }
