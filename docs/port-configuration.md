@@ -22,6 +22,10 @@ There are two ways to specify the port and hostname for `opencode`:
 }
 ```
 
+### Headless Execution (ocx run)
+
+When using `ocx run`, port publishing is **disabled**. This subcommand is designed for headless, one-off tasks (like agent execution or summaries) where a persistent server interface is not required. Even if `publish_port` is set to `true` in your configuration, `ocx run` will not bind the container port to the host.
+
 ## Auto-generated Default Port
 
 When no explicit port is configured, `ocx` automatically generates a default port using a hash of the project path. This ensures that different projects consistently use different ports while maintaining predictability - the same project will always get the same port.

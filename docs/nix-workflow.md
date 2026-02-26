@@ -59,6 +59,9 @@ echo '{"nix": true}' > ocx.json
 # Run OCX (daemon starts automatically if needed)
 ocx opencode
 
+# Run a task headlessly (wraps with nix develop automatically)
+ocx run summarize -f main.nu
+
 # Inside the container, nix is available
 $ nix --version
 $ nix develop

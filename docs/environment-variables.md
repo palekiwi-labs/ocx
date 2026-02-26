@@ -40,7 +40,9 @@ Override the automatic container name.
 export OCX_CONTAINER_NAME=my-dev-container
 ```
 
-**Default:** Generated as `ocx-<projectname>-<port>`
+**Default:** Generated as `ocx-<projectname>-<port>`. 
+
+**Note:** For `ocx run`, a unique UUID suffix is appended (e.g., `ocx-<projectname>-<port>-run-a1b2c3d4`) to allow multiple headless tasks to run simultaneously or alongside an interactive session.
 
 ### Port and Network
 
@@ -399,10 +401,10 @@ OCX automatically passes through OpenCode-specific environment variables from yo
 
 ### How It Works
 
-When you run `ocx opencode` or `ocx exec`, OCX checks for OpenCode-specific environment variables in your host environment and passes them through to the container if they exist. This works seamlessly with the `ocx.env` files:
+When you run `ocx opencode`, `ocx run`, or `ocx exec`, OCX checks for OpenCode-specific environment variables in your host environment and passes them through to the container if they exist. This works seamlessly with the `ocx.env` files:
 
 **Precedence Order (highest to lowest):**
-1. Host environment variables (e.g., `ANTHROPIC_API_KEY=xyz ocx opencode`)
+1. Host environment variables (e.g., `ANTHROPIC_API_KEY=xyz ocx run summarize`)
 2. Project env file (`./ocx.env`)
 3. Global env file (`~/.config/ocx/ocx.env`)
 
