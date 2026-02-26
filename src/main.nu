@@ -214,20 +214,50 @@ USAGE:
     ocx nix <SUBCOMMAND>
 
 SUBCOMMANDS:
-    status    Show nix daemon status
-    start     Start nix daemon container
-    stop      Stop nix daemon container
-    restart   Restart nix daemon container
-    shell     Open shell in nix daemon container
-    update    Update default flake (updates flake.lock)
+    status          Show nix daemon status
+    start           Start nix daemon container
+    stop            Stop nix daemon container
+    restart         Restart nix daemon container
+    shell           Open shell in nix daemon container
+    flake           Manage your custom flake (~/.config/ocx/nix/flake.nix)
+    upgrade         Upgrade nix binary/daemon to latest stable version
 
 EXAMPLES:
-    ocx nix status     # Check if nix daemon is running
-    ocx nix start      # Manually start nix daemon
-    ocx nix stop       # Stop nix daemon
-    ocx nix restart    # Restart nix daemon
-    ocx nix shell      # Open shell for inspection
-    ocx nix update     # Update default flake to latest OpenCode
+    ocx nix status           # Check if nix daemon is running
+    ocx nix start            # Manually start nix daemon
+    ocx nix stop             # Stop nix daemon
+    ocx nix restart          # Restart nix daemon
+    ocx nix shell            # Open shell for inspection
+    ocx nix flake            # Show flake subcommands
+    ocx nix upgrade          # Upgrade nix binary to latest stable version
+"
+}
+
+def "main nix flake" [] {
+    print "OCX Nix Flake
+
+Manage your custom flake at ~/.config/ocx/nix/flake.nix.
+All commands require a flake.nix at that location.
+
+USAGE:
+    ocx nix flake <SUBCOMMAND>
+
+SUBCOMMANDS:
+    show        Show the outputs provided by your custom flake
+    metadata    Show flake metadata
+    check       Check whether the flake evaluates and run its tests
+    lock        Create missing lock file entries
+    update      Update flake lock file (writes flake.lock back to host)
+
+EXAMPLES:
+    ocx nix flake show                 # Show flake outputs
+    ocx nix flake show --json          # Show flake outputs as JSON
+    ocx nix flake metadata             # Show flake metadata
+    ocx nix flake check                # Evaluate and run checks
+    ocx nix flake check --no-build     # Evaluate without building
+    ocx nix flake lock                 # Create missing lock entries
+    ocx nix flake update               # Update all inputs
+    ocx nix flake update nixpkgs       # Update a single input
 "
 }
 
@@ -277,10 +307,55 @@ def "main nix shell" [] {
     }
 }
 
-def "main nix update" [] {
+def --wrapped "main nix flake show" [...args] {
     try {
         let cfg = load
-        nix_daemon update $cfg
+        nix_daemon flake show $cfg ...$args
+    } catch { |err|
+        errors pretty-print $err
+    }
+}
+
+def --wrapped "main nix flake metadata" [...args] {
+    try {
+        let cfg = load
+        nix_daemon flake metadata $cfg ...$args
+    } catch { |err|
+        errors pretty-print $err
+    }
+}
+
+def --wrapped "main nix flake check" [...args] {
+    try {
+        let cfg = load
+        nix_daemon flake check $cfg ...$args
+    } catch { |err|
+        errors pretty-print $err
+    }
+}
+
+def --wrapped "main nix flake lock" [...args] {
+    try {
+        let cfg = load
+        nix_daemon flake lock $cfg ...$args
+    } catch { |err|
+        errors pretty-print $err
+    }
+}
+
+def --wrapped "main nix flake update" [...args] {
+    try {
+        let cfg = load
+        nix_daemon flake update $cfg ...$args
+    } catch { |err|
+        errors pretty-print $err
+    }
+}
+
+def "main nix upgrade" [] {
+    try {
+        let cfg = load
+        nix_daemon upgrade $cfg
     } catch { |err|
         errors pretty-print $err
     }
@@ -306,7 +381,7 @@ USAGE:
         volume   List project volumes
         image    Manage OCX Docker images
         nix      Manage nix daemon container
-        upgrade  Check for and install OpenCode updates
+        upgrade  Check for and install OpenCode update
 
 OPTIONS:
     -h, --help     Show this help
@@ -341,7 +416,8 @@ OPTIONS:
     ocx nix start                   # Start nix daemon
     ocx nix stop                    # Stop nix daemon
     ocx nix shell                   # Open shell in nix daemon
-    ocx nix update                  # Update default flake
+    ocx nix flake update            # Update your custom flake
+    ocx nix upgrade                 # Upgrade nix binary/daemon
     ocx upgrade                     # Check and update to latest version
     ocx version                     # Show version
     ocx help                        # Show help

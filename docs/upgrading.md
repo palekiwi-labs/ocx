@@ -205,6 +205,51 @@ export OCX_OPENCODE_VERSION=1.2.3
    ocx exec npm test  # or whatever your test command is
    ```
 
+### Nix Workflow Upgrade
+
+When using the Nix workflow (`nix: true`), the upgrade process works differently:
+
+```bash
+ocx upgrade
+```
+
+**What it does with Nix workflow:**
+1. Fetches latest version information from GitHub
+2. Updates the OpenCode version pin in the default flake
+3. Runs `nix flake lock --update-input opencode` to update the lock file
+4. Displays release notes
+5. No image rebuild required
+
+**Sample Output:**
+```
+Checking for updates...
+Current version: 1.2.6
+Latest version: 1.2.7
+
+Update flake pin to v1.2.7? [y/N] y
+
+Updated flake opencode pin to v1.2.7
+Updating flake.lock for opencode input...
+Flake lock updated
+
+OpenCode v1.2.7 is ready!
+```
+
+**To apply the new version:**
+```bash
+ocx stop
+ocx opencode
+```
+
+The Nix workflow allows for faster upgrades since no image rebuild is required.
+
+**To update other dependencies in the flake (nixpkgs, etc.):**
+```bash
+ocx nix flake update
+ocx stop
+ocx opencode
+```
+
 ### Team Upgrade Workflow
 
 1. **Coordinate with team:**

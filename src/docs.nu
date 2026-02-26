@@ -170,7 +170,7 @@ def generate_skill [
 
     let md_files = $files | get path
 
-    let skill_content = (generate_skill_content $name $repo_url $version $md_files)
+    let skill_content = (generate_skill_content $name $repo_url $version $md_files $output_path)
     $skill_content | save -f $skill_file
 
     print $"✓ Skill generated successfully at '($skill_file)'"
@@ -181,6 +181,7 @@ def generate_skill_content [
     repo_url: string
     version: string
     files: list<string>
+    output_path: string
 ] {
     let base_name = ($skill_name | str replace "-documentation" "")
     let description = $"provides documentation pages to help answer user questions about ($base_name)"
@@ -193,7 +194,8 @@ description: ($description)
 ## Documentation pages for version ($version):
 
 ($files | each { |name|
-    $"[($name)]\(./($version)/($name)\)"
+    let abs_path = ([$output_path $version $name] | path join)
+    $"[($name)]\(($abs_path)\)"
 } | str join "\n")
 
 ## Source
