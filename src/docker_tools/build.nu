@@ -1,4 +1,4 @@
-use ./utils.nu [image_exists, resolve-dockerfile-path, get-image-name-base, resolve-extra-volumes]
+use ./utils.nu [image-exists, resolve-dockerfile-path, get-image-name-base, resolve-extra-volumes]
 use ../config
 use ../version
 use ../nix_daemon.nu
@@ -127,7 +127,7 @@ def build_nix_dev [cfg: record, --force, --no-cache] {
     let dockerfile = ($context | path join "Dockerfile.nix-dev")
 
     # Check versioned image to trigger rebuild on version change
-    if (not $force) and (image_exists $nix_dev_image_versioned) {
+    if (not $force) and (image-exists $nix_dev_image_versioned) {
         print -e $"Nix dev image ($nix_dev_image_versioned) already exists, skipping build \(use --force to rebuild\)"
         return
     }
@@ -177,7 +177,7 @@ def build_custom_base [cfg: record, --force, --no-cache] {
 
     let base_image_name = $"localhost/ocx-base-($resolved.name):latest"
 
-    if (not $force) and (image_exists $base_image_name) {
+    if (not $force) and (image-exists $base_image_name) {
         print -e $"Custom base image ($base_image_name) already exists, skipping build \(use --force to rebuild\)"
         return
     }
@@ -209,7 +209,7 @@ def build_ocx_base [--force, --no-cache] {
     let context = $env.FILE_PWD
     let dockerfile = ($context | path join "Dockerfile.base")
 
-    if (not $force) and (image_exists $BASE_IMAGE) {
+    if (not $force) and (image-exists $BASE_IMAGE) {
         print -e $"Base image ($BASE_IMAGE) already exists, skipping build \(use --force to rebuild\)"
         return
     }

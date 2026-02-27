@@ -5,7 +5,7 @@ use ../opencode_env.nu
 use ../volume_name.nu
 use ../nix_daemon.nu
 
-export def image_exists [name: string] {
+export def image-exists [name: string] {
     (docker image inspect $name | complete).exit_code == 0
 }
 
