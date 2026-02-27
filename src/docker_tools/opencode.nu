@@ -1,4 +1,4 @@
-use ./utils.nu [image_exists, resolve-container-name, resolve-dockerfile-path, build-run-cmd]
+use ./utils.nu [image-exists, resolve-container-name, resolve-dockerfile-path, build-run-cmd]
 use ./build.nu
 use ../ports.nu
 use ../workspace.nu
@@ -73,7 +73,7 @@ export def main [...args] {
     let project_env_path = ($env_file_name | path expand)
     let volume_base = (volume_name resolve-volume-base-name $cfg)
 
-    if not (image_exists $image_name) {
+    if not (image-exists $image_name) {
         if $cfg.nix {
             print -e $"Image ($image_name) not found, building nix dev environment..."
             build
