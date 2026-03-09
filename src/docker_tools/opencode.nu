@@ -46,20 +46,21 @@ export def main [...args] {
     let ws = workspace get-workspace $cfg
 
     # Determine image name based on config
+    let image_base = (get-image-name-base $cfg)
+    let version = (version resolve-version $cfg.opencode_version $cfg)
     let image_name = if $cfg.nix {
         # Warn if custom base is configured (not supported for nix workflow)
         if ($cfg.custom_base_dockerfile != null) {
             print -e "Warning: custom_base_dockerfile is not supported with nix workflow"
             print -e "         Using standard nix-dev image"
         }
-        "localhost/ocx-nix:latest"
+        $"($image_base):($version)"
     } else {
-        let version = (version resolve-version $cfg.opencode_version $cfg)
         if ($cfg.custom_base_dockerfile != null) {
             let resolved = (resolve-dockerfile-path $cfg.custom_base_dockerfile)
-            $"localhost/ocx-($resolved.name):($version)"
+            $"($image_base):($version)"
         } else {
-            $"localhost/ocx:($version)"
+            $"($image_base):($version)"
         }
     }
 
