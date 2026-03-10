@@ -1,4 +1,4 @@
-use ./utils.nu [image-exists, resolve-container-name, resolve-dockerfile-path, build-run-cmd]
+use ./utils.nu [image-exists, resolve-container-name, resolve-dockerfile-path, build-run-cmd, get-image-name-base]
 use ./build.nu
 use ../ports.nu
 use ../workspace.nu
