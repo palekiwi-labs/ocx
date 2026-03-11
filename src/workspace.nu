@@ -1,6 +1,6 @@
 # Workspace path calculations and validation
 
-use ./config
+use ./config/user.nu resolve-user
 
 # Get workspace configuration from OCX_WORKSPACE environment variable
 export def get-workspace [cfg: record] {
@@ -29,7 +29,7 @@ export def get-workspace [cfg: record] {
     }
 
     # Get username for path calculation
-    let user_settings = (config resolve-user $cfg)
+    let user_settings = (resolve-user $cfg)
 
     # Compute container path
     let container_path = (calculate-container-path $workspace $user_settings.username)

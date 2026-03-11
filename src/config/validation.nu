@@ -225,12 +225,22 @@ export def validate-volume-config [key: string, config: any] {
             }
         }
         
-        # Bind mount source must be absolute path
-        if not ($config.source | str starts-with "/") {
+        # Bind mount source must be absolute or prefixed for expansion
+        let s = $config.source
+        if not (($s | str starts-with "/") or ($s | str starts-with "~") or ($s | str starts-with ".")) {
             error make {
                 msg: $"Invalid 'source' path for bind mount '($key)': ($config.source)"
-                help: "Bind mount source must be an absolute path starting with '/'"
+                help: "Bind mount source must be absolute (/), home-relative (~), or workspace-relative (./)"
             }
+        }
+    }
+
+    # Target must be absolute or explicitly relative (~/ or ./)
+    let t = $config.target
+    if not (($t | str starts-with "/") or ($t | str starts-with "~") or ($t | str starts-with ".")) {
+        error make {
+            msg: $"Invalid 'target' path for volume '($key)': ($config.target)"
+            help: "Target path must be absolute (starting with /) or explicitly relative (starting with ~/ or ./)"
         }
     }
 }
