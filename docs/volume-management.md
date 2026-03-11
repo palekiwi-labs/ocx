@@ -129,12 +129,65 @@ Each entry in `extra_data_volumes` is a record with the following fields:
 
 | Field | Required | Type | Description |
 |-------|----------|------|-------------|
-| `target` | Yes | string | Container path where volume/directory will be mounted. Supports `~/` prefix. |
-| `source` | Conditional | string | For volumes: Docker volume name (defaults to `${volume_base}-${key}`). For bind: absolute host path (required). |
+| `target` | Yes | string | Container path where volume/directory will be mounted. Supports `~/` (home-relative) and `./` (workspace-relative) prefixes. |
+| `source` | Conditional | string | For volumes: Docker volume name (defaults to `${volume_base}-${key}`). For bind: host path. Supports `~/`, `./`, and `../` expansion. (required for bind). |
 | `mode` | No | string | Mount mode: `"rw"` (read-write, default) or `"ro"` (read-only). |
 | `type` | No | string | Mount type: `"volume"` (Docker volume, default) or `"bind"` (host bind mount). |
 
+#### Path Expansion
+
+OCX supports intelligent path expansion for both `source` (host) and `target` (container) paths to make configurations more portable.
+
+##### Host-side Expansion (`source`)
+
+For `type: "bind"` mounts, the `source` path is expanded relative to the host environment:
+- `~/path` -> `/home/hostuser/path`
+- `./path` -> `$PWD/path` (relative to where `ocx` is run)
+- `../path` -> `$PWD/../path`
+
+##### Container-side Expansion (`target`)
+
+The `target` path is expanded relative to the container environment:
+- `~/path` -> `/home/opencode/path` (resolves to the container user's home)
+- `./path` -> `/workspace/project/path` (resolves relative to the active workspace)
+- `/path` -> remain absolute
+
+> **Note**: Relative target paths **must** start with either `~/` or `./` to distinguish them from Docker named volumes.
+
 #### Examples
+
+**Workspace-relative Bind Mount:**
+
+```json
+{
+  "extra_data_volumes": {
+    "logs": {
+      "source": "./logs",
+      "target": "./logs",
+      "type": "bind"
+    }
+  }
+}
+```
+If your project is at `/home/user/my-project` and mounted at `/workspace/my-project` in the container, this maps:
+- Host: `/home/user/my-project/logs`
+- Container: `/workspace/my-project/logs`
+
+**Home-relative Persistent Volume:**
+
+```json
+{
+  "extra_data_volumes": {
+    "config": {
+      "target": "~/.config/myapp",
+      "type": "volume"
+    }
+  }
+}
+```
+This ensures `~/.config/myapp` inside the container persists in a Docker volume, regardless of the container user's name.
+
+#### Use Cases
 
 **Docker Named Volumes** (traditional persistent storage):
 
@@ -239,10 +292,10 @@ Read-only sharing eliminates package duplication while maintaining security:
 #### Validation Rules
 
 - **Keys**: Must contain only lowercase letters, numbers, and hyphens
-- **target**: Required, must be a string path, supports `~/` expansion
+- **target**: Required, must be a string path. Must be absolute (`/`) or explicitly relative (`~/` or `./`).
 - **source**:
   - Optional for `type: "volume"` (defaults to `${volume_base}-${key}`)
-  - Required for `type: "bind"` (must be absolute path starting with `/`)
+  - Required for `type: "bind"`. Must be absolute (`/`) or explicitly relative (`~/`, `./`, or `../`).
 - **mode**: Must be `"rw"` or `"ro"` (defaults to `"rw"`)
 - **type**: Must be `"volume"` or `"bind"` (defaults to `"volume"`)
 

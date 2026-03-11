@@ -1,7 +1,8 @@
-use ./utils.nu [image-exists, resolve-dockerfile-path, get-image-name-base, resolve-extra-volumes]
+use ./utils.nu [image-exists, resolve-dockerfile-path, get-image-name-base]
 use ../config
 use ../version
 use ../nix_daemon.nu
+use ../workspace.nu
 
 export def main [
     --base
@@ -75,9 +76,10 @@ def build_ocx [cfg: record, --force, --no-cache] {
     let final_latest = $"($image_base):latest"
 
     let user_settings = (config resolve-user $cfg)
+    let ws = (workspace get-workspace $cfg)
 
     # Resolve extra data directories from config to bake them into the image
-    let extra_volumes = (resolve-extra-volumes $cfg $user_settings.username)
+    let extra_volumes = (config resolve-extra-volumes $cfg $user_settings.username $ws)
 
     # Only include target paths for volume-type mounts (not json mounts)
     let volume_dirs = ($extra_volumes
@@ -133,9 +135,10 @@ def build_nix_dev [cfg: record, --force, --no-cache] {
     }
 
     let user_settings = (config resolve-user $cfg)
+    let ws = (workspace get-workspace $cfg)
 
     # Resolve extra data directories from config to bake them into the image
-    let extra_volumes = (resolve-extra-volumes $cfg $user_settings.username)
+    let extra_volumes = (config resolve-extra-volumes $cfg $user_settings.username $ws)
 
     # Only include target paths for volume-type mounts (not bind mounts)
     let volume_dirs = ($extra_volumes

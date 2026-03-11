@@ -1,4 +1,4 @@
-use ../config
+use ../config [resolve-extra-volumes]
 use ../ports.nu
 use ../shadow_mounts.nu
 use ../opencode_env.nu
@@ -120,45 +120,6 @@ export def resolve-dockerfile-path [dockerfile_path: string] {
     }
 }
 
-export def resolve-extra-volumes [cfg: record, user: string] {
-    if $cfg.extra_data_volumes == null {
-        return []
-    }
-
-    $cfg.extra_data_volumes | columns | each {|key|
-        let vol_config = ($cfg.extra_data_volumes | get $key)
-
-        # Extract fields with defaults
-        let target = $vol_config.target
-        let mode = ($vol_config.mode? | default "rw")
-        let vol_type = ($vol_config.type? | default "volume")
-
-        # Expand tilde in target path
-        let container_target = if ($target | str starts-with "~/") {
-            $"/home/($user)($target | str substring 1..)"
-        } else {
-            $target
-        }
-
-        # Determine source
-        let source = if ($vol_config.source? != null) {
-            $vol_config.source
-        } else {
-            # Default source for volumes: ${volume_base}-${key}
-            # For bind mounts, source is required (caught by validation)
-            null
-        }
-
-        {
-            key: $key,
-            source: $source,
-            target: $container_target,
-            mode: $mode,
-            type: $vol_type
-        }
-    }
-}
-
 # Assemble a complete `docker run` argument list.
 #
 # Both interactive (ocx opencode) and headless (ocx run) container invocations
@@ -253,7 +214,7 @@ export def build-run-cmd [
             "-v" $"($volume_base)-local:/home/($user_settings.username)/.local:rw"
         ])
 
-        let extra_volumes = (resolve-extra-volumes $cfg $user_settings.username)
+        let extra_volumes = (resolve-extra-volumes $cfg $user_settings.username $ws)
         for vol in $extra_volumes {
             if $vol.type == "volume" and $volume_base == null {
                 print $"Warning: Skipping volume mount '($vol.key)' because data_volumes_mode is 'never'"
