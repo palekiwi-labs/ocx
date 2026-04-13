@@ -21,13 +21,12 @@ RUN set -eux; \
     | tar -xz -C /usr/local/bin/; \
     chmod +x /usr/local/bin/opencode;
 
-# Configure Nix system-wide to enable flakes
-# (Nix store will be mounted from nix-daemon volume)
-RUN mkdir -p /etc/nix && \
-    echo "experimental-features = nix-command flakes" > /etc/nix/nix.conf
-
 # Add Nix to PATH (will be available if /nix is mounted)
 ENV PATH="/nix/var/nix/profiles/default/bin:${PATH}"
+
+# Copy entrypoint script
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # Limit GC marker threads for Nix commands running in the container
 ENV GC_NPROCS=1
@@ -82,5 +81,7 @@ RUN set -e; \
 
 USER ${USERNAME}
 WORKDIR /workspace
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 CMD ["opencode"]
