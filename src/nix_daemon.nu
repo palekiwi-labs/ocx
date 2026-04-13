@@ -31,31 +31,26 @@ export def get-dev-image-name [cfg: record] {
 
 # Generate the nix.conf content for the Daemon Container
 export def generate-daemon-conf [cfg: record] {
-    let user_settings = (config resolve-user $cfg)
+    let extra_substituters = ($cfg.nix_extra_substituters | str join " ")
+    let extra_keys = ($cfg.nix_extra_trusted_public_keys | str join " ")
+    
+    let substituters = $"https://cache.nixos.org ($extra_substituters)"
+    let keys = $"cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= ($extra_keys)"
     
     [
         "experimental-features = nix-command flakes"
-        "substituters = https://cache.nixos.org"
-        "trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
-        $"trusted-users = root ($user_settings.username)"
+        $"substituters = ($substituters)"
+        $"trusted-substituters = ($substituters)"
+        $"trusted-public-keys = ($keys)"
+        "trusted-users = root *"
     ] | str join "\n"
 }
 
 # Generate the nix.conf content for the Dev Container (Client)
 export def generate-client-conf [cfg: record] {
-    mut lines = ["experimental-features = nix-command flakes"]
-    
-    if not ($cfg.nix_extra_substituters | is-empty) {
-        let subs = ($cfg.nix_extra_substituters | str join " ")
-        $lines = ($lines | append $"extra-substituters = ($subs)")
-    }
-    
-    if not ($cfg.nix_extra_trusted_public_keys | is-empty) {
-        let keys = ($cfg.nix_extra_trusted_public_keys | str join " ")
-        $lines = ($lines | append $"extra-trusted-public-keys = ($keys)")
-    }
-    
-    $lines | str join "\n"
+    [
+        "experimental-features = nix-command flakes"
+    ] | str join "\n"
 }
 
 # Check if nix workflow is enabled in config
