@@ -76,4 +76,5 @@ Session.vim
 # Other settings
 *.sublime-settings
 .envrc
+.mem
 ocx.env
