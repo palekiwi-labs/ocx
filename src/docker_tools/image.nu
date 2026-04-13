@@ -1,5 +1,6 @@
 use ../config
 use ../version
+use ../nix_daemon.nu
 
 export def main [] {
     print "OCX Image Management
@@ -79,27 +80,35 @@ export def prune [
     }
     
     let current_version = (get-current-version $cfg)
+    let cfg_with_version = ($cfg | merge { opencode_version: $current_version })
+    
+    # Calculate current valid Nix tags (safe to call even if Nix mode is disabled)
+    let active_nix_daemon = (nix_daemon get-daemon-image-name | split row ":" | last)
+    let active_nix_dev = (nix_daemon get-dev-image-name $cfg_with_version | split row ":" | last)
     
     # Determine which images to keep
     let to_keep = $filtered | where { |img|
-        $img.tag == "latest" or $img.tag == $current_version
+        $img.tag in ["latest", $current_version, $active_nix_daemon, $active_nix_dev]
     }
     
     # Determine which images to remove
     let to_remove = $filtered | where { |img|
-        $img.tag != "latest" and $img.tag != $current_version
+        not ($img.tag in ["latest", $current_version, $active_nix_daemon, $active_nix_dev])
     }
     
     if ($to_remove | is-empty) {
         print $"No old images to remove. Current version: ($current_version)"
-        print $"Keeping ($to_keep | length) image\(s\) with 'latest' or '($current_version)' tags"
+        if $cfg.nix {
+            print $"Active Nix tags: ($active_nix_daemon), ($active_nix_dev)"
+        }
+        print $"Keeping ($to_keep | length) image(s) with 'latest', '($current_version)', or active Nix tags"
         return
     }
     
-    print $"Removing ($to_remove | length) old image\(s\), keeping version ($current_version) and 'latest' tags..."
+    print $"Removing ($to_remove | length) old image(s), keeping version ($current_version), 'latest', and active Nix tags..."
     
     for img in $to_remove {
-        print $"  Removing ($img.repository):($img.tag) [($img.hash)] \(($img.size)\)"
+        print $"  Removing ($img.repository):($img.tag) [($img.hash)] (($img.size))"
         
         let result = (docker rmi $"($img.repository):($img.tag)" | complete)
         
@@ -134,10 +143,10 @@ export def remove-all [
         return
     }
     
-    print $"Removing ($filtered | length) OCX image\(s\)..."
+    print $"Removing ($filtered | length) OCX image(s)..."
     
     for img in $filtered {
-        print $"  Removing ($img.repository):($img.tag) [($img.hash)] \(($img.size)\)"
+        print $"  Removing ($img.repository):($img.tag) [($img.hash)] (($img.size))"
         
         let result = (docker rmi $"($img.repository):($img.tag)" | complete)
         

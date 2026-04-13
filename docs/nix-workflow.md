@@ -7,10 +7,10 @@ OCX supports optional Nix package management through a daemon-based architecture
 The Nix workflow uses a specialized two-container architecture:
 
 1. **Nix Daemon Container** (`ocx-nix-daemon`): A long-running container that runs the Nix daemon and manages the shared `/nix` store volume
-2. **Dev Containers**: Lightweight containers that run the `localhost/ocx-nix` image (versioned by OpenCode version) with `/nix` mounted read-only
+2. **Dev Containers**: Lightweight containers that run the `localhost/ocx` image (versioned and content-addressed) with `/nix` mounted read-only
 
 Key design points:
-- **OpenCode is embedded in the dev image** (versioned like `localhost/ocx-nix:1.2.3`)
+- **OpenCode is embedded in the dev image** (versioned and hashed like `localhost/ocx:v1.4.3-sha-254589d2`)
 - **User flake is on the host** at `~/.config/ocx/nix/flake.nix` (optional)
 - **Shared Nix store** reduces disk usage and build times across all projects
 - **No host Nix installation required** — the daemon container provides everything
@@ -132,7 +132,7 @@ ocx nix flake update nixpkgs
 
 ## OpenCode Version Management
 
-OpenCode is embedded in the dev image (`localhost/ocx-nix:<version>`), so version updates require rebuilding the image.
+OpenCode is embedded in the dev image (`localhost/ocx:v<version>-sha-<hash>`), so structural updates or version changes require rebuilding the image.
 
 ### Update to Latest Version
 
@@ -179,10 +179,7 @@ In `ocx.json`:
 }
 ```
 
-**After changing caches, rebuild the daemon:**
-```bash
-ocx build --base --force
-```
+OCX injects these caches dynamically at runtime. You do **not** need to rebuild images after changing these settings; simply restart your container for changes to take effect.
 
 ## User-Wide Development Environment with Flakes
 
@@ -264,8 +261,8 @@ docker volume rm ocx-nix
 ### Automatic
 
 When `nix: true`, OCX automatically builds:
-- The nix-daemon image (`localhost/ocx-nix-daemon:latest`)
-- The dev image (`localhost/ocx-nix:<version>`)
+- The nix-daemon image (`localhost/ocx-nix-daemon:sha-<hash>`)
+- The dev image (`localhost/ocx:v<version>-sha-<hash>`)
 
 ### Manual Build
 

@@ -71,10 +71,12 @@ RUN set -e; \
     # Create OCX directories
     mkdir -p /workspace \
              /home/${USERNAME}/.cache \
+             /home/${USERNAME}/.config \
              /home/${USERNAME}/.local \
              ${EXTRA_DIRS} && \
     chown -R ${UID}:${GID} /workspace \
                            /home/${USERNAME}/.cache \
+                           /home/${USERNAME}/.config \
                            /home/${USERNAME}/.local \
                            /home/${USERNAME} \
                            ${EXTRA_DIRS} 2>/dev/null || true

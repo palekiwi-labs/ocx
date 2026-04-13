@@ -26,25 +26,36 @@ export def get-daemon-image-name [] {
 export def get-dev-image-name [cfg: record] {
     let version = $cfg.opencode_version
     let hash = (calculate-image-hash "Dockerfile.nix-dev")
-    $"localhost/ocx-nix:v($version)-sha-($hash)"
+    $"localhost/ocx:v($version)-sha-($hash)"
 }
 
-# Generate the nix.conf content JIT
-export def generate-nix-conf [cfg: record] {
+# Generate the nix.conf content for the Daemon Container
+export def generate-daemon-conf [cfg: record] {
     let user_settings = (config resolve-user $cfg)
-    let extra_substituters = ($cfg.nix_extra_substituters | str join " ")
-    let extra_keys = ($cfg.nix_extra_trusted_public_keys | str join " ")
-    
-    let substituters = $"https://cache.nixos.org ($extra_substituters)"
-    let keys = $"cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= ($extra_keys)"
     
     [
         "experimental-features = nix-command flakes"
-        $"substituters = ($substituters)"
-        $"trusted-substituters = ($substituters)"
-        $"trusted-public-keys = ($keys)"
+        "substituters = https://cache.nixos.org"
+        "trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
         $"trusted-users = root ($user_settings.username)"
     ] | str join "\n"
+}
+
+# Generate the nix.conf content for the Dev Container (Client)
+export def generate-client-conf [cfg: record] {
+    mut lines = ["experimental-features = nix-command flakes"]
+    
+    if not ($cfg.nix_extra_substituters | is-empty) {
+        let subs = ($cfg.nix_extra_substituters | str join " ")
+        $lines = ($lines | append $"extra-substituters = ($subs)")
+    }
+    
+    if not ($cfg.nix_extra_trusted_public_keys | is-empty) {
+        let keys = ($cfg.nix_extra_trusted_public_keys | str join " ")
+        $lines = ($lines | append $"extra-trusted-public-keys = ($keys)")
+    }
+    
+    $lines | str join "\n"
 }
 
 # Check if nix workflow is enabled in config
@@ -180,7 +191,7 @@ export def ensure-running [cfg: record] {
     # Start daemon container
     print -e $"Starting nix daemon container: ($container_name)"
 
-    let nix_conf = (generate-nix-conf $cfg)
+    let nix_conf = (generate-daemon-conf $cfg)
 
     let cmd = [
         "docker" "run" "-d"
@@ -384,7 +395,7 @@ def run-flake-cmd [cfg: record, subcommand: string, args: list<string>] {
     }
 
     let nix_volume = (get-volume-name $cfg)
-    let nix_conf = (generate-nix-conf $cfg)
+    let nix_conf = (generate-client-conf $cfg)
 
     let cmd = [
         "docker" "run" "--rm"
