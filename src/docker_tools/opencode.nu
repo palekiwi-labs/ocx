@@ -35,8 +35,7 @@ export def main [...args] {
         if $user_flake_present {
             ["nix" "develop" $"/home/($user)/.config/ocx/nix" "-c" ...$base_cmd]
         } else {
-            # Fallback to default devshell
-            ["nix" "develop" "/nix/var/ocx" "-c" ...$base_cmd]
+            $base_cmd
         }
     } else {
         # Non-nix workflow: use command as-is

@@ -223,9 +223,8 @@ USAGE:
 
 SUBCOMMANDS:
     status          Show nix daemon status
-    start           Start nix daemon container
+    start           Start nix daemon container (supports --force, --no-cache)
     stop            Stop nix daemon container
-    restart         Restart nix daemon container
     shell           Open shell in nix daemon container
     flake           Manage your custom flake (~/.config/ocx/nix/flake.nix)
     upgrade         Upgrade nix binary/daemon to latest stable version
@@ -233,8 +232,8 @@ SUBCOMMANDS:
 EXAMPLES:
     ocx nix status           # Check if nix daemon is running
     ocx nix start            # Manually start nix daemon
+    ocx nix start --force    # Force rebuild and restart daemon
     ocx nix stop             # Stop nix daemon
-    ocx nix restart          # Restart nix daemon
     ocx nix shell            # Open shell for inspection
     ocx nix flake            # Show flake subcommands
     ocx nix upgrade          # Upgrade nix binary to latest stable version
@@ -251,6 +250,7 @@ USAGE:
     ocx nix flake <SUBCOMMAND>
 
 SUBCOMMANDS:
+    init        Scaffold a basic flake.nix if not present
     show        Show the outputs provided by your custom flake
     metadata    Show flake metadata
     check       Check whether the flake evaluates and run its tests
@@ -258,6 +258,7 @@ SUBCOMMANDS:
     update      Update flake lock file (writes flake.lock back to host)
 
 EXAMPLES:
+    ocx nix flake init                 # Scaffold initial flake.nix
     ocx nix flake show                 # Show flake outputs
     ocx nix flake show --json          # Show flake outputs as JSON
     ocx nix flake metadata             # Show flake metadata
@@ -278,10 +279,13 @@ def "main nix status" [] {
     }
 }
 
-def "main nix start" [] {
+def "main nix start" [
+    --force(-f)      # Force rebuild and restart daemon
+    --no-cache       # Build without cache
+] {
     try {
         let cfg = load
-        nix_daemon ensure-running $cfg
+        nix_daemon ensure-running $cfg --force=$force --no-cache=$no_cache
     } catch { |err|
         errors pretty-print $err
     }
@@ -291,16 +295,6 @@ def "main nix stop" [] {
     try {
         let cfg = load
         nix_daemon stop $cfg
-    } catch { |err|
-        errors pretty-print $err
-    }
-}
-
-def "main nix restart" [] {
-    try {
-        let cfg = load
-        nix_daemon stop $cfg
-        nix_daemon ensure-running $cfg
     } catch { |err|
         errors pretty-print $err
     }
@@ -355,6 +349,15 @@ def --wrapped "main nix flake update" [...args] {
     try {
         let cfg = load
         nix_daemon flake update $cfg ...$args
+    } catch { |err|
+        errors pretty-print $err
+    }
+}
+
+def "main nix flake init" [--force] {
+    try {
+        let cfg = load
+        nix_daemon flake init $cfg --force=$force
     } catch { |err|
         errors pretty-print $err
     }
@@ -425,8 +428,10 @@ OPTIONS:
     ocx image remove-all            # Remove all OCX images
     ocx nix status                  # Show nix daemon status
     ocx nix start                   # Start nix daemon
+    ocx nix start --force           # Force rebuild and restart daemon
     ocx nix stop                    # Stop nix daemon
     ocx nix shell                   # Open shell in nix daemon
+    ocx nix flake init              # Scaffold your custom flake
     ocx nix flake update            # Update your custom flake
     ocx nix upgrade                 # Upgrade nix binary/daemon
     ocx upgrade                     # Check and update to latest version

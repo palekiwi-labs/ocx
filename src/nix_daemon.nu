@@ -5,13 +5,14 @@
 # Nix daemon lifecycle management
 
 use config
+use version/resolver.nu
 
 # Generate a short SHA hash of the Dockerfile and its dependencies
 def calculate-image-hash [dockerfile_name: string] {
     let context = $env.FILE_PWD
     let dockerfile_path = ($context | path join $dockerfile_name)
     let entrypoint_path = ($context | path join "entrypoint.sh")
-    
+
     let dockerfile_content = (open --raw $dockerfile_path)
     let entrypoint_content = (open --raw $entrypoint_path)
     let content = ($dockerfile_content + $entrypoint_content)
@@ -35,10 +36,10 @@ export def get-dev-image-name [cfg: record] {
 export def generate-daemon-conf [cfg: record] {
     let extra_substituters = ($cfg.nix_extra_substituters | str join " ")
     let extra_keys = ($cfg.nix_extra_trusted_public_keys | str join " ")
-    
+
     let substituters = $"https://cache.nixos.org ($extra_substituters)" | str trim
     let keys = $"cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= ($extra_keys)" | str trim
-    
+
     [
         "experimental-features = nix-command flakes"
         $"substituters = ($substituters)"
@@ -79,11 +80,8 @@ export def is-running [container_name: string] {
 }
 
 # Build the nix daemon image if it doesn't exist
-def build-nix-daemon [cfg: record, --force, --no-cache] {
+def build-nix-daemon [cfg: record, --no-cache] {
     let image_name = (get-daemon-image-name)
-    if (not $force) and (image-exists $image_name) {
-        return
-    }
 
     print -e $"Building nix daemon image: ($image_name)"
 
@@ -92,6 +90,7 @@ def build-nix-daemon [cfg: record, --force, --no-cache] {
 
     mut cmd = [
         "docker" "build"
+        "--pull"
         "-f" $dockerfile
         "-t" $image_name
     ]
@@ -158,7 +157,7 @@ export def ensure-nix-version [cfg: record] {
 }
 
 # Ensure the nix daemon container is running
-export def ensure-running [cfg: record] {
+export def ensure-running [cfg: record, --force, --no-cache] {
     if not $cfg.nix {
         return
     }
@@ -167,15 +166,27 @@ export def ensure-running [cfg: record] {
     let volume_name = (get-volume-name $cfg)
     let image_name = (get-daemon-image-name)
 
+    # If force is requested, stop and remove existing container
+    if $force {
+        if (is-running $container_name) {
+            print -e $"Stopping existing daemon container: ($container_name)"
+            stop $cfg
+        }
+        # Attempt to remove if it exists but is not running
+        docker rm -f $container_name e>| ignore
+    }
+
     # Check if already running
-    if (is-running $container_name) {
+    if (not $force) and (is-running $container_name) {
         return
     }
 
-    # Ensure image exists
-    if not (image-exists $image_name) {
-        print -e "Nix daemon image not found, building..."
-        build-nix-daemon $cfg
+    # Ensure image exists (or rebuild if forced)
+    if $force or (not (image-exists $image_name)) {
+        if not $force {
+            print -e "Nix daemon image not found, building..."
+        }
+        build-nix-daemon $cfg --no-cache=$no_cache
     }
 
     # Start daemon container
@@ -205,6 +216,7 @@ export def ensure-running [cfg: record] {
             label: {
                 text: $"Container ($container_name) failed to start"
             }
+            help: $"Check logs with: docker logs ($container_name)"
         }
     }
 
@@ -263,7 +275,12 @@ export def status [cfg: record] {
 
 # Build the nix daemon image (exposed for ocx build command)
 export def build [cfg: record, --force, --no-cache] {
-    build-nix-daemon $cfg --force=$force --no-cache=$no_cache
+    let image_name = (get-daemon-image-name)
+    if (not $force) and (image-exists $image_name) {
+        print -e $"Nix daemon image ($image_name) already exists. Use --force to rebuild."
+        return
+    }
+    build-nix-daemon $cfg --no-cache=$no_cache
 }
 
 # Open a shell in the nix daemon container
@@ -375,7 +392,10 @@ def run-flake-cmd [cfg: record, subcommand: string, args: list<string>] {
         }
     }
 
-    let image_name = (get-dev-image-name $cfg)
+    # Resolve version before getting image name
+    let version = (resolver resolve-version $cfg.opencode_version $cfg)
+    let cfg_with_version = ($cfg | merge { opencode_version: $version })
+    let image_name = (get-dev-image-name $cfg_with_version)
 
     if not (image-exists $image_name) {
         error make {
@@ -421,4 +441,56 @@ export def "flake lock" [cfg: record, ...args] {
 # Update the user flake lock file (optionally specify input names to update selectively)
 export def "flake update" [cfg: record, ...args] {
     run-flake-cmd $cfg "update" $args
+}
+
+# Scaffold a basic flake.nix in the global configuration directory if not present
+export def "flake init" [cfg: record, --force] {
+    let flake = (detect-user-flake $cfg)
+    let flake_file = ($flake.host_dir | path join "flake.nix")
+
+    if (not $force) and ($flake_file | path exists) {
+        error make {
+            msg: $"Flake already exists at ($flake_file)"
+            help: "Use --force to overwrite"
+        }
+    }
+
+    if not ($flake.host_dir | path exists) {
+        mkdir $flake.host_dir
+    }
+
+    let template = `
+{
+  description = "Global OCX development environment";
+
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-utils.url = "github:numtide/flake-utils";
+  };
+
+  outputs = { self, nixpkgs, flake-utils }:
+    flake-utils.lib.eachDefaultSystem (system:
+      let
+        pkgs = nixpkgs.legacyPackages.${system};
+      in
+      {
+        devShells.default = pkgs.mkShell {
+          # Add your global packages here
+          buildInputs = with pkgs; [
+            # hello
+            # ripgrep
+            # fd
+          ];
+
+          shellHook = ''
+            echo "OCX Global Nix Environment Loaded"
+          '';
+        };
+      }
+    );
+}
+`
+    $template | save -f $flake_file
+
+    print -e $"Scaffolded flake.nix at ($flake_file)"
 }
