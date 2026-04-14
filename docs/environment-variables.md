@@ -476,17 +476,17 @@ OCX provides special handling for path-based OpenCode variables to simplify usag
 | Variable | Description | Handling |
 | :--- | :--- | :--- |
 | `OPENCODE_CONFIG` | Custom path to configuration file | Requires **container path**. |
-| `OPENCODE_CONFIG_DIR` | Path to directory containing configuration | **Host path supported**. OCX will automatically bind-mount this directory read-only into the container. |
+| `OPENCODE_CONFIG_DIR` | Path to directory containing configuration | **Host path supported**. OCX will automatically bind-mount this directory read-only into the container at `/opencode-config-dir` and update the environment variable to match. |
 | `OPENCODE_CONFIG_CONTENT` | Inline JSON string containing full configuration | N/A |
 | `OPENCODE_MODELS_PATH` | Local file path for model definitions | Requires **container path**. |
 
 **Special handling for `OPENCODE_CONFIG_DIR`:**
 If `OPENCODE_CONFIG_DIR` is set in your host environment and points to a directory that exists, OCX will:
-1. Automatically bind-mount that host directory into the container at the same absolute path.
-2. The mount is performed **read-only** (`ro`) for security.
-3. Missing parent directories in the container are automatically created by Docker.
+1. Automatically bind-mount that host directory into the container at `/opencode-config-dir`.
+2. Update the `OPENCODE_CONFIG_DIR` environment variable inside the container to point to `/opencode-config-dir`.
+3. The mount is performed **read-only** (`ro`) for security.
 
-This allows you to point OpenCode to a custom set of agents or configurations stored anywhere on your host without manually configuring extra volumes in `ocx.json`.
+This avoids conflicts with other mounts (like the Nix store) and ensures you can point OpenCode to custom configurations stored anywhere on your host without manual configuration.
 
 **Note:** The default OpenCode config directory is always mounted at `/home/username/.config/opencode` in the container.
 

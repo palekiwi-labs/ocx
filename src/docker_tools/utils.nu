@@ -213,7 +213,11 @@ export def build-run-cmd [
     if $opencode_config_dir_env != null {
         let expanded = ($opencode_config_dir_env | path expand)
         if ($expanded | path exists) {
-            $cmd = ($cmd | append ["-v" $"($expanded):($expanded):ro"])
+            # Mount to a dedicated container path to avoid conflicts with host-shadowing mounts
+            $cmd = ($cmd | append [
+                "-v" $"($expanded):/opencode-config-dir:ro"
+                "-e" "OPENCODE_CONFIG_DIR=/opencode-config-dir"
+            ])
         }
     }
 
