@@ -93,6 +93,7 @@ def build-nix-daemon [cfg: record, --force, --no-cache] {
 
     mut cmd = [
         "docker" "build"
+        "--pull"
         "-f" $dockerfile
         "-t" $image_name
     ]
@@ -159,7 +160,7 @@ export def ensure-nix-version [cfg: record] {
 }
 
 # Ensure the nix daemon container is running
-export def ensure-running [cfg: record] {
+export def ensure-running [cfg: record, --force, --no-cache] {
     if not $cfg.nix {
         return
     }
@@ -168,15 +169,27 @@ export def ensure-running [cfg: record] {
     let volume_name = (get-volume-name $cfg)
     let image_name = (get-daemon-image-name)
 
+    # If force is requested, stop and remove existing container
+    if $force {
+        if (is-running $container_name) {
+            print -e $"Stopping existing daemon container: ($container_name)"
+            stop $cfg
+        }
+        # Attempt to remove if it exists but is not running
+        docker rm -f $container_name | ignore
+    }
+
     # Check if already running
-    if (is-running $container_name) {
+    if (not $force) and (is-running $container_name) {
         return
     }
 
-    # Ensure image exists
-    if not (image-exists $image_name) {
-        print -e "Nix daemon image not found, building..."
-        build-nix-daemon $cfg
+    # Ensure image exists (or rebuild if forced)
+    if $force or (not (image-exists $image_name)) {
+        if not $force {
+            print -e "Nix daemon image not found, building..."
+        }
+        build-nix-daemon $cfg --force=$force --no-cache=$no_cache
     }
 
     # Start daemon container
@@ -206,6 +219,7 @@ export def ensure-running [cfg: record] {
             label: {
                 text: $"Container ($container_name) failed to start"
             }
+            help: $"Check logs with: docker logs ($container_name)"
         }
     }
 
