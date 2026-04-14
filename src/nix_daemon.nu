@@ -80,11 +80,8 @@ export def is-running [container_name: string] {
 }
 
 # Build the nix daemon image if it doesn't exist
-def build-nix-daemon [cfg: record, --force, --no-cache] {
+def build-nix-daemon [cfg: record, --no-cache] {
     let image_name = (get-daemon-image-name)
-    if (not $force) and (image-exists $image_name) {
-        return
-    }
 
     print -e $"Building nix daemon image: ($image_name)"
 
@@ -176,7 +173,7 @@ export def ensure-running [cfg: record, --force, --no-cache] {
             stop $cfg
         }
         # Attempt to remove if it exists but is not running
-        docker rm -f $container_name | ignore
+        docker rm -f $container_name e>| ignore
     }
 
     # Check if already running
@@ -189,7 +186,7 @@ export def ensure-running [cfg: record, --force, --no-cache] {
         if not $force {
             print -e "Nix daemon image not found, building..."
         }
-        build-nix-daemon $cfg --force=$force --no-cache=$no_cache
+        build-nix-daemon $cfg --no-cache=$no_cache
     }
 
     # Start daemon container
@@ -278,7 +275,12 @@ export def status [cfg: record] {
 
 # Build the nix daemon image (exposed for ocx build command)
 export def build [cfg: record, --force, --no-cache] {
-    build-nix-daemon $cfg --force=$force --no-cache=$no_cache
+    let image_name = (get-daemon-image-name)
+    if (not $force) and (image-exists $image_name) {
+        print -e $"Nix daemon image ($image_name) already exists. Use --force to rebuild."
+        return
+    }
+    build-nix-daemon $cfg --no-cache=$no_cache
 }
 
 # Open a shell in the nix daemon container
@@ -457,12 +459,13 @@ export def "flake init" [cfg: record, --force] {
         mkdir $flake.host_dir
     }
 
-    let template = "{
-  description = \"Global OCX development environment\";
+    let template = `
+{
+  description = "Global OCX development environment";
 
   inputs = {
-    nixpkgs.url = \"github:NixOS/nixpkgs/nixos-unstable\";
-    flake-utils.url = \"github:numtide/flake-utils\";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-utils.url = "github:numtide/flake-utils";
   };
 
   outputs = { self, nixpkgs, flake-utils }:
@@ -480,13 +483,13 @@ export def "flake init" [cfg: record, --force] {
           ];
 
           shellHook = ''
-            echo \"OCX Global Nix Environment Loaded\"
+            echo "OCX Global Nix Environment Loaded"
           '';
         };
       }
     );
 }
-"
+`
     $template | save -f $flake_file
 
     print -e $"Scaffolded flake.nix at ($flake_file)"

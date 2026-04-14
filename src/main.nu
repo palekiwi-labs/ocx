@@ -225,7 +225,6 @@ SUBCOMMANDS:
     status          Show nix daemon status
     start           Start nix daemon container (supports --force, --no-cache)
     stop            Stop nix daemon container
-    restart         Restart nix daemon container (supports --force, --no-cache)
     shell           Open shell in nix daemon container
     flake           Manage your custom flake (~/.config/ocx/nix/flake.nix)
     upgrade         Upgrade nix binary/daemon to latest stable version
@@ -235,7 +234,6 @@ EXAMPLES:
     ocx nix start            # Manually start nix daemon
     ocx nix start --force    # Force rebuild and restart daemon
     ocx nix stop             # Stop nix daemon
-    ocx nix restart          # Restart nix daemon
     ocx nix shell            # Open shell for inspection
     ocx nix flake            # Show flake subcommands
     ocx nix upgrade          # Upgrade nix binary to latest stable version
@@ -297,19 +295,6 @@ def "main nix stop" [] {
     try {
         let cfg = load
         nix_daemon stop $cfg
-    } catch { |err|
-        errors pretty-print $err
-    }
-}
-
-def "main nix restart" [
-    --force(-f)      # Force rebuild and restart
-    --no-cache       # Build without cache
-] {
-    try {
-        let cfg = load
-        nix_daemon stop $cfg
-        nix_daemon ensure-running $cfg --force=$force --no-cache=$no_cache
     } catch { |err|
         errors pretty-print $err
     }
