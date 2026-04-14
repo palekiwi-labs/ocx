@@ -46,13 +46,6 @@ export def generate-daemon-conf [cfg: record] {
     ] | str join "\n"
 }
 
-# Generate the nix.conf content for the Dev Container (Client)
-export def generate-client-conf [cfg: record] {
-    [
-        "experimental-features = nix-command flakes"
-    ] | str join "\n"
-}
-
 # Check if nix workflow is enabled in config
 export def is-enabled [cfg: record] {
     $cfg.nix
@@ -390,11 +383,9 @@ def run-flake-cmd [cfg: record, subcommand: string, args: list<string>] {
     }
 
     let nix_volume = (get-volume-name $cfg)
-    let nix_conf = (generate-client-conf $cfg)
 
     let cmd = [
         "docker" "run" "--rm"
-        "-e" $"NIX_CONF_CONTENT=($nix_conf)"
         "-v" $"($nix_volume):/nix:rw"
         "-v" $"($flake.host_dir):($flake.container_dir):rw"
         "-w" $flake.container_dir

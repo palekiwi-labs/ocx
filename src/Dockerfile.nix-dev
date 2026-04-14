@@ -21,6 +21,11 @@ RUN set -eux; \
     | tar -xz -C /usr/local/bin/; \
     chmod +x /usr/local/bin/opencode;
 
+# Configure Nix system-wide to enable flakes
+# (Nix store will be mounted from nix-daemon volume)
+RUN mkdir -p /etc/nix && \
+    echo "experimental-features = nix-command flakes" > /etc/nix/nix.conf
+
 # Add Nix to PATH (will be available if /nix is mounted)
 ENV PATH="/nix/var/nix/profiles/default/bin:${PATH}"
 

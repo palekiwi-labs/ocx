@@ -238,11 +238,7 @@ export def build-run-cmd [
 
     if $cfg.nix {
         let nix_volume = (nix_daemon get-volume-name $cfg)
-        let nix_conf = (nix_daemon generate-client-conf $cfg)
-        $cmd = ($cmd | append [
-            "-v" $"($nix_volume):/nix:ro"
-            "-e" $"NIX_CONF_CONTENT=($nix_conf)"
-        ])
+        $cmd = ($cmd | append ["-v" $"($nix_volume):/nix:ro"])
 
         # Mount user flake directory if present
         let user_flake_host_dir = ("~/.config/ocx/nix" | path expand)
