@@ -5,6 +5,7 @@
 # Nix daemon lifecycle management
 
 use config
+use version/resolver.nu
 
 # Generate a short SHA hash of the Dockerfile and its dependencies
 def calculate-image-hash [dockerfile_name: string] {
@@ -375,7 +376,10 @@ def run-flake-cmd [cfg: record, subcommand: string, args: list<string>] {
         }
     }
 
-    let image_name = (get-dev-image-name $cfg)
+    # Resolve version before getting image name
+    let version = (resolver resolve-version $cfg.opencode_version $cfg)
+    let cfg_with_version = ($cfg | merge { opencode_version: $version })
+    let image_name = (get-dev-image-name $cfg_with_version)
 
     if not (image-exists $image_name) {
         error make {
