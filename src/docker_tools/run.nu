@@ -34,7 +34,7 @@ export def --wrapped main [...args] {
         if $user_flake_present {
             ["nix" "develop" $"/home/($user)/.config/ocx/nix" "-c" ...$base_cmd "run"]
         } else {
-            ["nix" "develop" "/nix/var/ocx" "-c" ...$base_cmd "run"]
+            [...$base_cmd "run"]
         }
     } else {
         # Non-nix workflow: append "run" to the opencode command
