@@ -208,6 +208,19 @@ export def build-run-cmd [
     let opencode_env_args = (opencode_env generate-docker-args)
     $cmd = ($cmd | append $opencode_env_args)
 
+    # Automatic bind-mount for OPENCODE_CONFIG_DIR if set to a host path
+    let opencode_config_dir_env = ($env.OPENCODE_CONFIG_DIR? | default null)
+    if $opencode_config_dir_env != null {
+        let expanded = ($opencode_config_dir_env | path expand)
+        if ($expanded | path exists) {
+            # Mount to a dedicated container path to avoid conflicts with host-shadowing mounts
+            $cmd = ($cmd | append [
+                "-v" $"($expanded):/opencode-config-dir:ro"
+                "-e" "OPENCODE_CONFIG_DIR=/opencode-config-dir"
+            ])
+        }
+    }
+
     if $volume_base != null {
         $cmd = ($cmd | append [
             "-v" $"($volume_base)-cache:/home/($user_settings.username)/.cache:rw"
