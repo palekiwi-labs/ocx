@@ -12,7 +12,7 @@ def calculate-image-hash [dockerfile_name: string] {
     let context = $env.FILE_PWD
     let dockerfile_path = ($context | path join $dockerfile_name)
     let entrypoint_path = ($context | path join "entrypoint.sh")
-    
+
     let dockerfile_content = (open --raw $dockerfile_path)
     let entrypoint_content = (open --raw $entrypoint_path)
     let content = ($dockerfile_content + $entrypoint_content)
@@ -36,10 +36,10 @@ export def get-dev-image-name [cfg: record] {
 export def generate-daemon-conf [cfg: record] {
     let extra_substituters = ($cfg.nix_extra_substituters | str join " ")
     let extra_keys = ($cfg.nix_extra_trusted_public_keys | str join " ")
-    
+
     let substituters = $"https://cache.nixos.org ($extra_substituters)" | str trim
     let keys = $"cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= ($extra_keys)" | str trim
-    
+
     [
         "experimental-features = nix-command flakes"
         $"substituters = ($substituters)"
@@ -425,4 +425,55 @@ export def "flake lock" [cfg: record, ...args] {
 # Update the user flake lock file (optionally specify input names to update selectively)
 export def "flake update" [cfg: record, ...args] {
     run-flake-cmd $cfg "update" $args
+}
+
+# Scaffold a basic flake.nix in the global configuration directory if not present
+export def "flake init" [cfg: record, --force] {
+    let flake = (detect-user-flake $cfg)
+    let flake_file = ($flake.host_dir | path join "flake.nix")
+
+    if (not $force) and ($flake_file | path exists) {
+        error make {
+            msg: $"Flake already exists at ($flake_file)"
+            help: "Use --force to overwrite"
+        }
+    }
+
+    if not ($flake.host_dir | path exists) {
+        mkdir $flake.host_dir
+    }
+
+    let template = "{
+  description = \"Global OCX development environment\";
+
+  inputs = {
+    nixpkgs.url = \"github:NixOS/nixpkgs/nixos-unstable\";
+    flake-utils.url = \"github:numtide/flake-utils\";
+  };
+
+  outputs = { self, nixpkgs, flake-utils }:
+    flake-utils.lib.eachDefaultSystem (system:
+      let
+        pkgs = nixpkgs.legacyPackages.${system};
+      in
+      {
+        devShells.default = pkgs.mkShell {
+          # Add your global packages here
+          buildInputs = with pkgs; [
+            # hello
+            # ripgrep
+            # fd
+          ];
+
+          shellHook = ''
+            echo \"OCX Global Nix Environment Loaded\"
+          '';
+        };
+      }
+    );
+}
+"
+    $template | save -f $flake_file
+
+    print -e $"Scaffolded flake.nix at ($flake_file)"
 }

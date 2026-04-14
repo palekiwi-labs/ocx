@@ -251,6 +251,7 @@ USAGE:
     ocx nix flake <SUBCOMMAND>
 
 SUBCOMMANDS:
+    init        Scaffold a basic flake.nix if not present
     show        Show the outputs provided by your custom flake
     metadata    Show flake metadata
     check       Check whether the flake evaluates and run its tests
@@ -258,6 +259,7 @@ SUBCOMMANDS:
     update      Update flake lock file (writes flake.lock back to host)
 
 EXAMPLES:
+    ocx nix flake init                 # Scaffold initial flake.nix
     ocx nix flake show                 # Show flake outputs
     ocx nix flake show --json          # Show flake outputs as JSON
     ocx nix flake metadata             # Show flake metadata
@@ -360,6 +362,15 @@ def --wrapped "main nix flake update" [...args] {
     }
 }
 
+def "main nix flake init" [--force] {
+    try {
+        let cfg = load
+        nix_daemon flake init $cfg --force=$force
+    } catch { |err|
+        errors pretty-print $err
+    }
+}
+
 def "main nix upgrade" [] {
     try {
         let cfg = load
@@ -427,6 +438,7 @@ OPTIONS:
     ocx nix start                   # Start nix daemon
     ocx nix stop                    # Stop nix daemon
     ocx nix shell                   # Open shell in nix daemon
+    ocx nix flake init              # Scaffold your custom flake
     ocx nix flake update            # Update your custom flake
     ocx nix upgrade                 # Upgrade nix binary/daemon
     ocx upgrade                     # Check and update to latest version
