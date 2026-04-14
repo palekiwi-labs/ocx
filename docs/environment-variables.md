@@ -412,7 +412,7 @@ This means you can store API keys in `ocx.env` files and temporarily override th
 
 ### Important Notes
 
-1. **Path-based variables** (`OPENCODE_CONFIG`, `OPENCODE_CONFIG_DIR`, `OPENCODE_MODELS_PATH`) must use paths inside the container, not host paths. The OpenCode config directory is mounted at `/home/username/.config/opencode` by default.
+1. **Path-based variables** - `OPENCODE_CONFIG` and `OPENCODE_MODELS_PATH` must use paths inside the container, not host paths. However, `OPENCODE_CONFIG_DIR` supports host paths and will be automatically bind-mounted by OCX.
 
 2. **API keys and secrets** should be stored in `ocx.env` files (which should not be committed to version control) rather than in shell profiles.
 
@@ -469,18 +469,26 @@ This means you can store API keys in `ocx.env` files and temporarily override th
 | `OPENCODE_SERVER_USERNAME` | Username for basic auth on OpenCode server | `undefined` |
 | `OPENCODE_SERVER_PASSWORD` | Password for basic auth on OpenCode server | `undefined` |
 
-#### Path-Based Configuration
+### Path-Based Configuration
 
-These variables require **container paths**, not host paths:
+OCX provides special handling for path-based OpenCode variables to simplify usage between host and container.
 
-| Variable | Description |
-| :--- | :--- |
-| `OPENCODE_CONFIG` | Custom path to configuration file (container path) |
-| `OPENCODE_CONFIG_DIR` | Path to directory containing configuration (container path) |
-| `OPENCODE_CONFIG_CONTENT` | Inline JSON string containing full configuration |
-| `OPENCODE_MODELS_PATH` | Local file path for model definitions (container path) |
+| Variable | Description | Handling |
+| :--- | :--- | :--- |
+| `OPENCODE_CONFIG` | Custom path to configuration file | Requires **container path**. |
+| `OPENCODE_CONFIG_DIR` | Path to directory containing configuration | **Host path supported**. OCX will automatically bind-mount this directory read-only into the container. |
+| `OPENCODE_CONFIG_CONTENT` | Inline JSON string containing full configuration | N/A |
+| `OPENCODE_MODELS_PATH` | Local file path for model definitions | Requires **container path**. |
 
-**Note:** The default OpenCode config directory is mounted at `/home/username/.config/opencode` in the container.
+**Special handling for `OPENCODE_CONFIG_DIR`:**
+If `OPENCODE_CONFIG_DIR` is set in your host environment and points to a directory that exists, OCX will:
+1. Automatically bind-mount that host directory into the container at the same absolute path.
+2. The mount is performed **read-only** (`ro`) for security.
+3. Missing parent directories in the container are automatically created by Docker.
+
+This allows you to point OpenCode to a custom set of agents or configurations stored anywhere on your host without manually configuring extra volumes in `ocx.json`.
+
+**Note:** The default OpenCode config directory is always mounted at `/home/username/.config/opencode` in the container.
 
 #### System Settings
 

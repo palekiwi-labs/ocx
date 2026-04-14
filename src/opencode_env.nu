@@ -63,6 +63,14 @@ export def generate-docker-args [] {
         let var_value = (do -i { $env | get -o $var_name })
 
         if $var_value != null {
+            # Special handling for OPENCODE_CONFIG_DIR to ensure it's an absolute path
+            # The actual bind mount is handled in docker_tools/utils.nu
+            if $var_name == "OPENCODE_CONFIG_DIR" {
+                let expanded = ($var_value | path expand)
+                $args = ($args | append ["-e" $"($var_name)=($expanded)"])
+                continue
+            }
+
             $args = ($args | append ["-e" $var_name])
         }
     }
