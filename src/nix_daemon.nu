@@ -12,7 +12,9 @@ def calculate-image-hash [dockerfile_name: string] {
     let dockerfile_path = ($context | path join $dockerfile_name)
     let entrypoint_path = ($context | path join "entrypoint.sh")
     
-    let content = (cat $dockerfile_path $entrypoint_path)
+    let dockerfile_content = (open --raw $dockerfile_path)
+    let entrypoint_content = (open --raw $entrypoint_path)
+    let content = ($dockerfile_content + $entrypoint_content)
     ($content | hash sha256 | str substring 0..7)
 }
 
@@ -34,8 +36,8 @@ export def generate-daemon-conf [cfg: record] {
     let extra_substituters = ($cfg.nix_extra_substituters | str join " ")
     let extra_keys = ($cfg.nix_extra_trusted_public_keys | str join " ")
     
-    let substituters = $"https://cache.nixos.org ($extra_substituters)"
-    let keys = $"cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= ($extra_keys)"
+    let substituters = $"https://cache.nixos.org ($extra_substituters)" | str trim
+    let keys = $"cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= ($extra_keys)" | str trim
     
     [
         "experimental-features = nix-command flakes"
