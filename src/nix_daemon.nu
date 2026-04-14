@@ -6,8 +6,47 @@
 
 use config
 
-const NIX_DAEMON_IMAGE = "localhost/ocx-nix-daemon:latest"
-const NIX_DEV_IMAGE_LATEST = "localhost/ocx-nix:latest"
+# Generate a short SHA hash of the Dockerfile and its dependencies
+def calculate-image-hash [dockerfile_name: string] {
+    let context = $env.FILE_PWD
+    let dockerfile_path = ($context | path join $dockerfile_name)
+    let entrypoint_path = ($context | path join "entrypoint.sh")
+    
+    let dockerfile_content = (open --raw $dockerfile_path)
+    let entrypoint_content = (open --raw $entrypoint_path)
+    let content = ($dockerfile_content + $entrypoint_content)
+    ($content | hash sha256 | str substring 0..7)
+}
+
+# Get the tagged daemon image name
+export def get-daemon-image-name [] {
+    let hash = (calculate-image-hash "Dockerfile.nix-daemon")
+    $"localhost/ocx-nix-daemon:sha-($hash)"
+}
+
+# Get the tagged dev image name
+export def get-dev-image-name [cfg: record] {
+    let version = $cfg.opencode_version
+    let hash = (calculate-image-hash "Dockerfile.nix-dev")
+    $"localhost/ocx:v($version)-sha-($hash)"
+}
+
+# Generate the nix.conf content for the Daemon Container
+export def generate-daemon-conf [cfg: record] {
+    let extra_substituters = ($cfg.nix_extra_substituters | str join " ")
+    let extra_keys = ($cfg.nix_extra_trusted_public_keys | str join " ")
+    
+    let substituters = $"https://cache.nixos.org ($extra_substituters)" | str trim
+    let keys = $"cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= ($extra_keys)" | str trim
+    
+    [
+        "experimental-features = nix-command flakes"
+        $"substituters = ($substituters)"
+        $"trusted-substituters = ($substituters)"
+        $"trusted-public-keys = ($keys)"
+        "trusted-users = root *"
+    ] | str join "\n"
+}
 
 # Check if nix workflow is enabled in config
 export def is-enabled [cfg: record] {
@@ -41,25 +80,20 @@ export def is-running [container_name: string] {
 
 # Build the nix daemon image if it doesn't exist
 def build-nix-daemon [cfg: record, --force, --no-cache] {
-    if (not $force) and (image-exists $NIX_DAEMON_IMAGE) {
+    let image_name = (get-daemon-image-name)
+    if (not $force) and (image-exists $image_name) {
         return
     }
 
-    print -e $"Building nix daemon image: ($NIX_DAEMON_IMAGE)"
+    print -e $"Building nix daemon image: ($image_name)"
 
     let context = $env.FILE_PWD
     let dockerfile = ($context | path join "Dockerfile.nix-daemon")
 
-    # Convert substituters and keys arrays to space-separated strings for build args
-    let extra_substituters = ($cfg.nix_extra_substituters | str join " ")
-    let extra_keys = ($cfg.nix_extra_trusted_public_keys | str join " ")
-
     mut cmd = [
         "docker" "build"
         "-f" $dockerfile
-        "-t" $NIX_DAEMON_IMAGE
-        "--build-arg" $"NIX_EXTRA_SUBSTITUTERS=($extra_substituters)"
-        "--build-arg" $"NIX_EXTRA_TRUSTED_PUBLIC_KEYS=($extra_keys)"
+        "-t" $image_name
     ]
 
     if $no_cache {
@@ -131,6 +165,7 @@ export def ensure-running [cfg: record] {
 
     let container_name = (get-container-name $cfg)
     let volume_name = (get-volume-name $cfg)
+    let image_name = (get-daemon-image-name)
 
     # Check if already running
     if (is-running $container_name) {
@@ -138,7 +173,7 @@ export def ensure-running [cfg: record] {
     }
 
     # Ensure image exists
-    if not (image-exists $NIX_DAEMON_IMAGE) {
+    if not (image-exists $image_name) {
         print -e "Nix daemon image not found, building..."
         build-nix-daemon $cfg
     }
@@ -146,12 +181,15 @@ export def ensure-running [cfg: record] {
     # Start daemon container
     print -e $"Starting nix daemon container: ($container_name)"
 
+    let nix_conf = (generate-daemon-conf $cfg)
+
     let cmd = [
         "docker" "run" "-d"
         "--name" $container_name
         "--rm"
+        "-e" $"NIX_CONF_CONTENT=($nix_conf)"
         "-v" $"($volume_name):/nix:rw"
-        $NIX_DAEMON_IMAGE
+        $image_name
     ]
 
     run-external ...$cmd
@@ -189,12 +227,13 @@ export def stop [cfg: record] {
 export def status [cfg: record] {
     let container_name = (get-container-name $cfg)
     let volume_name = (get-volume-name $cfg)
+    let image_name = (get-daemon-image-name)
 
     print "Nix Workflow Status:"
     print $"  Enabled: ($cfg.nix)"
     print $"  Container: ($container_name)"
     print $"  Volume: ($volume_name)"
-    print $"  Image: ($NIX_DAEMON_IMAGE)"
+    print $"  Image: ($image_name)"
     print ""
 
     if (is-running $container_name) {
@@ -336,9 +375,11 @@ def run-flake-cmd [cfg: record, subcommand: string, args: list<string>] {
         }
     }
 
-    if not (image-exists $NIX_DEV_IMAGE_LATEST) {
+    let image_name = (get-dev-image-name $cfg)
+
+    if not (image-exists $image_name) {
         error make {
-            msg: "Nix dev image not found"
+            msg: $"Nix dev image ($image_name) not found"
             label: { text: "Run 'ocx build' first to create the nix dev image" }
         }
     }
@@ -350,7 +391,7 @@ def run-flake-cmd [cfg: record, subcommand: string, args: list<string>] {
         "-v" $"($nix_volume):/nix:rw"
         "-v" $"($flake.host_dir):($flake.container_dir):rw"
         "-w" $flake.container_dir
-        $NIX_DEV_IMAGE_LATEST
+        $image_name
         "nix" "flake" $subcommand
     ] | append $args
 

@@ -51,14 +51,11 @@ export def --wrapped main [...args] {
             print -e "Warning: custom_base_dockerfile is not supported with nix workflow"
             print -e "         Using standard nix-dev image"
         }
-        $"($image_base):($version)"
+        # For Nix mode, use the hashed tag which includes the version
+        let cfg_with_version = ($cfg | merge { opencode_version: $version })
+        nix_daemon get-dev-image-name $cfg_with_version
     } else {
-        if ($cfg.custom_base_dockerfile != null) {
-            let resolved = (resolve-dockerfile-path $cfg.custom_base_dockerfile)
-            $"($image_base):($version)"
-        } else {
-            $"($image_base):($version)"
-        }
+        $"($image_base):($version)"
     }
 
     let port = if $cfg.port == null { ports generate } else { $cfg.port }

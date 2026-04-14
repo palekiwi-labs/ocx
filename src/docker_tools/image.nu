@@ -1,5 +1,6 @@
 use ../config
 use ../version
+use ../nix_daemon.nu
 
 export def main [] {
     print "OCX Image Management
@@ -36,7 +37,7 @@ export def list [
     --json     # Output as JSON
 ] {
     let images = (list-ocx-images)
-    
+
     let filtered = if $base {
         $images | filter-base-images
     } else if $final {
@@ -44,12 +45,12 @@ export def list [
     } else {
         $images
     }
-    
+
     if ($filtered | is-empty) {
         print "No OCX images found"
         return
     }
-    
+
     if $json {
         $filtered | to json
     } else {
@@ -64,7 +65,7 @@ export def prune [
 ] {
     let cfg = (config load)
     let images = (list-ocx-images)
-    
+
     let filtered = if $base {
         $images | filter-base-images
     } else if $final {
@@ -72,37 +73,45 @@ export def prune [
     } else {
         $images
     }
-    
+
     if ($filtered | is-empty) {
         print "No OCX images found to prune"
         return
     }
-    
+
     let current_version = (get-current-version $cfg)
-    
+    let cfg_with_version = ($cfg | merge { opencode_version: $current_version })
+
+    # Calculate current valid Nix tags (safe to call even if Nix mode is disabled)
+    let active_nix_daemon = (nix_daemon get-daemon-image-name | split row ":" | last)
+    let active_nix_dev = (nix_daemon get-dev-image-name $cfg_with_version | split row ":" | last)
+
     # Determine which images to keep
     let to_keep = $filtered | where { |img|
-        $img.tag == "latest" or $img.tag == $current_version
+        $img.tag in ["latest", $current_version, $active_nix_daemon, $active_nix_dev]
     }
-    
+
     # Determine which images to remove
     let to_remove = $filtered | where { |img|
-        $img.tag != "latest" and $img.tag != $current_version
+        not ($img.tag in ["latest", $current_version, $active_nix_daemon, $active_nix_dev])
     }
-    
+
     if ($to_remove | is-empty) {
         print $"No old images to remove. Current version: ($current_version)"
-        print $"Keeping ($to_keep | length) image\(s\) with 'latest' or '($current_version)' tags"
+        if $cfg.nix {
+            print $"Active Nix tags: ($active_nix_daemon), ($active_nix_dev)"
+        }
+        print $"Keeping ($to_keep | length) image\(s\) with 'latest', '($current_version)', or active Nix tags"
         return
     }
-    
-    print $"Removing ($to_remove | length) old image\(s\), keeping version ($current_version) and 'latest' tags..."
-    
+
+    print $"Removing ($to_remove | length) old image\(s\), keeping version ($current_version), 'latest', and active Nix tags..."
+
     for img in $to_remove {
-        print $"  Removing ($img.repository):($img.tag) [($img.hash)] \(($img.size)\)"
-        
+        print $"  Removing ($img.repository):($img.tag) [($img.hash)] (($img.size))"
+
         let result = (docker rmi $"($img.repository):($img.tag)" | complete)
-        
+
         if $result.exit_code != 0 {
             print $"    Warning: Could not remove ($img.repository):($img.tag)"
             if ($result.stderr | str contains "image is being used") {
@@ -110,7 +119,7 @@ export def prune [
             }
         }
     }
-    
+
     print $"\nPrune complete."
 }
 
@@ -120,7 +129,7 @@ export def remove-all [
     --final    # Remove only final OCX images
 ] {
     let images = (list-ocx-images)
-    
+
     let filtered = if $base {
         $images | filter-base-images
     } else if $final {
@@ -128,19 +137,19 @@ export def remove-all [
     } else {
         $images
     }
-    
+
     if ($filtered | is-empty) {
         print "No OCX images found to remove"
         return
     }
-    
+
     print $"Removing ($filtered | length) OCX image\(s\)..."
-    
+
     for img in $filtered {
-        print $"  Removing ($img.repository):($img.tag) [($img.hash)] \(($img.size)\)"
-        
+        print $"  Removing ($img.repository):($img.tag) [($img.hash)] (($img.size))"
+
         let result = (docker rmi $"($img.repository):($img.tag)" | complete)
-        
+
         if $result.exit_code != 0 {
             print $"    Warning: Could not remove ($img.repository):($img.tag)"
             if ($result.stderr | str contains "image is being used") {
@@ -148,19 +157,19 @@ export def remove-all [
             }
         }
     }
-    
+
     print $"\nRemove complete."
 }
 
 # Helper: List all OCX images
 def list-ocx-images [] {
     let result = (
-        docker images 
-            --filter "reference=localhost/ocx*" 
+        docker images
+            --filter "reference=localhost/ocx*"
             --format "{{.Repository}}|{{.Tag}}|{{.ID}}|{{.CreatedAt}}|{{.Size}}"
         | complete
     )
-    
+
     if $result.exit_code != 0 {
         error make {
             msg: "Failed to list Docker images"
@@ -169,13 +178,13 @@ def list-ocx-images [] {
             }
         }
     }
-    
+
     if ($result.stdout | str trim | is-empty) {
         return []
     }
-    
-    $result.stdout 
-        | lines 
+
+    $result.stdout
+        | lines
         | where { |line| not ($line | is-empty) }
         | parse "{repository}|{tag}|{hash}|{created}|{size}"
         | rename repository tag hash created size
@@ -188,7 +197,7 @@ def filter-base-images [] {
 
 # Helper: Filter to only final OCX images (non-base)
 def filter-final-images [] {
-    where { |img| 
+    where { |img|
         ($img.repository =~ "localhost/ocx") and not ($img.repository =~ "localhost/ocx-base")
     }
 }

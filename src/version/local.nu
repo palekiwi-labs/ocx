@@ -20,8 +20,12 @@ export def parse-semantic-versions [tags: list<string>]: nothing -> list<string>
     $tags
     | where { |tag| $tag != "latest" }
     | where { |tag|
-        $tag =~ '^\d+\.\d+\.\d+$'
+        $tag =~ '^v?\d+\.\d+\.\d+(?:-sha-[0-9a-f]{7,8})?$'
     }
+    | each { |tag|
+        $tag | str replace -r '^v?(\d+\.\d+\.\d+)(?:-sha-[0-9a-f]{7,8})?$' '$1'
+    }
+    | uniq
 }
 
 export def get-local-semantic-versions [cfg: record]: nothing -> list<string> {

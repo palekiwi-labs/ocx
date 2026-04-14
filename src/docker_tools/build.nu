@@ -122,15 +122,16 @@ def build_nix_dev [cfg: record, --force, --no-cache] {
 
     # Resolve opencode version (same mechanism as standard image)
     let version = (version resolve-version $cfg.opencode_version $cfg)
-    let nix_dev_image_versioned = $"localhost/ocx-nix:($version)"
-    let nix_dev_image_latest = "localhost/ocx-nix:latest"
+    # Ensure cfg has the resolved version for nix_daemon to use
+    let cfg_with_version = ($cfg | merge { opencode_version: $version })
+    let image_name = (nix_daemon get-dev-image-name $cfg_with_version)
     
     let context = $env.FILE_PWD
     let dockerfile = ($context | path join "Dockerfile.nix-dev")
 
-    # Check versioned image to trigger rebuild on version change
-    if (not $force) and (image-exists $nix_dev_image_versioned) {
-        print -e $"Nix dev image ($nix_dev_image_versioned) already exists, skipping build \(use --force to rebuild\)"
+    # Check versioned image to trigger rebuild on version change or Dockerfile change
+    if (not $force) and (image-exists $image_name) {
+        print -e $"Nix dev image ($image_name) already exists, skipping build \(use --force to rebuild\)"
         return
     }
 
@@ -146,7 +147,7 @@ def build_nix_dev [cfg: record, --force, --no-cache] {
         | get target)
     let extra_dirs_arg = ($volume_dirs | str join " ")
 
-    print -e $"Building nix dev image: ($nix_dev_image_versioned)"
+    print -e $"Building nix dev image: ($image_name)"
     print -e $"  OpenCode version: v($version)"
     print -e $"  Container user: ($user_settings.username) \(UID: ($user_settings.uid), GID: ($user_settings.gid)\)"
     if ($extra_dirs_arg != "") {
@@ -162,8 +163,7 @@ def build_nix_dev [cfg: record, --force, --no-cache] {
             "--build-arg" $"UID=($user_settings.uid)"
             "--build-arg" $"GID=($user_settings.gid)"
             "--build-arg" $"EXTRA_DIRS=($extra_dirs_arg)"
-            "-t" $nix_dev_image_versioned
-            "-t" $nix_dev_image_latest
+            "-t" $image_name
         ]
         | append (if $no_cache { ["--no-cache"] } else { [] })
         | append [$context]
