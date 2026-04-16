@@ -475,16 +475,16 @@ OCX provides special handling for path-based OpenCode variables to simplify usag
 
 | Variable | Description | Handling |
 | :--- | :--- | :--- |
-| `OPENCODE_CONFIG` | Custom path to configuration file | Requires **container path**. |
+| `OPENCODE_CONFIG` | Custom path to configuration file | **Host path supported**. OCX will automatically bind-mount this file read-only into the container at `/opencode.json` and update the environment variable to match. |
 | `OPENCODE_CONFIG_DIR` | Path to directory containing configuration | **Host path supported**. OCX will automatically bind-mount this directory read-only into the container at `/opencode-config-dir` and update the environment variable to match. |
 | `OPENCODE_CONFIG_CONTENT` | Inline JSON string containing full configuration | N/A |
 | `OPENCODE_MODELS_PATH` | Local file path for model definitions | Requires **container path**. |
 
-**Special handling for `OPENCODE_CONFIG_DIR`:**
-If `OPENCODE_CONFIG_DIR` is set in your host environment and points to a directory that exists, OCX will:
-1. Automatically bind-mount that host directory into the container at `/opencode-config-dir`.
-2. Update the `OPENCODE_CONFIG_DIR` environment variable inside the container to point to `/opencode-config-dir`.
-3. The mount is performed **read-only** (`ro`) for security.
+**Special handling for `OPENCODE_CONFIG` and `OPENCODE_CONFIG_DIR`:**
+If these variables are set in your host environment and point to paths that exist, OCX will:
+1. Automatically bind-mount the file/directory into the container at `/opencode.json` and `/opencode-config-dir` respectively.
+2. Update the environment variables inside the container to point to these new paths.
+3. The mounts are performed **read-only** (`ro`) for security.
 
 This avoids conflicts with other mounts (like the Nix store) and ensures you can point OpenCode to custom configurations stored anywhere on your host without manual configuration.
 
@@ -619,17 +619,19 @@ ocx opencode
 
 #### Path Variables Not Found
 
-Remember that `OPENCODE_CONFIG`, `OPENCODE_CONFIG_DIR`, and `OPENCODE_MODELS_PATH` require container paths:
+Remember that `OPENCODE_MODELS_PATH` requires a container path:
 
 **Wrong:**
 ```bash
-export OPENCODE_CONFIG=~/.config/opencode/custom.json  # Host path
+export OPENCODE_MODELS_PATH=~/.config/opencode/models.json  # Host path
 ```
 
 **Correct:**
 ```bash
-export OPENCODE_CONFIG=/home/username/.config/opencode/custom.json  # Container path
+export OPENCODE_MODELS_PATH=/home/username/.config/opencode/models.json  # Container path
 ```
+
+*Note: `OPENCODE_CONFIG` and `OPENCODE_CONFIG_DIR` support host paths directly.*
 
 #### Proxy Not Working
 

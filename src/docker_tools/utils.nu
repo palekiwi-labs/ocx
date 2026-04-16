@@ -221,6 +221,18 @@ export def build-run-cmd [
         }
     }
 
+    # Automatic bind-mount for OPENCODE_CONFIG if set to a host path
+    let opencode_config_env = ($env.OPENCODE_CONFIG? | default null)
+    if $opencode_config_env != null {
+        let expanded = ($opencode_config_env | path expand)
+        if ($expanded | path type) == "file" {
+            $cmd = ($cmd | append [
+                "-v" $"($expanded):/opencode.json:ro"
+                "-e" "OPENCODE_CONFIG=/opencode.json"
+            ])
+        }
+    }
+
     if $volume_base != null {
         $cmd = ($cmd | append [
             "-v" $"($volume_base)-cache:/home/($user_settings.username)/.cache:rw"
