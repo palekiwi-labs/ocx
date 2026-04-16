@@ -48,11 +48,6 @@ export def main [...args] {
     let image_base = (get-image-name-base $cfg)
     let version = (version resolve-version $cfg.opencode_version $cfg)
     let image_name = if $cfg.nix {
-        # Warn if custom base is configured (not supported for nix workflow)
-        if ($cfg.custom_base_dockerfile != null) {
-            print -e "Warning: custom_base_dockerfile is not supported with nix workflow"
-            print -e "         Using standard nix-dev image"
-        }
         # For Nix mode, use the hashed tag which includes the version
         let cfg_with_version = ($cfg | merge { opencode_version: $version })
         nix_daemon get-dev-image-name $cfg_with_version
