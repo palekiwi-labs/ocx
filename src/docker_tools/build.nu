@@ -114,12 +114,6 @@ def build_ocx [cfg: record, --force, --no-cache] {
 }
 
 def build_nix_dev [cfg: record, --force, --no-cache] {
-    # Warn if custom base is configured (not supported for nix workflow)
-    if ($cfg.custom_base_dockerfile != null) {
-        print -e "Warning: custom_base_dockerfile is not supported with nix workflow (nix=true)"
-        print -e "         Ignoring custom base and using standard nix-dev image"
-    }
-
     # Resolve opencode version (same mechanism as standard image)
     let version = (version resolve-version $cfg.opencode_version $cfg)
     # Ensure cfg has the resolved version for nix_daemon to use
