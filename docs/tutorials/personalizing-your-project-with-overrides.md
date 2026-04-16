@@ -56,7 +56,7 @@ OPENCODE_CONFIG=/home/youruser/opencode/my-workflow.json
 OPENCODE_CONFIG_DIR=/home/youruser/opencode/my-custom-agents/
 ```
 
-> **Note on Paths:** Use the absolute path as it appears *inside* the container. By default, `ocx` maps your home directory to the same path inside the container (e.g., `/home/username`).
+> **Note on Paths:** You can use absolute paths on your host machine. If the path exists on your host, `ocx` will automatically bind-mount the file/directory and update the environment variable for the container.
 
 ### 3. Benefits of this Approach
 
