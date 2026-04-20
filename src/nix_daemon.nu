@@ -459,13 +459,13 @@ export def "flake init" [cfg: record, --force] {
         mkdir $flake.host_dir
     }
 
-    let template = `
+    let template = "
 {
-  description = "Global OCX development environment";
+  description = \"Global OCX development environment\";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    flake-utils.url = "github:numtide/flake-utils";
+    nixpkgs.url = \"github:NixOS/nixpkgs/nixos-unstable\";
+    flake-utils.url = \"github:numtide/flake-utils\";
   };
 
   outputs = { self, nixpkgs, flake-utils }:
@@ -483,13 +483,13 @@ export def "flake init" [cfg: record, --force] {
           ];
 
           shellHook = ''
-            echo "OCX Global Nix Environment Loaded"
+            echo \"OCX Global Nix Environment Loaded\"
           '';
         };
       }
     );
 }
-`
+"
     $template | save -f $flake_file
 
     print -e $"Scaffolded flake.nix at ($flake_file)"
